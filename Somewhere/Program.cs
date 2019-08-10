@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Data.SQLite;
+using SQLiteExtension;
 
 namespace Somewhere
 {
@@ -50,13 +52,31 @@ namespace Somewhere
             => typeof(Program).GetMethods(BindingFlags.Static | BindingFlags.NonPublic).ToDictionary(m => m,
                 m => m.GetCustomAttributes(typeof(CommandAttribute), false).SingleOrDefault())
                 .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value);
+        /// <summary>
+        /// Check whether current working directory is a "home" folder, i.e. whether Somewhere DB file is present
+        /// </summary>
+        private static bool IsHomePresent
+            => File.Exists(SomewhereDBName);
+        #endregion
+
+        #region Constants
+        private const string SomewhereDBName = "Home.somewhere";
         #endregion
 
         #region Commands
+        /// <summary>
+        /// Add a file to home
+        /// </summary>
+        private static IEnumerable<string> Add()
+        {
+
+        }
         [Command("Show available commands and general usage help.")]
         private static IEnumerable<string> Help(string[] args)
         {
-            var list = CommandMethodAttributes.Select(ma => $"\t{ma.Key.Name.ToLower()} - {(ma.Value as CommandAttribute).Description}").ToList();
+            var list = CommandMethodAttributes
+                .OrderBy(cm => cm.Key.Name) // Sort alphabetically
+                .Select(cm => $"\t{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}").ToList();
             list.Insert(0, "Available Commands: ");
             return list;
         }
@@ -74,6 +94,48 @@ namespace Somewhere
                 pProcess.Start();
                 // string output = pProcess.StandardOutput.ReadToEnd(); //The output result
                 // pProcess.WaitForExit();
+            }
+        }
+        #endregion
+
+        #region Subroutines
+        /// <summary>
+        /// Generate database for Home
+        /// </summary>
+        private static void GenerateDBFile()
+        {
+            // Check not existing
+            if (IsHomePresent) throw new InvalidOperationException($"A {SomewhereDBName} already exist in {Directory.GetCurrentDirectory()} directory");
+            // Generate file
+            using(SQLiteConnection connection = new SQLiteConnection($"DataSource={SomewhereDBName};Verions=3;"))
+            {
+                connection.Open();
+                List<string> commands = new List<string>
+                {
+                    @"CREATE TABLE ""Tag"" (
+	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
+	                    ""Name""	TEXT
+                    )",
+                    @"CREATE TABLE ""File"" (
+	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
+	                    ""Name""	TEXT,
+	                    ""Path""	TEXT,
+	                    ""Content""	BLOB,
+	                    ""Meta""	TEXT
+                    )",
+                    @"CREATE TABLE ""FileTag"" (
+	                    ""FileID""	INTEGER,
+	                    ""TagID""	INTEGER,
+	                    PRIMARY KEY(""FileID"",""TagID""),
+	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID""),
+	                    FOREIGN KEY(""TagID"") REFERENCES ""Tag""(""ID"")
+                    )",
+                    @"CREATE TABLE ""Log"" (
+	                    ""DateTime""	TEXT,
+	                    ""Action""	TEXT
+                    )"
+                };
+                connection.ExecuteSQLNonQuery(commands);
             }
         }
         #endregion

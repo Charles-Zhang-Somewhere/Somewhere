@@ -32,12 +32,37 @@ namespace SQLiteExtension
     /// </summary>
     public static class SQLiteDataReaderExtension
     {
+        #region Interface Method
+        /// <summary>
+        /// Execute a SQL query (e.g. select) with given command and SQLite parameters defined in an object
+        /// </summary>
         public static SQLiteDataReader ExecuteQuery(this SQLiteConnection connection, string command, object parameters = null, bool containsBlob = false)
             => connection.BuildSQL(command, parameters, cmd =>
                 // Optionally we can store result to in-memory table: new DataTable().Load(reader);
                 cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
+        /// <summary>
+        /// Execute a SQL non-query (e.g. insert and update) with given command and SQLite parameters defined in an object
+        /// </summary>
         public static void ExecuteSQLNonQuery(this SQLiteConnection connection, string command, object parameters = null)
             => connection.BuildSQL(command, parameters, cmd => { cmd.ExecuteNonQuery(); return null; });
+        /// <summary>
+        /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
+        /// </summary>
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, string command, IEnumerable<object> commandParameters)
+            => connection.RunSQL(commandParameters.Select(cp => new Tuple<string, object>(command, cp)));
+        /// <summary>
+        /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
+        /// </summary>
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, IEnumerable<Tuple<string, object>> commandAndParameters)
+            => connection.RunSQL(commandAndParameters);
+        /// <summary>
+        /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
+        /// </summary>
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, IEnumerable<string> commandsWithoutParameters)
+            => connection.RunSQL(commandsWithoutParameters.Select(cwp => new Tuple<string, object>(cwp, null)));
+        #endregion
+
+        #region Core Abstraction Logic
         /// <summary>
         /// Build a sql command with given dynamic paramters using database provider methods
         /// </summary>
@@ -61,7 +86,33 @@ namespace SQLiteExtension
                 return returnValue;
             }
         }
+        /// <summary>
+        /// Build and run a sequence of sql commands with given dynamic paramters using database provider methods in a transaction
+        /// </summary>
+        private static void RunSQL(this SQLiteConnection connection, IEnumerable<Tuple<string, object>> commandAndParameters)
+        {
+            using (SQLiteTransaction transaction = connection.BeginTransaction())
+            {
+                foreach (Tuple<string, object> item in commandAndParameters)
+                {
+                    string command = item.Item1.TrimEnd(';');
+                    object parameters = item.Item2;
+                    using (SQLiteCommand cmd = new SQLiteCommand(command, connection, transaction))
+                    {
+                        // Handle parameters
+                        if (parameters != null)
+                            foreach (PropertyInfo property in parameters.GetType().GetProperties())
+                                cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
+                        // Execute command
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                transaction.Commit();
+            }
+        }
+        #endregion
 
+        #region Data Extraction Helpers
         /// <summary>
         /// Retrieve a list of objects for target type using reflection from the data table;
         /// Type must have public properties; Property names are case insensitive;
@@ -185,6 +236,7 @@ namespace SQLiteExtension
 
             return list;
         }
+        #endregion
     }
 
     public static class ConvertExtension
