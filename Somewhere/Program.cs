@@ -15,7 +15,7 @@ namespace Somewhere
         {
             // Print working directory for identification
             if(args.Length == 0) Console.WriteLine($"Welcome to Somewhere, a tag-based personal file management system!");   // Show greeting only when it's not annoying, i.e. people not sending any specific command
-            Console.WriteLine($"Current working Directory: {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"Current working Directory: {Directory.GetCurrentDirectory()} {(Commands.IsHomePresent ? "" : "(Not a Home folder)")}");
 
             // Show help if no argument is given
             if (args.Length == 0)

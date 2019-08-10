@@ -25,8 +25,9 @@ namespace Somewhere
         public static Dictionary<MethodInfo, CommandArgumentAttribute[]> CommandArguments
             => _CommandArguments == null
             ? (_CommandArguments = CommandMethods.ToDictionary(m => m.Key,
-                m => m.Key.GetCustomAttributes(typeof(CommandAttribute), false).Select(a => a as CommandArgumentAttribute).ToArray())
-                .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value))    // Initialize and return static member
+                m => m.Key.GetCustomAttributes(typeof(CommandArgumentAttribute), false)
+                .Select(a => a as CommandArgumentAttribute).ToArray())
+                .ToDictionary(d => d.Key, d => d.Value))    // Initialize and return static member
             : _CommandArguments; // Return already initialized member
         /// <summary>
         /// Returns a list of all commands by name
@@ -64,8 +65,8 @@ namespace Somewhere
         {
             ValidateArgs(args, true);
             string fileName = args[0];
-            if (!File.Exists(fileName))
-                throw new ArgumentException($"Specified file {fileName} doesn't exist on disk.");
+            if (!File.Exists(fileName) && !Directory.Exists(fileName))
+                throw new ArgumentException($"Specified file (directory) {fileName} doesn't exist on disk.");
             if (IsFileInHome(fileName))
                 return new string[] { $"File `{fileName}` already added in database." };
             else
@@ -74,12 +75,36 @@ namespace Somewhere
                 return new string[] { $"File `{fileName}` added to database with a total of {FileCount} files." };
             }
         }
+        [Command("Displays the state of the Home directory and the staging area.",
+            "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
+            "Notice only the files in current directory are checked, we don't go through children folders. " +
+            "We also don't check folders. The (reasons) last two points are made clear in design document.")]
+        public static IEnumerable<string> Status(string[] args = null)
+        {
+            var files = Directory.GetFiles(Directory.GetCurrentDirectory()).OrderBy(f => f);
+            var managed = Connection.ExecuteQuery("select Name from File").List<string>()
+                .ToDictionary(f => f, f => 1 /* Dummy */);
+            List<string> result = new List<string>();
+            result.Add($"{files.Count()} files on disk; {managed.Count} files in database.");
+            result.Add($"------------");
+            int newCount = 0;
+            foreach (string file in files)
+            {
+                if (!managed.ContainsKey(file))
+                {
+                    result.Add($"[New] {file}");
+                    newCount++;
+                }                    
+            }
+            result.Add($"{newCount} new.");
+            return result;
+        }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.")]
-        [CommandArgument("commandname", "name of command", true)]
-        public static IEnumerable<string> Help(string[] args)
+        [CommandArgument("commandname", "name of command", optional: true)]
+        public static IEnumerable<string> Help(string[] args = null)
         {
             // Show list of commands
-            if(args.Length == 0)
+            if(args == null || args.Length == 0)
             {
                 var list = CommandMethods
                 .OrderBy(cm => cm.Key.Name) // Sort alphabetically
@@ -94,8 +119,27 @@ namespace Somewhere
                 return GetCommandHelp(command);
             }
         }
+        [Command("Generate documentation of Somewhere program.")]
+        [CommandArgument("path", "path for the generated file.")]
+        public static IEnumerable<string> Doc(string[] args = null)
+        {
+            string documentation = "SomewhereDoc.txt";
+            if (args != null && args?.Length == 0)
+                documentation = args[0];
+            using (FileStream file = new FileStream(documentation, FileMode.CreateNew))
+            using (StreamWriter writer = new StreamWriter(file))
+            {
+                foreach (string line in Help(null))
+                    writer.WriteLine(line);
+                writer.WriteLine(); // Add empty line
+                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
+                    foreach (string line in Help(new string[] { commandName }))
+                        writer.WriteLine(line);
+            }
+            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(Directory.GetCurrentDirectory(), documentation) : documentation)}" };
+        }
         [Command("Run desktop version of Somewhere.")]
-        public static void UI()
+        public static IEnumerable<string> UI(string[] args = null)
         {
             using (System.Diagnostics.Process pProcess = new System.Diagnostics.Process())
             {
@@ -109,6 +153,7 @@ namespace Somewhere
                 // string output = pProcess.StandardOutput.ReadToEnd(); //The output result
                 // pProcess.WaitForExit();
             }
+            return null;
         }
         #endregion
 
@@ -182,7 +227,13 @@ namespace Somewhere
                     )",
                     // Assign initial db meta values
                     @"INSERT INTO Configuration (Key, Value) 
-                        values ('Version', 'V1.0.0')"
+                        values ('Version', 'V1.0.0')",
+                    @"CREATE TABLE ""Revision"" (
+	                    ""FileID""	INTEGER,
+	                    ""DateTime""	TEXT,
+	                    ""Content""	BLOB,
+	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID"")
+                    )"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }

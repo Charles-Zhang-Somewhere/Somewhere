@@ -17,7 +17,7 @@ namespace SomewhereTest
         public void NewCommandGeneratesADBFile()
         {
             // Make sure we start clean
-            CleanTestFolderRemoveDBFile();
+            CleanTestFolderRemoveDBFileDocFile();
             // Create and assert
             Commands.New();
             Assert.True(File.Exists(Commands.DBName));
@@ -26,7 +26,7 @@ namespace SomewhereTest
         [Fact]
         public void AddFileShouldUpdateFileCount()
         {
-            CleanTestFolderRemoveDBFile();
+            CleanTestFolderRemoveDBFileDocFile();
             Commands.New(); // Create a new db
             Assert.Equal(0, Commands.FileCount);
             Commands.Add(new string[] { "Somewhere.exe" });
@@ -34,12 +34,22 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void CleanTestFolderRemoveDBFile()
+        public void CleanTestFolderRemoveDBFileDocFile()
         {
             // Make sure we are in the test folder
             TestLocationContainsExecutable();
             // Remove DB file
             File.Delete(Commands.DBName);
+            // Remove Doc file
+            File.Delete("SomewhereDoc.txt");
+        }
+
+        [Fact]
+        public void ShouldGenerateDoc()
+        {
+            CleanTestFolderRemoveDBFileDocFile();
+            Commands.Doc();
+            File.Exists("SomewhereDoc.txt");
         }
     }
 }
