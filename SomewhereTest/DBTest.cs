@@ -51,5 +51,23 @@ namespace SomewhereTest
             Commands.Doc();
             File.Exists("SomewhereDoc.txt");
         }
+
+        [Fact]
+        public void ShouldRunStatus()
+        {
+            CleanTestFolderRemoveDBFileDocFile();
+            Commands.New(); // Create a new db
+            foreach (var item in Commands.Status())
+            {
+                Console.WriteLine(item);
+            }
+        }
+
+        [Fact]
+        public void ShouldNotRunStatus()
+        {
+            CleanTestFolderRemoveDBFileDocFile();
+            Commands.Status();
+        }
     }
 }

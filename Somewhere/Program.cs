@@ -14,8 +14,11 @@ namespace Somewhere
         static void Main(string[] args)
         {
             // Print working directory for identification
-            if(args.Length == 0) Console.WriteLine($"Welcome to Somewhere, a tag-based personal file management system!");   // Show greeting only when it's not annoying, i.e. people not sending any specific command
-            Console.WriteLine($"Current working Directory: {Directory.GetCurrentDirectory()} {(Commands.IsHomePresent ? "" : "(Not a Home folder)")}");
+            if (args.Length == 0)
+            {
+                Console.WriteLine($"Welcome to Somewhere, a tag-based personal file management system!");   // Show greeting only when it's not annoying, i.e. people not sending any specific command
+                Console.WriteLine($"Current working Directory: {Directory.GetCurrentDirectory()} {(Commands.IsHomePresent ? "" : "(Not a Home folder)")}");
+            }
 
             // Show help if no argument is given
             if (args.Length == 0)
@@ -26,21 +29,22 @@ namespace Somewhere
             }
 
             // Handle commands (in lower case)
-            var argsLower = args[0].ToLower();
-            if (Commands.CommandNames.ContainsKey(argsLower))
+            var commandName = args[0].ToLower();
+            if (Commands.CommandNames.ContainsKey(commandName))
             {
-                var method = Commands.CommandNames[argsLower];
+                var method = Commands.CommandNames[commandName];
+                var arguments = args.ToList().GetRange(1, args.Length - 1).ToArray();
                 try
                 {
-                    IEnumerable<string> result = method.Invoke(null, args) as IEnumerable<string>;
+                    IEnumerable<string> result = method.Invoke(null, new [] {arguments}) as IEnumerable<string>;
                     if (result != null)
                         foreach (string line in result)
                             Console.WriteLine(line);
                 }
-                catch (Exception e){ Console.WriteLine($"{e.Message}"); }
+                catch (Exception e){ Console.WriteLine($"{e.InnerException.Message}"); }
             }
             else
-                Console.WriteLine($"Specified command {argsLower} doesn't exist. Try again.");
+                Console.WriteLine($"Specified command {commandName} doesn't exist. Try again.");
         }
         #endregion
     }

@@ -56,8 +56,11 @@ namespace Somewhere
         [Command("Create a new Somewhere home at current directory.")]
         public static IEnumerable<string> New(string[] args = null)
         {
-            GenerateDBFile();
-            return null;
+            try {
+                string path = GenerateDBFile();
+                return new string[] { $"Database generated at ${path}" };
+            }
+            catch (Exception) { throw; }
         }
         [Command("Add a file to home.")]
         [CommandArgument("filename", "name of file")]
@@ -83,7 +86,7 @@ namespace Somewhere
         {
             var files = Directory.GetFiles(Directory.GetCurrentDirectory()).OrderBy(f => f);
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
-                .ToDictionary(f => f, f => 1 /* Dummy */);
+                ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
             result.Add($"{files.Count()} files on disk; {managed.Count} files in database.");
             result.Add($"------------");
@@ -188,10 +191,11 @@ namespace Somewhere
         /// <summary>
         /// Generate database for Home
         /// </summary>
-        private static void GenerateDBFile()
+        /// <returns>Fullpath of generated file</returns>
+        private static string GenerateDBFile()
         {
             // Check not existing
-            if (IsHomePresent) throw new InvalidOperationException($"A {DBName} already exist in {Directory.GetCurrentDirectory()} directory");
+            if (IsHomePresent) throw new InvalidOperationException($"A Somewhere database already exist in {Directory.GetCurrentDirectory()} directory");
             // Generate file
             using (SQLiteConnection connection = new SQLiteConnection($"DataSource={DBName};Verions=3;"))
             {
@@ -237,6 +241,7 @@ namespace Somewhere
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
+            return Path.Combine(Directory.GetCurrentDirectory(), DBName);
         }
         /// <summary>
         /// Given a filename check whether the file is reocrded in the database
