@@ -13,6 +13,7 @@ namespace Somewhere
         #region Program Entry
         static void Main(string[] args)
         {
+            Commands Commands = new Commands(Directory.GetCurrentDirectory());
             // Print working directory for identification
             if (args.Length == 0)
             {

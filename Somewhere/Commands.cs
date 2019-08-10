@@ -10,41 +10,47 @@ using System.Text;
 
 namespace Somewhere
 {
-    public static class Commands
+    public class Commands
     {
+        #region Constructor
+        public Commands(string workingDirectory)
+            => HomeDirectory = workingDirectory;
+        #endregion
+
         #region Public Properties
+        public string HomeDirectory { get; }
         /// <summary>
         /// Returns a list of all Command methods
         /// </summary>
-        public static Dictionary<MethodInfo, CommandAttribute> CommandMethods
+        public Dictionary<MethodInfo, CommandAttribute> CommandMethods
             => _CommandMethods == null 
-            ? (_CommandMethods = typeof(Commands).GetMethods(BindingFlags.Static | BindingFlags.Public).ToDictionary(m => m,
+            ? (_CommandMethods = typeof(Commands).GetMethods(BindingFlags.Instance | BindingFlags.Public).ToDictionary(m => m,
                 m => m.GetCustomAttributes(typeof(CommandAttribute), false).SingleOrDefault() as CommandAttribute)
-                .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value))    // Initialize and return static member
+                .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
             : _CommandMethods; // Return already initialized member
-        public static Dictionary<MethodInfo, CommandArgumentAttribute[]> CommandArguments
+        public Dictionary<MethodInfo, CommandArgumentAttribute[]> CommandArguments
             => _CommandArguments == null
             ? (_CommandArguments = CommandMethods.ToDictionary(m => m.Key,
                 m => m.Key.GetCustomAttributes(typeof(CommandArgumentAttribute), false)
                 .Select(a => a as CommandArgumentAttribute).ToArray())
-                .ToDictionary(d => d.Key, d => d.Value))    // Initialize and return static member
+                .ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
             : _CommandArguments; // Return already initialized member
         /// <summary>
         /// Returns a list of all commands by name
         /// </summary>
-        public static Dictionary<string, MethodInfo> CommandNames
+        public Dictionary<string, MethodInfo> CommandNames
             => _CommandNames == null
-            ? (_CommandNames = CommandMethods.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return static member
+            ? (_CommandNames = CommandMethods.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
             : _CommandNames;
         /// <summary>
         /// Check whether current working directory is a "home" folder, i.e. whether Somewhere DB file is present
         /// </summary>
-        public static bool IsHomePresent
-            => File.Exists(DBName);
+        public bool IsHomePresent
+            => FileExistsAtHomeFolder(DBName);
         /// <summary>
         /// Count of managed files
         /// </summary>
-        public static int FileCount
+        public int FileCount
             => Connection.ExecuteQuery("select count(*) from File").Single<int>();
         #endregion
 
@@ -53,8 +59,8 @@ namespace Somewhere
         #endregion
 
         #region Commands (Public Interface as Library)
-        [Command("Create a new Somewhere home at current directory.")]
-        public static IEnumerable<string> New(string[] args = null)
+        [Command("Create a new Somewhere home at current home directory.")]
+        public IEnumerable<string> New(params string[] args)
         {
             try {
                 string path = GenerateDBFile();
@@ -64,13 +70,13 @@ namespace Somewhere
         }
         [Command("Add a file to home.")]
         [CommandArgument("filename", "name of file")]
-        public static IEnumerable<string> Add(string[] args)
+        public IEnumerable<string> Add(params string[] args)
         {
             ValidateArgs(args, true);
             string fileName = args[0];
-            if (!File.Exists(fileName) && !Directory.Exists(fileName))
+            if (!FileExistsAtHomeFolder(fileName) && !DirectoryExistsAtHomeFolder(fileName))
                 throw new ArgumentException($"Specified file (directory) {fileName} doesn't exist on disk.");
-            if (IsFileInHome(fileName))
+            if (IsFileInDatabase(fileName))
                 return new string[] { $"File `{fileName}` already added in database." };
             else
             {
@@ -82,9 +88,9 @@ namespace Somewhere
             "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
             "Notice only the files in current directory are checked, we don't go through children folders. " +
             "We also don't check folders. The (reasons) last two points are made clear in design document.")]
-        public static IEnumerable<string> Status(string[] args = null)
+        public IEnumerable<string> Status(params string[] args)
         {
-            var files = Directory.GetFiles(Directory.GetCurrentDirectory()).OrderBy(f => f);
+            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f);
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
@@ -102,9 +108,35 @@ namespace Somewhere
             result.Add($"{newCount} new.");
             return result;
         }
+        [Command("Remove a file from Home directory, deletes the file both physically and from database.",
+            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("-f", "force physical deletion instead of mark as \"_deleted\"", optional: true)]
+        public IEnumerable<string> RM(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            if (!FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            if (!IsFileInDatabase(filename))
+                throw new ArgumentException($"Specified file `{filename}` is not managed in database.");
+            // Delete from DB
+            RemoveFile(filename);
+            // Delete from filesystem
+            if (args.Length == 2 && args[1] == "-f")
+            {
+                DeleteFileFromHomeFolder(filename);
+                return new string[] { $"File `{filename}` is forever gone (deleted)." };
+            }
+            else
+            {
+                MoveFileInHomeFolder(filename, filename + "_deleted");
+                return new string[] { $"File `{filename}` is marked as \"_deleted\"." };
+            }
+        }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.")]
         [CommandArgument("commandname", "name of command", optional: true)]
-        public static IEnumerable<string> Help(string[] args = null)
+        public IEnumerable<string> Help(params string[] args)
         {
             // Show list of commands
             if(args == null || args.Length == 0)
@@ -124,12 +156,12 @@ namespace Somewhere
         }
         [Command("Generate documentation of Somewhere program.")]
         [CommandArgument("path", "path for the generated file.")]
-        public static IEnumerable<string> Doc(string[] args = null)
+        public IEnumerable<string> Doc(params string[] args)
         {
             string documentation = "SomewhereDoc.txt";
-            if (args != null && args?.Length == 0)
+            if (args != null && args?.Length != 0)
                 documentation = args[0];
-            using (FileStream file = new FileStream(documentation, FileMode.CreateNew))
+            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.CreateNew))
             using (StreamWriter writer = new StreamWriter(file))
             {
                 foreach (string line in Help(null))
@@ -139,10 +171,10 @@ namespace Somewhere
                     foreach (string line in Help(new string[] { commandName }))
                         writer.WriteLine(line);
             }
-            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(Directory.GetCurrentDirectory(), documentation) : documentation)}" };
+            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
         }
         [Command("Run desktop version of Somewhere.")]
-        public static IEnumerable<string> UI(string[] args = null)
+        public IEnumerable<string> UI(params string[] args)
         {
             using (System.Diagnostics.Process pProcess = new System.Diagnostics.Process())
             {
@@ -160,44 +192,46 @@ namespace Somewhere
         }
         #endregion
 
-        #region Low-Level Public Interface
-        public static void AddFile(string fileName)
+        #region Low-Level Public (Database) Interface
+        public void AddFile(string fileName)
             => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = fileName });
+        public void RemoveFile(string fileName)
+            => Connection.ExecuteSQLNonQuery("delete from File where Name=@name", new { name = fileName });
         #endregion
 
         #region Primary Properties
-        private static Dictionary<MethodInfo, CommandAttribute> _CommandMethods = null;
-        private static Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
-        private static Dictionary<string, MethodInfo> _CommandNames = null;
-        private static SQLiteConnection _Connection = null;
+        private Dictionary<MethodInfo, CommandAttribute> _CommandMethods = null;
+        private Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
+        private Dictionary<string, MethodInfo> _CommandNames = null;
+        private SQLiteConnection _Connection = null;
         #endregion
 
         #region Private Subroutines
-        private static SQLiteConnection Connection
+        private SQLiteConnection Connection
         {
             get
             {
                 if (_Connection == null && IsHomePresent)
                 {
-                    _Connection = new SQLiteConnection($"DataSource={DBName};Version=3;");
+                    _Connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Version=3;");
                     _Connection.Open();
                     return _Connection;
                 }
                 else if (_Connection != null && IsHomePresent)
                     return _Connection;
-                else throw new InvalidOperationException($"Cannot initialize database, not in a Home directory.");
+                else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory.");
             }
         }
         /// <summary>
         /// Generate database for Home
         /// </summary>
         /// <returns>Fullpath of generated file</returns>
-        private static string GenerateDBFile()
+        private string GenerateDBFile()
         {
             // Check not existing
-            if (IsHomePresent) throw new InvalidOperationException($"A Somewhere database already exist in {Directory.GetCurrentDirectory()} directory");
+            if (IsHomePresent) throw new InvalidOperationException($"A Somewhere database already exist in {HomeDirectory} directory");
             // Generate file
-            using (SQLiteConnection connection = new SQLiteConnection($"DataSource={DBName};Verions=3;"))
+            using (SQLiteConnection connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Verions=3;"))
             {
                 connection.Open();
                 List<string> commands = new List<string>
@@ -229,47 +263,59 @@ namespace Somewhere
 	                    ""Value""	TEXT,
 	                    PRIMARY KEY(""Key"")
                     )",
-                    // Assign initial db meta values
-                    @"INSERT INTO Configuration (Key, Value) 
-                        values ('Version', 'V1.0.0')",
                     @"CREATE TABLE ""Revision"" (
 	                    ""FileID""	INTEGER,
 	                    ""DateTime""	TEXT,
 	                    ""Content""	BLOB,
 	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID"")
-                    )"
+                    )",
+                    // Assign initial db meta values
+                    @"INSERT INTO Configuration (Key, Value) 
+                        values ('Version', 'V1.0.0')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
-            return Path.Combine(Directory.GetCurrentDirectory(), DBName);
+            return Path.Combine(HomeDirectory, DBName);
         }
         /// <summary>
         /// Given a filename check whether the file is reocrded in the database
         /// </summary>
-        private static bool IsFileInHome(string fileName)
+        private bool IsFileInDatabase(string fileName)
             => Connection.ExecuteQuery("select count(*) from File where Name = @name", new { name = fileName })
             .Single<int>() == 1;
+        private bool FileExistsAtHomeFolder(string fileName)
+            => File.Exists(Path.Combine(HomeDirectory, fileName));
+        private bool DirectoryExistsAtHomeFolder(string directoryName)
+            => Directory.Exists(Path.Combine(HomeDirectory, directoryName));
+        private void DeleteFileFromHomeFolder(string fileName)
+            => File.Delete(Path.Combine(HomeDirectory, fileName));
+        private void MoveFileInHomeFolder(string fileName, string newFileName)
+            => File.Move(Path.Combine(HomeDirectory, fileName), Path.Combine(HomeDirectory, newFileName));
         /// <summary>
         /// Validate argument (count) for a given command; 
         /// Throw exception when not valid
         /// </summary>
         /// <param name="isHomeOperation">Indicates whether this command requires presence in home folder and will validate
         /// working directory is a valid home folder</param>
-        private static void ValidateArgs(string[] args, bool isHomeOperation = false, [CallerMemberName]string commandName = null)
+        private void ValidateArgs(string[] args, bool isHomeOperation = false, [CallerMemberName]string commandName = null)
         {
             if(isHomeOperation && !IsHomePresent)
-                throw new InvalidOperationException($"Current directory {Directory.GetCurrentDirectory()} is not a Somewhere home folder.");
+                throw new InvalidOperationException($"Current directory {HomeDirectory} is not a Somewhere home folder.");
 
             commandName = commandName.ToLower();
             var command = CommandNames[commandName];
             var arguments = CommandArguments[command];
-            if (args.Length != arguments.Length)
-                throw new InvalidOperationException($"Command {commandName} requires {arguments.Length} arguments. Use `help {commandName}`.");
+            int maxLength = arguments.Length;
+            int minLength = arguments.Where(a => a.Optional == false).Count();
+            if (args.Length > maxLength || args.Length < minLength)
+                throw new InvalidOperationException($"Command {commandName} requires " +
+                    $"{(maxLength != minLength ? $"{arguments.Length}": $"{minLength}-{maxLength}")} arguments, " +
+                    $"{args.Length} is given. Use `help {commandName}`.");
         }
         /// <summary>
         /// Get a formatted help info for a given command
         /// </summary>
-        private static IEnumerable<string> GetCommandHelp(string commandName)
+        private IEnumerable<string> GetCommandHelp(string commandName)
         {
             List<string> commandHelp = new List<string>();
             var command = CommandNames[commandName];
