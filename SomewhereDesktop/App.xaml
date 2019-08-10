@@ -4,6 +4,42 @@
              xmlns:local="clr-namespace:SomewhereDesktop"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <!-- Solarized Color Style: https://ethanschoonover.com/solarized/ -->
+        <SolidColorBrush x:Key="base03" Color="#002b36"/>
+        <SolidColorBrush x:Key="base02" Color="#073642"/>
+        <SolidColorBrush x:Key="base01" Color="#586e75"/>
+        <SolidColorBrush x:Key="base00" Color="#657b83"/>
+        <SolidColorBrush x:Key="base0" Color="#839496"/>
+        <SolidColorBrush x:Key="base1" Color="#93a1a1"/>
+        <SolidColorBrush x:Key="base2" Color="#eee8d5"/>
+        <SolidColorBrush x:Key="base3" Color="#fdf6e3"/>
+        <SolidColorBrush x:Key="yellow" Color="#b58900"/>
+        <SolidColorBrush x:Key="orange" Color="#cb4b16"/>
+        <SolidColorBrush x:Key="red" Color="#dc322f"/>
+        <SolidColorBrush x:Key="magenta" Color="#d33682"/>
+        <SolidColorBrush x:Key="violet" Color="#6c71c4"/>
+        <SolidColorBrush x:Key="blue" Color="#268bd2"/>
+        <SolidColorBrush x:Key="cyan" Color="#2aa198"/>
+        <SolidColorBrush x:Key="green" Color="#859900"/>
+
+        <!-- Custom Color Scheme -->
+        <!-- Primary Color (Base) -->
+        <SolidColorBrush x:Key="Base4" Color="#313B74"/>
+        <SolidColorBrush x:Key="Base3" Color="#6D7EDD"/>
+        <SolidColorBrush x:Key="Base2" Color="#4A58A2"/>
+        <SolidColorBrush x:Key="Base1" Color="#1B2246"/>
+        <SolidColorBrush x:Key="Base0" Color="#080B18"/>
+        <!-- Secondary color 1 (Highlight) -->
+        <SolidColorBrush x:Key="Highlight4" Color="#4C2D73"/>
+        <SolidColorBrush x:Key="Highlight3" Color="#9B67DC"/>
+        <SolidColorBrush x:Key="Highlight2" Color="#6D45A1"/>
+        <SolidColorBrush x:Key="Highlight1" Color="#2C1846"/>
+        <SolidColorBrush x:Key="Highlight0" Color="#0F0818"/>
+        <!-- Secondary color 2 (Accent) -->
+        <SolidColorBrush x:Key="Accent4" Color="#226666"/>
+        <SolidColorBrush x:Key="Accent3" Color="#59D4D4"/>
+        <SolidColorBrush x:Key="Accent2" Color="#358E8E"/>
+        <SolidColorBrush x:Key="Accent1" Color="#123E3E"/>
+        <SolidColorBrush x:Key="Accent0" Color="#051515"/>
     </Application.Resources>
 </Application>
