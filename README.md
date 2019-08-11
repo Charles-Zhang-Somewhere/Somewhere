@@ -13,19 +13,11 @@ Large scale performance test: generate 50000 files and add each to home and gene
 
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
 
-FAQ: How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
-
-Best Practice: Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
-
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
 
 Clean: clean all deleted files. Require confirmation. Show report list after action.
 
 Database schemas: the idea of adding tags to physics file resources is quite simple. In fact cefore creating this application I am already doing it at work manually for documents, reading materials, test data, and misc resource files - that's much slower,  but the advantage of having a database for this purpose is very superior, by avoiding the limits of underlying OS FS, I gain the ability to annotate files (notably name length limit, hierarchical structure, and no meta data available) like never before and this enables much easier later retrieval.
-
-FAQ: What will happen if I put an emoji in my filename?
-
-Update: Change "note" meta to "remark" to disignify it.
 
 Feature Requests (Usability): Add whole file version revision, either simply natively, or using git. Per file based, require message.
 ```
@@ -73,6 +65,8 @@ This app is absolutely intended for personal use. Sharing files on network drive
 
 1. (Not used) **Item**: Anything that contains information or data, this corresponds to a "File" entry in the File table, however in practice, and as in most operating system, "Files" can also denote "Folders", so "item" is used to avoid confusion.
 2. Physical Folder: a folder is a file.... and item...
+3. (Virtual) Note:
+4. (File Meta) Remark: 
 
 ## Terminology
 
@@ -115,6 +109,7 @@ This app is absolutely intended for personal use. Sharing files on network drive
 8. Git: well everyone knows it and loves it
 9. RoboOS: Flattened FS inspiration
 10. (Anti)tagxfs: good [reading](http://tagxfs.sourceforge.net), some excerts of points..., too long a name, the scheme is not flexible, the underlying architecture/structure is not obvious, no **GUI support is not good** (even for efficient typers, GUI when utilized properly can provide much more information at a glance, so a proper GUI should be provided as a complement)
+11. Everything (voidtools): inspired the name for Somewhere.
 
 # Developement Notes and Roadmap
 
@@ -140,7 +135,12 @@ A functional and effective application may not just end here, I have several sim
 ## Software Components
 
 1. SQLite Handling Layer: .Net Core
-2. 
+2. **Somewhere Application** (Library, Command Line, WPF): 
+	* Commands (also as library functions): 
+		- ✓: add, rm, mv, new (home), sync; 
+		- ☆: tag, untag;
+		- ⓘ: status, log, search, help
+	* UI Interface: ...
 
 ## Underlying SQLite Table Schemes
 
@@ -165,11 +165,33 @@ Cautious:
 
 1. Filename must be either unique or null (for safe add and remove operations, and for compatibility with file system), though length limit is removed (for meaningful description for notes). And as such meaningful filename is encouraged (if not required). For practical (and safe) reasons, files are never actually physically deleted - they are instead marked with suffix `_deleted` at the very end of filename (and disable the extension).
 
+## Shortcuts (Desktop Version)
+
+1. F1: Help Popup
+2. F2: OPen (Home)
+3. F3: Reserved
+4. F4: Advanced Actions (Divide, Merge (in), Diff (status popup), Sync, Branch)
+5. F5: Tag Editor Popup (Addition + Rename + Remove) - Search select from list and enter in textbox
+6. Double Click on file:
+7. Right click on file:
+8. Right click on home: 
+
 ## Best Practices
 
 1. Tag name convention: per convention of other existing tag based systems, I found this a good starting point: 1) comma or space seperated thus no comma or space in name, 2) lower case, case insensitive 3)
 	* Do note by design any characters are allowed in tags in the underlying databse, but command line and gui interface enforce no comma and no space policy
 2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
+3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
+
+## Questions
+
+1. Should I still use folders? Certainly. E.g. Musics put together in one folder (i.e. by **subject**), by **type** and **project**, or as mentioned above: use folders as **homogenous containers** - but flatted under parent/home folder.
+2. I have *30+* Miku png images under *MyPicture/Anime/Miku*, what should I do? Eat it. Not, tag **the whole folder** directly, and **don't** tag individual files (unless some specific ones have special importance) - just let them go wild in there and keep the content growing. Or **zip it** and **tag the compressed file**.
+3. I have 30+ software icon assets in *MyPictures/Graphical Assets/Icons*, what should I do? This case is slightly different because it may have need for **future reference**. You have two options: 1) As above; 2) There is something *seriously worong* with how you organize those images - *"Icons"*? Seriously? Does it mean anything? A *file/note/item* should never be categorized udner a **type description alone**: the categorization should always conform to its **content and meaning** instead. The same applies to specific **application domains** - and those simply cannot be appropriately addressed by hierarchical file systems. Use at least **two tags** (one is "icon", the other indicates its actual content - but in the case of simple application icons, you can probably avoid a secondary tag and instead use a **proper icon file name** (don't use "Icon 1.png", "Icon 2.png" etc.) instead. However **two-tag scheme** can work for things more sophisticated e.g. a digital painting) for **each of the files** in this folder, and throw that folder away. *Semantics matter*.
+4. Why not as a VS code extension? JS?
+5. Proper workflow: give a folder a beaituful name; never look at it.
+6. What will happen if I put an emoji in my filename?
+7. How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
 
 # Commands
 
