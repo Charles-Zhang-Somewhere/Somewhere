@@ -16,6 +16,17 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void AddFileShouldAllowAddingTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
+            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File1.txt")));    // Notice we are comparing lower case
+        }
+
+        [Fact]
         public void NewCommandGeneratesADBFile()
         {
             // Make sure we start clean
@@ -164,6 +175,20 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void UntagAFileRemovesTagsOnIt()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Add("*", "A Tag, Another Tag, One More Tag");
+            Assert.Equal(1, Commands.FileCount);
+            Assert.Equal(3, Commands.GetTags("File1.txt").Length);
+            Commands.Untag("File1.txt", "A Tag, One More Tag, Nonexisting Tag");
+            Assert.Empty(new string[] { "another tag"}.Except(Commands.GetTags("File1.txt")));
+        }
+
+        [Fact]
         public void UpdateFileTagsShouldSilentlyHandleExistingTags()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -176,17 +201,6 @@ namespace SomewhereTest
             Commands.Tag("File1.txt", "Tag1");
             Commands.Tag("File2.txt", "Tag1, Tag2");
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File2.txt")));
-        }
-
-        [Fact]
-        public void AddFileShouldAllowAddingTags()
-        {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
-            Commands.New();
-            Commands.Doc("File1.txt"); // Create file for test
-            Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
-            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File1.txt")));    // Notice we are comparing lower case
         }
 
         [Fact]

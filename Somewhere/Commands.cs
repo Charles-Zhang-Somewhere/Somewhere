@@ -264,9 +264,26 @@ namespace Somewhere
             }
             return null;
         }
+        [Command("Untag a file.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; " +
+            "if the file doesn't have a specified tag then the tag is not effected")]
+        public IEnumerable<string> Untag(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            if (!FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            if (!IsFileInDatabase(filename))
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            // Update tags
+            string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Get as lower case
+            string[] allTags = RemoveTags(filename, tags);
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} tags: `{string.Join(", ", allTags)}`." };
+        }
         #endregion
 
-        #region Low-Level Public (Database) Interface
+        #region Low-Level Public (Database) Interface; Notice data handling is generic (as long as DB allows) and assumed input parameters make sense (e.g. file actually exists on disk, tag names are lower cases)
         /// <summary>
         /// Add a file entry to database
         /// </summary>
@@ -297,8 +314,20 @@ namespace Somewhere
             string[] existingTags = GetTags(filename);
             IEnumerable<string> newTags = tags.Except(existingTags);
             int fileID = GetFileID(filename);
-            IEnumerable<object> parameterSets = tags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
+            IEnumerable<object> parameterSets = newTags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
             Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
+            return GetTags(filename);
+        }
+        /// <summary>
+        /// Update file by removing given set of tags if present
+        /// </summary>
+        private string[] RemoveTags(string filename, IEnumerable<string> tags)
+        {
+            string[] existingTags = GetTags(filename);
+            IEnumerable<string> matchingTags = tags.Intersect(existingTags);    // Get only those tags that are applicable to the file
+            int fileID = GetFileID(filename);
+            var tagIDs = matchingTags.Select(tag => GetTagID(tag));
+            Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", tagIDs.Select(tagID => new { fileID, tagID }));
             return GetTags(filename);
         }
         /// <summary>
