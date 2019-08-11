@@ -1,6 +1,7 @@
 using Somewhere;
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -131,6 +132,48 @@ namespace SomewhereTest
             Commands.Doc(); // Create a doc file for test
             Assert.True(TestFileExists("SomewhereDoc.txt"));
             Assert.Throws<InvalidOperationException>(()=> { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
+        }
+
+        [Fact]
+        public void AddTagToFileGetsTag()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc(); // Create a doc file for test
+            Commands.Add("SomewhereDoc.txt");
+            Commands.Tag("SomewhereDoc.txt", "MyDoc");
+            Assert.Equal(1, Commands.GetTagID("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
+            Assert.Equal(1, Commands.TryAddTag("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
+            Assert.Equal(2, Commands.TryAddTag("mydoc2")); // Tentative, we shouldn't depend on this index, but this is expected
+            Commands.Tag("SomewhereDoc.txt", "MyDoc2");
+            Assert.Empty(new string[] { "mydoc", "mydoc2" }.Except(Commands.GetTags("SomewhereDoc.txt")));
+        }
+
+        [Fact]
+        public void UpdateFileTagsShouldSilentlyHandleExistingTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Doc("File2.txt"); // Create file for test
+            Commands.Add("File1.txt");
+            Commands.Add("File2.txt");
+            Commands.Tag("File1.txt", "Tag1");
+            Commands.Tag("File2.txt", "Tag1, Tag2");
+            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File2.txt")));
+        }
+
+        [Fact]
+        public void AddFileShouldAllowAddingTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
+            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File1.txt")));    // Notice we are comparing lower case
         }
 
         [Fact]

@@ -76,18 +76,20 @@ namespace Somewhere
         }
         [Command("Add a file to home.")]
         [CommandArgument("filename", "name of file")]
+        [CommandArgument("tags", "tags for the file", optional: true)]
         public IEnumerable<string> Add(params string[] args)
         {
             ValidateArgs(args, true);
-            string fileName = args[0];
-            if (!FileExistsAtHomeFolder(fileName) && !DirectoryExistsAtHomeFolder(fileName))
-                throw new ArgumentException($"Specified file (directory) {fileName} doesn't exist on disk.");
-            if (IsFileInDatabase(fileName))
-                return new string[] { $"File `{fileName}` already added in database." };
+            string filename = args[0];
+            if (!FileExistsAtHomeFolder(filename) && !DirectoryExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file (directory) {filename} doesn't exist on disk.");
+            if (IsFileInDatabase(filename))
+                return new string[] { $"File `{filename}` already added in database." };
             else
             {
-                AddFile(fileName);
-                return new string[] { $"File `{fileName}` added to database with a total of {FileCount} files." };
+                AddFile(filename);
+                if (args.Length == 2) UpdateTags(filename, args[1].Split(',').Select(a => a.Trim().ToLower()));
+                return new string[] { $"File `{filename}` added to database with a total of {FileCount} files." };
             }
         }
         [Command("Displays the state of the Home directory and the staging area.",
@@ -201,6 +203,25 @@ namespace Somewhere
             }
             return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
         }
+        [Command("Tag a specified file.", 
+            "Tags are case-insensitive and will be stored in lower case; Though allowed, it's recommended tags don't contain spaces. " +
+            "Use underscore \"_\" to connect words. Spaces immediately before and after comma delimiters are trimmed. Commas are not allowed in tags, otherwise any character is allowed." +
+            "If specified file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed.")]
+        public IEnumerable<string> Tag(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            if (!FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            if (!IsFileInDatabase(filename))
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            // Update tags
+            string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Save as lower case
+            string[] allTags = UpdateTags(filename, tags);
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} tags: `{string.Join(", ", allTags)}`." };
+        }
         [Command("Run desktop version of Somewhere.")]
         public IEnumerable<string> UI(params string[] args)
         {
@@ -224,13 +245,13 @@ namespace Somewhere
         /// <summary>
         /// Add a file entry to database
         /// </summary>
-        public void AddFile(string fileName)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = fileName });
+        public void AddFile(string filename)
+            => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = filename });
         /// <summary>
         /// Remove a file entry from database
         /// </summary>
-        public void RemoveFile(string fileName)
-            => Connection.ExecuteSQLNonQuery("delete from File where Name=@name", new { name = fileName });
+        public void RemoveFile(string filename)
+            => Connection.ExecuteSQLNonQuery("delete from File where Name=@name", new { name = filename });
         /// <summary>
         /// Rename a file entry in database
         /// </summary>
@@ -242,6 +263,52 @@ namespace Somewhere
         public void AddLog(object content)
             => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
                 new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
+        /// <summary>
+        /// Update file with given set of tags which may or may not already be present
+        /// Return an array of all current tags
+        /// </summary>
+        public string[] UpdateTags(string filename, IEnumerable<string> tags)
+        {
+            string[] existingTags = GetTags(filename);
+            IEnumerable<string> newTags = tags.Except(existingTags);
+            int fileID = GetFileID(filename);
+            IEnumerable<object> parameterSets = tags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
+            Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
+            return GetTags(filename);
+        }
+        /// <summary>
+        /// Get ID of file in database, this can sometimes be useful, though practical application shouldn't depend on it
+        /// and should treat it as transient
+        /// </summary>
+        public int GetFileID(string filename)
+            => Connection.ExecuteQuery("select ID from File where Name=@filename", new { filename}).Single<int>();
+        /// <summary>
+        /// Get ID of tag in database, this can sometimes be useful, though practical application shouldn't depend on it
+        /// and should treat it as transient
+        /// </summary>
+        public int GetTagID(string tag)
+            => Connection.ExecuteQuery("select ID from Tag where Name=@tag", new { tag }).Single<int>(true);
+        /// <summary>
+        /// Try add tag and return tag ID, if tag already exist then return existing ID
+        /// </summary>
+        public int TryAddTag(string tag)
+        {
+            int id = GetTagID(tag);
+            if (id == 0)
+            {
+                Connection.ExecuteSQLNonQuery("insert into Tag(Name) values(@tag)", new { tag });
+                id = GetTagID(tag);
+            }
+            return id;
+        }
+        /// <summary>
+        /// Get tags for the file, if no tags are added, return empty array
+        /// </summary>
+        public string[] GetTags(string filename)
+            => Connection.ExecuteQuery(@"select Tag.Name from Tag, File, FileTag
+                where FileTag.FileID = File.ID
+                and FileTag.TagID = Tag.ID
+                and File.Name = @filename", new { filename }).List<string>()?.ToArray() ?? new string[] { };
         #endregion
 
         #region Primary Properties
@@ -284,11 +351,11 @@ namespace Somewhere
                     // Create tables
                     @"CREATE TABLE ""Tag"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
-	                    ""Name""	TEXT
+	                    ""Name""	TEXT UNIQUE
                     )",
                     @"CREATE TABLE ""File"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
-	                    ""Name""	TEXT,
+	                    ""Name""	TEXT UNIQUE,
 	                    ""Content""	BLOB,
 	                    ""Meta""	TEXT
                     )",

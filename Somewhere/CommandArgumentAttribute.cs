@@ -20,8 +20,17 @@ namespace Somewhere
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Name of the argument
+        /// </summary>
         public string Name { get; }
-        public String Explanation { get;  }
+        /// <summary>
+        /// An explanation of usage for the argument
+        /// </summary>
+        public string Explanation { get;  }
+        /// <summary>
+        /// Indicates this argument is optional
+        /// </summary>
         public bool Optional { get; }
         #endregion
     }
