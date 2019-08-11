@@ -73,7 +73,7 @@ namespace SomewhereTest
             Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });
             Commands.Doc(); // Create test file
             Assert.Empty(Commands.AllTags);
-            Commands.Tag("SomewhereDoc.txt", "MyTag");
+            Commands.Add("SomewhereDoc.txt", "MyTag");
             Assert.Single(Commands.AllTags);
         }
 
@@ -143,7 +143,7 @@ namespace SomewhereTest
             int fileCount = testSets[testSetSelector].Item1;
             int tagCount = testSets[testSetSelector].Item2;
             int noteCount = testSets[testSetSelector].Item3;
-            int fileTagCount = 1testSets[testSetSelector].Item4;
+            int fileTagCount = testSets[testSetSelector].Item4;
             Random rand = new Random();
 
             CleanOrCreateTestFolderRemoveAllFiles();

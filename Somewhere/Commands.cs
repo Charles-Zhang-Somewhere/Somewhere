@@ -44,10 +44,11 @@ namespace Somewhere
             ? (_CommandNames = CommandAttributes.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
             : _CommandNames;
         /// <summary>
-        /// Return the list of all tags
+        /// Return the list of all tags;
+        /// Returns empty array instead of null if there is no tag
         /// </summary>
         public string[] AllTags
-            => Connection.ExecuteQuery("select Name from Tag").List<string>().ToArray();
+            => Connection.ExecuteQuery("select Name from Tag").List<string>()?.ToArray() ?? new string[] { };
         /// <summary>
         /// Check whether current working directory is a "home" folder, i.e. whether Somewhere DB file is present
         /// </summary>
@@ -380,7 +381,7 @@ namespace Somewhere
             string[] existingTags = GetTags(filename);
             IEnumerable<string> newTags = tags.Except(existingTags);
             int fileID = GetFileID(filename);
-            IEnumerable<object> parameterSets = tags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
+            IEnumerable<object> parameterSets = newTags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
             Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
             return GetTags(filename);
         }
@@ -469,10 +470,7 @@ namespace Somewhere
         {
             int id = GetTagID(tag);
             if (id == 0)
-            {
-                
-                id = GetTagID(tag);
-            }
+                return AddTag(tag);
             return id;
         }
         /// <summary>
