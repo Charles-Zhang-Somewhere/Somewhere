@@ -438,7 +438,7 @@ namespace Somewhere
                     )",
                     @"CREATE TABLE ""File"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
-	                    ""Name""	TEXT UNIQUE,
+	                    ""Name""	TEXT NOT NULL UNIQUE,
 	                    ""Content""	BLOB,
 	                    ""Meta""	TEXT,
                         ""EntryDate""	TEXT
@@ -467,7 +467,9 @@ namespace Somewhere
                     )",
                     // Assign initial db meta values
                     @"INSERT INTO Configuration (Key, Value) 
-                        values ('Version', 'V1.0.0')"
+                        values ('Version', 'V1.0.0')",
+                    @"INSERT INTO Configuration (Key, Value) 
+                        values ('Change Log', 'V1.0.0: Basic implementations.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
