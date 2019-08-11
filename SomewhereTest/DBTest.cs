@@ -27,17 +27,6 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void NewCommandGeneratesADBFile()
-        {
-            // Make sure we start clean
-            CleanOrCreateTestFolderRemoveAllFiles();
-            // Create and assert
-            Commands Commands = CreateNewCommands();
-            Commands.New();
-            Assert.True(TestFileExists(Commands.DBName));
-        }
-
-        [Fact]
         public void AddFileShouldUpdateFileCount()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -117,6 +106,17 @@ namespace SomewhereTest
             Assert.True(TestFileExists("SomewhereDoc.txt"));
             Commands.RM("SomewhereDoc.txt", "-f");
             Assert.True(!TestFileExists("SomewhereDoc.txt"));
+        }
+
+        [Fact]
+        public void NewCommandGeneratesADBFile()
+        {
+            // Make sure we start clean
+            CleanOrCreateTestFolderRemoveAllFiles();
+            // Create and assert
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Assert.True(TestFileExists(Commands.DBName));
         }
 
         [Fact]
