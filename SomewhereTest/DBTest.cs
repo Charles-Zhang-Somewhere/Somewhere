@@ -151,6 +151,19 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void AddAllShouldReallyAddAllAndWithTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Doc("File2.txt"); // Create file for test
+            Commands.Add("*", "A Tag, Another Tag");
+            Assert.Equal(2, Commands.FileCount);
+            Assert.Empty(new string[] { "a tag", "another tag" }.Except(Commands.GetTags("File2.txt")));
+        }
+
+        [Fact]
         public void UpdateFileTagsShouldSilentlyHandleExistingTags()
         {
             CleanOrCreateTestFolderRemoveAllFiles();

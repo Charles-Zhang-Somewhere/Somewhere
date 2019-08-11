@@ -75,21 +75,45 @@ namespace Somewhere
             catch (Exception) { throw; }
         }
         [Command("Add a file to home.")]
-        [CommandArgument("filename", "name of file")]
+        [CommandArgument("filename", "name of file; use * to add all in current directory")]
         [CommandArgument("tags", "tags for the file", optional: true)]
         public IEnumerable<string> Add(params string[] args)
         {
             ValidateArgs(args, true);
-            string filename = args[0];
-            if (!FileExistsAtHomeFolder(filename) && !DirectoryExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file (directory) {filename} doesn't exist on disk.");
-            if (IsFileInDatabase(filename))
-                return new string[] { $"File `{filename}` already added in database." };
+            // Add single file
+            if(args[0] != "*")
+            {
+                string filename = args[0];
+                if (!FileExistsAtHomeFolder(filename) && !DirectoryExistsAtHomeFolder(filename))
+                    throw new ArgumentException($"Specified file (directory) {filename} doesn't exist on disk.");
+                if (IsFileInDatabase(filename))
+                    return new string[] { $"File `{filename}` already added in database." };
+                else
+                {
+                    AddFile(filename);
+                    if (args.Length == 2) UpdateTags(filename, args[1].Split(',').Select(a => a.Trim().ToLower()));
+                    return new string[] { $"File `{filename}` added to database with a total of {FileCount} {(FileCount > 1 ? "files": "file")}." };
+                }
+            }
+            // Add all files
             else
             {
-                AddFile(filename);
-                if (args.Length == 2) UpdateTags(filename, args[1].Split(',').Select(a => a.Trim().ToLower()));
-                return new string[] { $"File `{filename}` added to database with a total of {FileCount} files." };
+                string[] newFiles = Directory.EnumerateFiles(HomeDirectory)
+                    .Select(filepath => Path.GetFileName(filepath)) // Returned strings contain folder path
+                    .Where(filename => !IsFileInDatabase(filename) && filename != DBName)
+                    .ToArray();    // Exclude DB file itself
+                string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();
+                List<string> result = new List<string>();
+                result.Add($"Add {newFiles.Length} files");
+                result.Add("------------");
+                foreach (var filename in newFiles)
+                {
+                    AddFile(filename);
+                    if (args.Length == 2) UpdateTags(filename, tags);
+                    result.Add($"[Added] `{filename}`");
+                }
+                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files": "file")}.");
+                return result;
             }
         }
         [Command("Displays the state of the Home directory and the staging area.",
@@ -98,7 +122,7 @@ namespace Somewhere
             "We also don't check folders. The (reasons) last two points are made clear in design document.")]
         public IEnumerable<string> Status(params string[] args)
         {
-            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f);
+            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f).Except(new string[] { DBName });  // Exlude db file itself
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
