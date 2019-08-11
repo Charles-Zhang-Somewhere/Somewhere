@@ -51,12 +51,6 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void BaseTestLocationContainsExecutable()
-        {
-            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
-        }
-
-        [Fact]
         public void AddFileShouldUpdateFileCount()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -66,6 +60,12 @@ namespace SomewhereTest
             Commands.Doc();
             Commands.Add("SomewhereDoc.txt");
             Assert.Equal(1, Commands.FileCount);
+        }
+
+        [Fact]
+        public void BaseTestLocationContainsExecutable()
+        {
+            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
         }
 
         [Fact]
