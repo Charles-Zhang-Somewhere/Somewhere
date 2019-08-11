@@ -107,6 +107,32 @@ namespace SomewhereTest
             Assert.True(!TestFileExists("SomewhereDoc.txt"));
         }
 
+        [Fact]
+        public void RenameShouldUpdatePhysicalFile()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc(); // Create a doc file for test
+            Commands.Add("SomewhereDoc.txt");
+            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt");
+            Assert.True(!TestFileExists("SomewhereDoc.txt"));
+            Assert.True(TestFileExists("SomewhereDocNew.txt"));
+            Assert.Equal(1, Commands.FileCount);
+        }
+
+        [Fact]
+        public void RenameShouldNotWorkIfFileIsNotManaged()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc(); // Create a doc file for test
+            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Assert.Throws<InvalidOperationException>(()=> { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
+        }
+
         #region Subroutines
         private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
         {

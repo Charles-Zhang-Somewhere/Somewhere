@@ -119,7 +119,7 @@ namespace Somewhere
             if (!FileExistsAtHomeFolder(filename))
                 throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
             if (!IsFileInDatabase(filename))
-                throw new ArgumentException($"Specified file `{filename}` is not managed in database.");
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Delete from DB
             RemoveFile(filename);
             // Delete from filesystem
@@ -133,6 +133,27 @@ namespace Somewhere
                 MoveFileInHomeFolder(filename, filename + "_deleted");
                 return new string[] { $"File `{filename}` is marked as \"_deleted\"." };
             }
+        }
+        [Command("Rename file.",
+            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("newfilename", "new name of file")]
+        public IEnumerable<string> MV(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            string newfilename = args[1];
+            if (!FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            if (!IsFileInDatabase(filename))
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            if(FileExistsAtHomeFolder(newfilename))
+                throw new ArgumentException($"Filename `{filename}` is already used.");
+            // Update in DB
+            RenameFile(filename, newfilename);
+            // Move in filesystem
+            MoveFileInHomeFolder(filename, newfilename);
+            return new string[] { $"File `{filename}` has been renamed to `{newfilename}`." };
         }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.")]
         [CommandArgument("commandname", "name of command", optional: true)]
@@ -197,6 +218,8 @@ namespace Somewhere
             => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = fileName });
         public void RemoveFile(string fileName)
             => Connection.ExecuteSQLNonQuery("delete from File where Name=@name", new { name = fileName });
+        public void RenameFile(string filename, string newFilename)
+            => Connection.ExecuteQuery("update File set Name=@newFileName where Name=@fileName", new { filename, newFilename });
         #endregion
 
         #region Primary Properties
