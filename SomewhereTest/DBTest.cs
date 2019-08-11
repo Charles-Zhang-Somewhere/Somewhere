@@ -10,12 +10,6 @@ namespace SomewhereTest
     public class UnitTest1
     {
         [Fact]
-        public void BaseTestLocationContainsExecutable()
-        {
-            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
-        }
-
-        [Fact]
         public void AddFileShouldAllowAddingTags()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -24,6 +18,12 @@ namespace SomewhereTest
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File1.txt")));    // Notice we are comparing lower case
+        }
+
+        [Fact]
+        public void BaseTestLocationContainsExecutable()
+        {
+            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
         }
 
         [Fact]
