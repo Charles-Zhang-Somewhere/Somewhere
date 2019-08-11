@@ -21,6 +21,35 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void AddTagToFileGetsTag()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc(); // Create a doc file for test
+            Commands.Add("SomewhereDoc.txt");
+            Commands.Tag("SomewhereDoc.txt", "MyDoc");
+            Assert.Equal(1, Commands.GetTagID("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
+            Assert.Equal(1, Commands.TryAddTag("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
+            Assert.Equal(2, Commands.TryAddTag("mydoc2")); // Tentative, we shouldn't depend on this index, but this is expected
+            Commands.Tag("SomewhereDoc.txt", "MyDoc2");
+            Assert.Empty(new string[] { "mydoc", "mydoc2" }.Except(Commands.GetTags("SomewhereDoc.txt")));
+        }
+
+        [Fact]
+        public void AddAllShouldReallyAddAllAndWithTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File1.txt"); // Create file for test
+            Commands.Doc("File2.txt"); // Create file for test
+            Commands.Add("*", "A Tag, Another Tag");
+            Assert.Equal(2, Commands.FileCount);
+            Assert.Empty(new string[] { "a tag", "another tag" }.Except(Commands.GetTags("File2.txt")));
+        }
+
+        [Fact]
         public void BaseTestLocationContainsExecutable()
         {
             Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
@@ -143,35 +172,6 @@ namespace SomewhereTest
             Commands.Doc(); // Create a doc file for test
             Assert.True(TestFileExists("SomewhereDoc.txt"));
             Assert.Throws<InvalidOperationException>(()=> { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
-        }
-
-        [Fact]
-        public void AddTagToFileGetsTag()
-        {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
-            Commands.New();
-            Commands.Doc(); // Create a doc file for test
-            Commands.Add("SomewhereDoc.txt");
-            Commands.Tag("SomewhereDoc.txt", "MyDoc");
-            Assert.Equal(1, Commands.GetTagID("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
-            Assert.Equal(1, Commands.TryAddTag("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
-            Assert.Equal(2, Commands.TryAddTag("mydoc2")); // Tentative, we shouldn't depend on this index, but this is expected
-            Commands.Tag("SomewhereDoc.txt", "MyDoc2");
-            Assert.Empty(new string[] { "mydoc", "mydoc2" }.Except(Commands.GetTags("SomewhereDoc.txt")));
-        }
-
-        [Fact]
-        public void AddAllShouldReallyAddAllAndWithTags()
-        {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
-            Commands.New();
-            Commands.Doc("File1.txt"); // Create file for test
-            Commands.Doc("File2.txt"); // Create file for test
-            Commands.Add("*", "A Tag, Another Tag");
-            Assert.Equal(2, Commands.FileCount);
-            Assert.Empty(new string[] { "a tag", "another tag" }.Except(Commands.GetTags("File2.txt")));
         }
 
         [Fact]
