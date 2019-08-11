@@ -68,6 +68,20 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void LogShouldIncreseCount()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc();
+            Commands.Help();    // Help doesn't count as log entry
+            Commands.Add("SomewhereDoc.txt");
+            // Above commands don't automatically log
+            Commands.AddLog("This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
+            Assert.Equal(1, Commands.LogCount);
+        }
+
+        [Fact]
         public void ShouldGenerateDoc()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -203,19 +217,7 @@ namespace SomewhereTest
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File2.txt")));
         }
 
-        [Fact]
-        public void LogShouldIncreseCount()
-        {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
-            Commands.New();
-            Commands.Doc();
-            Commands.Help();    // Help doesn't count as log entry
-            Commands.Add("SomewhereDoc.txt");
-            // Above commands don't automatically log
-            Commands.AddLog("This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
-            Assert.Equal(1, Commands.LogCount);
-        }
+        
 
         #region Subroutines
         private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
