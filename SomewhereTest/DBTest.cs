@@ -1,5 +1,6 @@
 using Somewhere;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -63,6 +64,20 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void AllTagShouldReturnNumberOfTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New(); // Create a new db
+            Assert.Empty(Commands.AllTags);
+            Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });
+            Commands.Doc(); // Create test file
+            Assert.Empty(Commands.AllTags);
+            Commands.Tag("SomewhereDoc.txt", "MyTag");
+            Assert.Single(Commands.AllTags);
+        }
+
+        [Fact]
         public void BaseTestLocationContainsExecutable()
         {
             Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
@@ -112,6 +127,46 @@ namespace SomewhereTest
             Commands.Create("My Note", "Initial Content", "my tag");
             Commands.Tag("My Note", "Some tag");
             Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetTags("My Note")));
+        }
+
+        [Fact]
+        public void PerformanceTest()
+        {
+            // Configurations
+            int testSetSelector = 1;
+            List<Tuple<int, int, int, int>> testSets = new List<Tuple<int, int, int, int>>()
+            {
+                // File count, tag count, note count, file tag count
+                new Tuple<int, int, int, int>(50000, 1000, 3000, 10),   // Takes around 4 min including deleting files
+                new Tuple<int, int, int, int>(5000, 100, 300, 10)   // Currently using
+            };
+            int fileCount = testSets[testSetSelector].Item1;
+            int tagCount = testSets[testSetSelector].Item2;
+            int noteCount = testSets[testSetSelector].Item3;
+            int fileTagCount = 1testSets[testSetSelector].Item4;
+            Random rand = new Random();
+
+            CleanOrCreateTestFolderRemoveAllFiles();
+            // Generate tags and filenames
+            List<string> tags = Enumerable.Range(1, tagCount).Select(i => Guid.NewGuid().ToString()).ToList();
+            List<string> names = Enumerable.Range(1, fileCount).Select(i => Guid.NewGuid().ToString()).ToList();
+            // Generate database
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            // Add virtual notes
+            string[] tempTag = new string[] { "virtual notes" };
+            Commands.AddFilesBatch(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => "Initial Content..."));
+            Commands.UpdateTagsInBatch(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => tempTag));
+            // Add physicla files
+            names.ForEach(f => File.Create(GetFilePath(f)).Dispose());
+            Commands.AddFilesBatch(names);
+            // Assign tags
+            Commands.UpdateTagsInBatch(names.ToDictionary( n => n, n => Enumerable.Range(1, rand.Next(fileTagCount)).Select(i => rand.Next(tagCount)).Select(i => tags[i]).ToArray()));
+
+            // Assertions
+            Assert.Equal(fileCount + noteCount, Commands.FileCount);
+            Assert.True(Commands.TagCount >= fileTagCount);
+            Assert.Equal(noteCount, Commands.NoteCount);
         }
 
         [Fact]
@@ -268,6 +323,8 @@ namespace SomewhereTest
         /// </summary>
         private bool TestFileExists(string fileName, [CallerMemberName] string testFolderName = null)
             => File.Exists(Path.Combine(testFolderName, fileName));
+        private string GetFilePath(string fileName, [CallerMemberName] string testFolderName = null)
+            => Path.Combine(testFolderName, fileName);
         private Commands CreateNewCommands([CallerMemberName] string testFolderName = null)
             => new Commands(testFolderName);
         #endregion

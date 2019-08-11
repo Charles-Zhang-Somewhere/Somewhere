@@ -1,6 +1,4 @@
 ```
-If no arguments is given, enter interactive session.
-
 Tags: show all tags (along with ID and total and tag usage count) (in a plain ordered single line comma delimited list
 
 Files + count + recent: show all files with: ID, add date, name, tags, remark (if any) in command line, per count number of lines each time (Add Date, Revision Date, Revision Count are all derived, not in meta)
@@ -77,7 +75,7 @@ This app is absolutely intended for personal use. Sharing files on network drive
 1. Strictly item based - not for managing tags (just like bookmark ninja). Operations are focused around specific items.
 2. Tag with efficiency: tagging is only so useful when we spend less time organizing stuff and more easily receive stuff, when it's much faster to assign (as mentioned above) multiple tags than deciding which single folder to put something - a proper command line interface is one step, but it's subject to typos - an efficient GUI (like Bookmark Ninja) is thus especially important .
 3. Let me put it this way: there are at least N (N>3) ways to tag a file while there is only one way to put it under a folder - you can see the limit of traditional hierarchical based systems. This applies both in terms of organization and retrieval.
-4. Virtual file/note/resource: in the command only notes are supported. Files that exist directly (and only) in database are called "virtual files", in terms of the contents it contains - if it contains text file, it's "virtual note", otherwise for binary it's terms "virtual resource". Filenames are required to be unique among all managed files, no matter whether it's virtual or not. (idea) "Virtual file as resource".. bookmark ninja as notes, OneNote....Evernote......
+4. Virtual file/note/resource: in the command only notes are supported. Files that exist directly (and only) in database are called "virtual files", in terms of the contents it contains - if it contains text file, it's "virtual note", otherwise for binary it's terms "virtual resource". Filenames are required to be unique among all managed files, no matter whether it's virtual or not. (idea) "Virtual file as resource".. bookmark ninja as notes, OneNote....Evernote...... (virtual note are those that content is not null, including resources and temperaty editing results in UI)
 5. `Home.Somewhere`: The idea of using a dedicated home folder for managing all the files originated in MULTITUDE, and is partially inspired by Git which have the idea of a root repository folder - but in this case we are **flattenning files** by exploiting the capability of underlying disk FS.
 6. **Flat Physical FS**: I used to have layers of layers of folder structures, making sure **each layer is semantically meaningful**, but then that introduces a lot of management burder, then I discovered that by flattening this structure, and sacrifce "meaning" at root folder, (screenshot of current home disk root folder for D drive), with folder at second level, it actually makes things much easier... with tags, it's even better...
 7. (Best practice)**Best possible match filename**: semantics without limit of underlying FS file length
@@ -138,7 +136,7 @@ A functional and effective application may not just end here, I have several sim
 2. **Somewhere Application** (Library, Command Line, WPF): 
 	* Commands (also as library functions): 
 		- ✓: add, rm, mv, new (home), sync; 
-		- ☆: tag, untag;
+		- ☆: tag, untag, tags
 		- ⓘ: status, log, search, help
 	* UI Interface: ...
 
@@ -146,11 +144,11 @@ A functional and effective application may not just end here, I have several sim
 
 In summary, those tables:
 
-1. Tag: ID (Always incremental, unique), Name (Tags are first-class objects)
-2. File (item): ID (Always incremental, unique), Name (Name and or path; Nott-nullable), Content (Blob), Meta (YAML: Size, MD5, Remark), EntryDate - for physical file, physical folder, virtual file (note and resource)
-3. FileTag: FileID, TagID
-4. Log: DateTime, Event (include relevant IDs and all details) - server mosltly reference purpose
-3. Configuration: key, value
+1. **Tag**: ID (Always incremental, unique), Name (Tags are first-class objects)
+2. **File (item)**: ID (Always incremental, unique), Name (Name and or path; Nott-nullable), Content (Blob), Meta (YAML: Size, MD5, Remark), EntryDate - for physical file, physical folder, virtual file (note and resource)
+3. **FileTag**: FileID, TagID
+4. **Log**: DateTime, Event (include relevant IDs and all details) - server mosltly reference purpose
+3. **Configuration**: key, value
 4. (Future) Rule (A,B,C)
 5. (Future) Hierarchy (A/B/C)
 6. (Future) Revision: FileID, RevisionID, Content, EntryDate

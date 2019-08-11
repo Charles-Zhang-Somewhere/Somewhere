@@ -41,6 +41,14 @@ namespace SQLiteExtension
                 // Optionally we can store result to in-memory table: new DataTable().Load(reader);
                 cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
         /// <summary>
+        /// Execute a SQL query (e.g. select) with given command and SQLite parameters defined in a dictionary for string parameters;
+        /// Useful in cases parameter name need to be procedurally generated in which case objects won't work
+        /// </summary>
+        public static SQLiteDataReader ExecuteQueryDictionary(this SQLiteConnection connection, string command, Dictionary<string, object> parameters = null, bool containsBlob = false)
+            => connection.BuildSQLDictionary(command, parameters, cmd =>
+                // Optionally we can store result to in-memory table: new DataTable().Load(reader);
+                cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
+        /// <summary>
         /// Execute a SQL non-query (e.g. insert and update) with given command and SQLite parameters defined in an object
         /// </summary>
         public static void ExecuteSQLNonQuery(this SQLiteConnection connection, string command, object parameters = null)
@@ -60,6 +68,27 @@ namespace SQLiteExtension
         /// </summary>
         public static void ExecuteSQLNonQuery(this SQLiteConnection connection, IEnumerable<string> commandsWithoutParameters)
             => connection.RunSQL(commandsWithoutParameters.Select(cwp => new Tuple<string, object>(cwp, null)));
+        /// <summary>
+        /// Execute a SQL insert query with given command and SQLite parameters defined in an object;
+        /// Returns row id
+        /// </summary>
+        public static int ExecuteSQLInsert(this SQLiteConnection connection, string command, object parameters = null)
+        {
+            using (SQLiteCommand cmd = new SQLiteCommand(command.TrimEnd(';'), connection))
+            {
+                // Handle parameters
+                if (parameters != null)
+                {
+                    foreach (PropertyInfo property in parameters.GetType().GetProperties())
+                        cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
+                }
+
+                // Execute command
+                cmd.ExecuteNonQuery();
+
+                return (int)connection.LastInsertRowId;
+            }
+        }
         #endregion
 
         #region Core Abstraction Logic
@@ -77,6 +106,29 @@ namespace SQLiteExtension
                 {
                     foreach (PropertyInfo property in parameters.GetType().GetProperties())
                         cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
+                }
+
+                // Execute command
+                SQLiteDataReader returnValue = action(cmd);    // May or may not return anything depending on 
+                // whether we are executing query or nonquery but just catch it
+
+                return returnValue;
+            }
+        }
+        /// <summary>
+        /// Build a sql command with given dynamic paramters using database provider methods
+        /// </summary>
+        private static SQLiteDataReader BuildSQLDictionary(this SQLiteConnection connection, string command, Dictionary<string, object> parameters,
+            Func<SQLiteCommand, SQLiteDataReader> action)
+        {
+            // Build command
+            using (SQLiteCommand cmd = new SQLiteCommand(command.TrimEnd(';'), connection))
+            {
+                // Handle parameters
+                if (parameters != null)
+                {
+                    foreach (KeyValuePair<string, object> property in parameters)
+                        cmd.Parameters.AddWithValue(property.Key, property.Value);
                 }
 
                 // Execute command

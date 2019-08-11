@@ -44,12 +44,17 @@ namespace Somewhere
             ? (_CommandNames = CommandAttributes.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
             : _CommandNames;
         /// <summary>
+        /// Return the list of all tags
+        /// </summary>
+        public string[] AllTags
+            => Connection.ExecuteQuery("select Name from Tag").List<string>().ToArray();
+        /// <summary>
         /// Check whether current working directory is a "home" folder, i.e. whether Somewhere DB file is present
         /// </summary>
         public bool IsHomePresent
             => FileExistsAtHomeFolder(DBName);
         /// <summary>
-        /// Count of managed files
+        /// Count of managed files (including virtual files)
         /// </summary>
         public int FileCount
             => Connection.ExecuteQuery("select count(*) from File").Single<int>();
@@ -58,6 +63,16 @@ namespace Somewhere
         /// </summary>
         public int LogCount
             => Connection.ExecuteQuery("select count(*) from Log").Single<int>();
+        /// <summary>
+        /// Get count of tags
+        /// </summary>
+        public int TagCount
+            => Connection.ExecuteQuery("select count(*) from Tag").Single<int>();
+        /// <summary>
+        /// Get count of virtual notes
+        /// </summary>
+        public int NoteCount
+            => Connection.ExecuteQuery("select count(*) from File where Content is not null").Single<int>();
         #endregion
 
         #region Constants
@@ -268,6 +283,18 @@ namespace Somewhere
             string[] allTags = UpdateTags(filename, tags);
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
+        [Command("Show all tags currently exist.",
+            "The displayed result will be a plain alphanumerically ordered list of tag names, " +
+            "along with ID and tag usage count.")]
+        public IEnumerable<string> Tags(params string[] args)
+        {
+            ValidateArgs(args);
+            List<string> result = new List<string>();
+            result.Add($"Total: {TagCount}");
+            // single line comma delimited list
+            // get tags along with file count Connection.ExecuteQuery("select ");
+            return result;
+        }
         [Command("Run desktop version of Somewhere.")]
         public IEnumerable<string> UI(params string[] args)
         {
@@ -314,6 +341,16 @@ namespace Somewhere
         public void AddFile(string filename, string content)
             => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd") });
         /// <summary>
+        /// Add files in batch
+        /// </summary>
+        public void AddFilesBatch(IEnumerable<string> filenames)
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, EntryDate) values (@name, @date)", filenames.Select(fn => new { name = fn, date = DateTime.Now.ToString("yyyy-MM-dd") }));
+        /// <summary>
+        /// Add files in batch with initial contents (for virtual notes)
+        /// </summary>
+        public void AddFilesBatch(Dictionary<string, string> filenamesAndContents)
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", filenamesAndContents.Select( fn=> new { name = fn.Key, content = fn.Value, date = DateTime.Now.ToString("yyyy-MM-dd") }));
+        /// <summary>
         /// Remove a file entry from database
         /// </summary>
         public void RemoveFile(string filename)
@@ -335,7 +372,7 @@ namespace Somewhere
             => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
                 new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
         /// <summary>
-        /// Update file with given set of tags which may or may not already be present
+        /// Update file with given set of tags which may or may not already be present (new tags are added, already existing tags are ignored)
         /// Return an array of all current tags
         /// </summary>
         public string[] UpdateTags(string filename, IEnumerable<string> tags)
@@ -343,9 +380,51 @@ namespace Somewhere
             string[] existingTags = GetTags(filename);
             IEnumerable<string> newTags = tags.Except(existingTags);
             int fileID = GetFileID(filename);
-            IEnumerable<object> parameterSets = newTags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
+            IEnumerable<object> parameterSets = tags.Select(tag => new { fileID, tagID = TryAddTag(tag) });
             Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
             return GetTags(filename);
+        }
+        /// <summary>
+        /// Update all files' tags with given set of tags (add new tags) in large batch
+        /// </summary>
+        public void UpdateTagsInBatch(IEnumerable<string> filenames, string[] tags)
+        {
+            // Make sure all specified tags exist in database and we have their IDs at hand
+            IEnumerable<string> newTags = tags.Except(
+                /*Get among those input tags which ones already exist in database, the remaining will be new olds*/ 
+                GetTagIDs(tags).Select(tag => tag.Name));
+            AddTags(tags);
+            int[] allTagIDs = GetTagIDs(tags).Select(t => t.ID).ToArray();
+            Dictionary<string, int> rawFileIDs = GetRawFiles().ToDictionary(f => f.Name, f => f.ID);
+            // For each file, prepare its new tags (IDs)
+            Dictionary<string, IGrouping<string, FileTagMapping>> fileTagMappings = GetRawFileTagMappings().GroupBy(m => m.FileName).ToDictionary(m => m.Key, m => m);
+            Dictionary<int, IEnumerable<int>> fileExistingTagIDs = filenames.ToDictionary(filename => rawFileIDs[filename], 
+                filename => fileTagMappings.ContainsKey(filename) ? fileTagMappings[filename].Select(n => n.TagID) : new int[] { });
+            Dictionary<int, IEnumerable<int>> fileNewTagIDs = fileExistingTagIDs.ToDictionary(f => f.Key, f => allTagIDs.Except(f.Value));
+            IEnumerable<object> parameterSets = fileNewTagIDs.SelectMany(ftids => ftids.Value.Select(ft => new { fileId = ftids.Key, tagID = ft }));
+            Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
+        }
+        /// <summary>
+        /// Update files with given set of tags (add new tags) in large batch, each one with distinct set of new tags
+        /// </summary>
+        public void UpdateTagsInBatch(Dictionary<string, string[]> fileanemAndTags)
+        {
+            // Get all tags
+            string[] allTags = fileanemAndTags.Values.SelectMany(tag => tag)./*Slight optimization - avoid repetitions*/Distinct().ToArray();
+            // Make sure all specified tags exist in database and we have their IDs at hand
+            IEnumerable<string> newTags = allTags.Except(
+                /*Get among those input tags which ones already exist in database, the remaining will be new olds*/
+                GetTagIDs(allTags).Select(tag => tag.Name));
+            AddTags(newTags);  
+            Dictionary<string, int> allTagIDs = GetTagIDs(allTags).ToDictionary(t => t.Name, t => t.ID);
+            Dictionary<string, int> rawFileIDs = GetRawFiles().ToDictionary(f => f.Name, f => f.ID);
+            // For each file, prepare its new tags (IDs)
+            Dictionary<string, IGrouping<string, FileTagMapping>> fileTagMappings = GetRawFileTagMappings().GroupBy(m => m.FileName).ToDictionary(m => m.Key, m => m);
+            Dictionary<int, IEnumerable<int>> fileNewTagIDs = fileanemAndTags.ToDictionary(p => rawFileIDs[p.Key], 
+                p => /*All specified tags for the file*/p.Value.Select(t => allTagIDs[t])./*Minus all existing tags for the file*/Except(fileTagMappings.ContainsKey(p.Key) ? fileTagMappings[p.Key].Select(n => n.TagID) : new int[] { }));
+            // Prepare query parameters
+            IEnumerable<object> parameterSets = fileNewTagIDs.SelectMany(ftids => ftids.Value.Select(ft => new { fileId = ftids.Key, tagID = ft }));
+            Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
         }
         /// <summary>
         /// Update file by removing given set of tags if present
@@ -366,11 +445,23 @@ namespace Somewhere
         public int GetFileID(string filename)
             => Connection.ExecuteQuery("select ID from File where Name=@filename", new { filename}).Single<int>();
         /// <summary>
+        /// Get IDs of files in database
+        /// </summary>
+        public List<FileRow> GetFileIDs(IEnumerable<string> filenames)
+            => Connection.ExecuteQueryDictionary($"select * from File where Name in ({string.Join(", ", filenames.Select((t, i) => $"@name{i}"))})",
+                filenames.Select((t, i) => new KeyValuePair<string, string>($"name{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<FileRow>();
+        /// <summary>
         /// Get ID of tag in database, this can sometimes be useful, though practical application shouldn't depend on it
         /// and should treat it as transient
         /// </summary>
         public int GetTagID(string tag)
             => Connection.ExecuteQuery("select ID from Tag where Name=@tag", new { tag }).Single<int>(true);
+        /// <summary>
+        /// Get IDs of tags in database; Notice input tags may or may not be present
+        /// </summary>
+        public List<TagRow> GetTagIDs(IEnumerable<string> tags)
+            => Connection.ExecuteQueryDictionary($"select * from Tag where Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))})", 
+                tags.Select((t, i) => new KeyValuePair<string, string>($"tag{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<TagRow>();
         /// <summary>
         /// Try add tag and return tag ID, if tag already exist then return existing ID
         /// </summary>
@@ -379,11 +470,27 @@ namespace Somewhere
             int id = GetTagID(tag);
             if (id == 0)
             {
-                Connection.ExecuteSQLNonQuery("insert into Tag(Name) values(@tag)", new { tag });
+                
                 id = GetTagID(tag);
             }
             return id;
         }
+        /// <summary>
+        /// Add tag with given name to database
+        /// </summary>
+        /// <remarks>
+        /// Unlike TryAddTag, there is no checking, we just add
+        /// </remarks>
+        public int AddTag(string tag)
+            => Connection.ExecuteSQLInsert("insert into Tag(Name) values(@tag)", new { tag });
+        /// <summary>
+        /// Add tags with given names to database
+        /// </summary>
+        /// <remarks>
+        /// Unlike TryAddTag, there is no checking, we just add
+        /// </remarks>
+        public void AddTags(IEnumerable<string> tags)
+            => Connection.ExecuteSQLNonQuery("insert into Tag(Name) values(@tag)", tags.Select(tag => new { tag }));
         /// <summary>
         /// Get tags for the file, if no tags are added, return empty array
         /// </summary>
@@ -392,6 +499,27 @@ namespace Somewhere
                 where FileTag.FileID = File.ID
                 and FileTag.TagID = Tag.ID
                 and File.Name = @filename", new { filename }).List<string>()?.ToArray() ?? new string[] { };
+        /// <summary>
+        /// Get raw list of all file tags
+        /// </summary>
+        public List<FileTagRow> GetRawFileTags()
+            => Connection.ExecuteQuery(@"select * from FileTag").Unwrap<FileTagRow>();
+        /// <summary>
+        /// Get raw list of all tags
+        /// </summary>
+        public List<TagRow> GetRawTags()
+            => Connection.ExecuteQuery(@"select * from Tag").Unwrap<TagRow>();
+        /// <summary>
+        /// Get raw list of all files (exclude content meta)
+        /// </summary>
+        public List<FileRow> GetRawFiles()
+            => Connection.ExecuteQuery(@"select * from File").Unwrap<FileRow>();
+        /// <summary>
+        /// Get joined table between File, Tag and FileTag database tables
+        /// </summary>
+        public List<FileTagMapping> GetRawFileTagMappings()
+            => Connection.ExecuteQuery(@"select Tag.ID as TagID, Tag.Name as TagName, File.ID as FileID, File.Name as FileName
+                from Tag, File, FileTag where FileTag.FileID = File.ID and FileTag.TagID = Tag.ID").Unwrap<FileTagMapping>();
         #endregion
 
         #region Primary Properties
@@ -434,7 +562,7 @@ namespace Somewhere
                     // Create tables
                     @"CREATE TABLE ""Tag"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
-	                    ""Name""	TEXT UNIQUE
+                        ""Name""	TEXT NOT NULL UNIQUE
                     )",
                     @"CREATE TABLE ""File"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
