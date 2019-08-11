@@ -14,10 +14,11 @@ namespace Somewhere
     public class CommandAttribute: Attribute
     {
         #region Constructor
-        public CommandAttribute(string description, string documentation = null)
+        public CommandAttribute(string description, string documentation = null, bool logged = true)
         {
             Description = description;
             Documentation = documentation;
+            Logged = logged;
         }
         #endregion
 
@@ -30,6 +31,11 @@ namespace Somewhere
         /// Detailed command documentation
         /// </summary>
         public string Documentation { get; }
+        /// <summary>
+        /// Whether the execution of this command should be logged;
+        /// If true the date time, command argument details, and command results are logged
+        /// </summary>
+        public bool Logged { get; }
         #endregion
     }
 }

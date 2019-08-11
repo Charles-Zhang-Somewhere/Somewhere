@@ -133,6 +133,20 @@ namespace SomewhereTest
             Assert.Throws<InvalidOperationException>(()=> { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
         }
 
+        [Fact]
+        public void LogShouldIncreseCount()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc();
+            Commands.Help();    // Help doesn't count as log entry
+            Commands.Add("SomewhereDoc.txt");
+            // Above commands don't automatically log
+            Commands.AddLog("This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
+            Assert.Equal(1, Commands.LogCount);
+        }
+
         #region Subroutines
         private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
         {

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using YamlDotNet.Serialization;
 
 namespace Somewhere
 {
@@ -22,7 +23,7 @@ namespace Somewhere
         /// <summary>
         /// Returns a list of all Command methods
         /// </summary>
-        public Dictionary<MethodInfo, CommandAttribute> CommandMethods
+        public Dictionary<MethodInfo, CommandAttribute> CommandAttributes
             => _CommandMethods == null 
             ? (_CommandMethods = typeof(Commands).GetMethods(BindingFlags.Instance | BindingFlags.Public).ToDictionary(m => m,
                 m => m.GetCustomAttributes(typeof(CommandAttribute), false).SingleOrDefault() as CommandAttribute)
@@ -30,7 +31,7 @@ namespace Somewhere
             : _CommandMethods; // Return already initialized member
         public Dictionary<MethodInfo, CommandArgumentAttribute[]> CommandArguments
             => _CommandArguments == null
-            ? (_CommandArguments = CommandMethods.ToDictionary(m => m.Key,
+            ? (_CommandArguments = CommandAttributes.ToDictionary(m => m.Key,
                 m => m.Key.GetCustomAttributes(typeof(CommandArgumentAttribute), false)
                 .Select(a => a as CommandArgumentAttribute).ToArray())
                 .ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
@@ -40,7 +41,7 @@ namespace Somewhere
         /// </summary>
         public Dictionary<string, MethodInfo> CommandNames
             => _CommandNames == null
-            ? (_CommandNames = CommandMethods.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
+            ? (_CommandNames = CommandAttributes.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
             : _CommandNames;
         /// <summary>
         /// Check whether current working directory is a "home" folder, i.e. whether Somewhere DB file is present
@@ -52,6 +53,11 @@ namespace Somewhere
         /// </summary>
         public int FileCount
             => Connection.ExecuteQuery("select count(*) from File").Single<int>();
+        /// <summary>
+        /// Get count of log entry
+        /// </summary>
+        public int LogCount
+            => Connection.ExecuteQuery("select count(*) from Log").Single<int>();
         #endregion
 
         #region Constants
@@ -94,7 +100,8 @@ namespace Somewhere
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
-            result.Add($"{files.Count()} files on disk; {managed.Count} files in database.");
+            result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
+                $"{managed.Count} {(managed.Count > 1 ? "files" : "file")} in database.");
             result.Add($"------------");
             int newCount = 0;
             foreach (string file in files)
@@ -155,14 +162,14 @@ namespace Somewhere
             MoveFileInHomeFolder(filename, newfilename);
             return new string[] { $"File `{filename}` has been renamed to `{newfilename}`." };
         }
-        [Command("Show available commands and general usage help. Use `help commandname` to see more.")]
+        [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false)]
         [CommandArgument("commandname", "name of command", optional: true)]
         public IEnumerable<string> Help(params string[] args)
         {
             // Show list of commands
             if(args == null || args.Length == 0)
             {
-                var list = CommandMethods
+                var list = CommandAttributes
                 .OrderBy(cm => cm.Key.Name) // Sort alphabetically
                 .Select(cm => $"\t{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}").ToList();
                 list.Insert(0, "Available Commands: ");
@@ -182,7 +189,7 @@ namespace Somewhere
             string documentation = "SomewhereDoc.txt";
             if (args != null && args?.Length != 0)
                 documentation = args[0];
-            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.CreateNew))
+            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.Create))
             using (StreamWriter writer = new StreamWriter(file))
             {
                 foreach (string line in Help(null))
@@ -214,12 +221,27 @@ namespace Somewhere
         #endregion
 
         #region Low-Level Public (Database) Interface
+        /// <summary>
+        /// Add a file entry to database
+        /// </summary>
         public void AddFile(string fileName)
             => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = fileName });
+        /// <summary>
+        /// Remove a file entry from database
+        /// </summary>
         public void RemoveFile(string fileName)
             => Connection.ExecuteSQLNonQuery("delete from File where Name=@name", new { name = fileName });
+        /// <summary>
+        /// Rename a file entry in database
+        /// </summary>
         public void RenameFile(string filename, string newFilename)
             => Connection.ExecuteQuery("update File set Name=@newFileName where Name=@fileName", new { filename, newFilename });
+        /// <summary>
+        /// Add a log entry to database in yaml
+        /// </summary>
+        public void AddLog(object content)
+            => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
+                new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
         #endregion
 
         #region Primary Properties
@@ -279,7 +301,7 @@ namespace Somewhere
                     )",
                     @"CREATE TABLE ""Log"" (
 	                    ""DateTime""	TEXT,
-	                    ""Action""	TEXT
+	                    ""Event""	TEXT
                     )",
                     @"CREATE TABLE ""Configuration"" (
 	                    ""Key""	TEXT,
@@ -342,12 +364,14 @@ namespace Somewhere
         {
             List<string> commandHelp = new List<string>();
             var command = CommandNames[commandName];
-            var commandAttribute = CommandMethods[command];
+            var commandAttribute = CommandAttributes[command];
             commandHelp.Add($"{commandName} - {commandAttribute.Description}");
             if(commandAttribute.Documentation != null)
                 commandHelp.Add($"\t{commandAttribute.Documentation}");
-            foreach (var argument in CommandArguments[command])
-                commandHelp.Add($"\t{argument.Name}{(argument.Optional ? "(Optional)" : "")} - {argument.Explanation}");
+            var arguments = CommandArguments[command];
+            if (arguments.Length != 0) commandHelp.Add($"\tOptions:");
+            foreach (var argument in arguments)
+                commandHelp.Add($"\t\t{argument.Name}{(argument.Optional ? "(Optional)" : "")} - {argument.Explanation}");
             return commandHelp;
         }
         #endregion

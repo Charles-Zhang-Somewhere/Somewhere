@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using SQLiteExtension;
+using System.Text;
 
 namespace Somewhere
 {
@@ -35,12 +36,24 @@ namespace Somewhere
             {
                 var method = Commands.CommandNames[commandName];
                 var arguments = args.ToList().GetRange(1, args.Length - 1).ToArray();
+                var attribute = Commands.CommandAttributes[method];
                 try
                 {
-                    IEnumerable<string> result = method.Invoke(null, new [] {arguments}) as IEnumerable<string>;
+                    // Execute the command
+                    IEnumerable<string> result = method.Invoke(Commands, new [] {arguments}) as IEnumerable<string>;
+                    StringBuilder builder = new StringBuilder();
                     if (result != null)
+                    {
                         foreach (string line in result)
+                        {
                             Console.WriteLine(line);
+                            builder.AppendLine(line);
+                        }
+                    }
+                        
+                    // Log the command
+                    if (attribute.Logged)
+                        Commands.AddLog(new { Command = commandName, Arguments = arguments, result =  builder.ToString()});
                 }
                 catch (Exception e){ Console.WriteLine($"{e.InnerException.Message}"); }
             }
