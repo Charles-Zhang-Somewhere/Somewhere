@@ -65,15 +65,6 @@ namespace Somewhere
         #endregion
 
         #region Commands (Public Interface as Library)
-        [Command("Create a new Somewhere home at current home directory.")]
-        public IEnumerable<string> New(params string[] args)
-        {
-            try {
-                string path = GenerateDBFile();
-                return new string[] { $"Database generated at ${path}" };
-            }
-            catch (Exception) { throw; }
-        }
         [Command("Add a file to home.")]
         [CommandArgument("filename", "name of file; use * to add all in current directory")]
         [CommandArgument("tags", "tags for the file", optional: true)]
@@ -116,30 +107,75 @@ namespace Somewhere
                 return result;
             }
         }
-        [Command("Displays the state of the Home directory and the staging area.",
-            "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
-            "Notice only the files in current directory are checked, we don't go through children folders. " +
-            "We also don't check folders. The (reasons) last two points are made clear in design document.")]
-        public IEnumerable<string> Status(params string[] args)
+        [Command("Generate documentation of Somewhere program.")]
+        [CommandArgument("path", "path for the generated file.")]
+        public IEnumerable<string> Doc(params string[] args)
         {
-            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f).Except(new string[] { DBName });  // Exlude db file itself
-            var managed = Connection.ExecuteQuery("select Name from File").List<string>()
-                ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
-            List<string> result = new List<string>();
-            result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
-                $"{managed.Count} {(managed.Count > 1 ? "files" : "file")} in database.");
-            result.Add($"------------");
-            int newCount = 0;
-            foreach (string file in files)
+            string documentation = "SomewhereDoc.txt";
+            if (args != null && args?.Length != 0)
+                documentation = args[0];
+            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.Create))
+            using (StreamWriter writer = new StreamWriter(file))
             {
-                if (!managed.ContainsKey(file))
-                {
-                    result.Add($"[New] {file}");
-                    newCount++;
-                }                    
+                foreach (string line in Help(null))
+                    writer.WriteLine(line);
+                writer.WriteLine(); // Add empty line
+                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
+                    foreach (string line in Help(new string[] { commandName }))
+                        writer.WriteLine(line);
             }
-            result.Add($"{newCount} new.");
-            return result;
+            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
+        }
+        [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false)]
+        [CommandArgument("commandname", "name of command", optional: true)]
+        public IEnumerable<string> Help(params string[] args)
+        {
+            // Show list of commands
+            if (args == null || args.Length == 0)
+            {
+                var list = CommandAttributes
+                .OrderBy(cm => cm.Key.Name) // Sort alphabetically
+                .Select(cm => $"\t{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}").ToList();
+                list.Insert(0, "Available Commands: ");
+                return list;
+            }
+            // Show help of specific command
+            else
+            {
+                string command = args[0];
+                return GetCommandHelp(command);
+            }
+        }
+        [Command("Rename file.",
+            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("newfilename", "new name of file")]
+        public IEnumerable<string> MV(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            string newfilename = args[1];
+            if (!FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            if (!IsFileInDatabase(filename))
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            if (FileExistsAtHomeFolder(newfilename))
+                throw new ArgumentException($"Filename `{filename}` is already used.");
+            // Update in DB
+            RenameFile(filename, newfilename);
+            // Move in filesystem
+            MoveFileInHomeFolder(filename, newfilename);
+            return new string[] { $"File `{filename}` has been renamed to `{newfilename}`." };
+        }
+        [Command("Create a new Somewhere home at current home directory.")]
+        public IEnumerable<string> New(params string[] args)
+        {
+            try
+            {
+                string path = GenerateDBFile();
+                return new string[] { $"Database generated at ${path}" };
+            }
+            catch (Exception) { throw; }
         }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
@@ -167,65 +203,30 @@ namespace Somewhere
                 return new string[] { $"File `{filename}` is marked as \"_deleted\"." };
             }
         }
-        [Command("Rename file.",
-            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
-        [CommandArgument("filename", "name of file")]
-        [CommandArgument("newfilename", "new name of file")]
-        public IEnumerable<string> MV(params string[] args)
+        [Command("Displays the state of the Home directory and the staging area.",
+            "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
+            "Notice only the files in current directory are checked, we don't go through children folders. " +
+            "We also don't check folders. The (reasons) last two points are made clear in design document.")]
+        public IEnumerable<string> Status(params string[] args)
         {
-            ValidateArgs(args);
-            string filename = args[0];
-            string newfilename = args[1];
-            if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
-            if (!IsFileInDatabase(filename))
-                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
-            if(FileExistsAtHomeFolder(newfilename))
-                throw new ArgumentException($"Filename `{filename}` is already used.");
-            // Update in DB
-            RenameFile(filename, newfilename);
-            // Move in filesystem
-            MoveFileInHomeFolder(filename, newfilename);
-            return new string[] { $"File `{filename}` has been renamed to `{newfilename}`." };
-        }
-        [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false)]
-        [CommandArgument("commandname", "name of command", optional: true)]
-        public IEnumerable<string> Help(params string[] args)
-        {
-            // Show list of commands
-            if(args == null || args.Length == 0)
+            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f).Except(new string[] { DBName });  // Exlude db file itself
+            var managed = Connection.ExecuteQuery("select Name from File").List<string>()
+                ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
+            List<string> result = new List<string>();
+            result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
+                $"{managed.Count} {(managed.Count > 1 ? "files" : "file")} in database.");
+            result.Add($"------------");
+            int newCount = 0;
+            foreach (string file in files)
             {
-                var list = CommandAttributes
-                .OrderBy(cm => cm.Key.Name) // Sort alphabetically
-                .Select(cm => $"\t{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}").ToList();
-                list.Insert(0, "Available Commands: ");
-                return list;
+                if (!managed.ContainsKey(file))
+                {
+                    result.Add($"[New] {file}");
+                    newCount++;
+                }
             }
-            // Show help of specific command
-            else
-            {
-                string command = args[0];
-                return GetCommandHelp(command);
-            }
-        }
-        [Command("Generate documentation of Somewhere program.")]
-        [CommandArgument("path", "path for the generated file.")]
-        public IEnumerable<string> Doc(params string[] args)
-        {
-            string documentation = "SomewhereDoc.txt";
-            if (args != null && args?.Length != 0)
-                documentation = args[0];
-            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.Create))
-            using (StreamWriter writer = new StreamWriter(file))
-            {
-                foreach (string line in Help(null))
-                    writer.WriteLine(line);
-                writer.WriteLine(); // Add empty line
-                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
-                    foreach (string line in Help(new string[] { commandName }))
-                        writer.WriteLine(line);
-            }
-            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
+            result.Add($"{newCount} new.");
+            return result;
         }
         [Command("Tag a specified file.", 
             "Tags are case-insensitive and will be stored in lower case; Though allowed, it's recommended tags don't contain spaces. " +
