@@ -107,6 +107,26 @@ namespace Somewhere
                 return result;
             }
         }
+        [Command("Create a virtual file (virtual text note).")]
+        [CommandArgument("filename", "name for the virtual file, must be unique among all managed files")]
+        [CommandArgument("content", "initial content for the virtual file")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed.")]
+        public IEnumerable<string> Create(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            if (FileExistsAtHomeFolder(filename))
+                throw new ArgumentException($"Specified filename `{filename}` already exist on disk.");
+            if (IsFileInDatabase(filename))
+                throw new InvalidOperationException($"Specified filename `{filename}` is already used by another virtual file in database.");
+            // Get content and save the file
+            string content = args[1];
+            AddFile(filename, content);
+            // Get tags
+            string[] tags = args[2].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Save as lower case
+            string[] allTags = UpdateTags(filename, tags);
+            return new string[] { $"File `{filename}` has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
+        }
         [Command("Generate documentation of Somewhere program.")]
         [CommandArgument("path", "path for the generated file.")]
         public IEnumerable<string> Doc(params string[] args)
@@ -154,18 +174,21 @@ namespace Somewhere
         {
             ValidateArgs(args);
             string filename = args[0];
-            string newfilename = args[1];
-            if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+            string newFilename = args[1];
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
-            if (FileExistsAtHomeFolder(newfilename))
+            if (FileExistsAtHomeFolder(newFilename) || IsFileInDatabase(newFilename))
                 throw new ArgumentException($"Filename `{filename}` is already used.");
             // Update in DB
-            RenameFile(filename, newfilename);
-            // Move in filesystem
-            MoveFileInHomeFolder(filename, newfilename);
-            return new string[] { $"File `{filename}` has been renamed to `{newfilename}`." };
+            RenameFile(filename, newFilename);
+            // Move in filesystem (if it's a physical file rather than a virtual file)
+            if (FileExistsAtHomeFolder(filename))
+            {
+                MoveFileInHomeFolder(filename, newFilename);
+                return new string[] { $"File (Physical) `{filename}` has been renamed to `{newFilename}`." };
+            }
+            else
+                return new string[] { $"Virtual file `{filename}` has been renamed to `{newFilename}`." };
         }
         [Command("Create a new Somewhere home at current home directory.")]
         public IEnumerable<string> New(params string[] args)
@@ -186,7 +209,7 @@ namespace Somewhere
             ValidateArgs(args);
             string filename = args[0];
             if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
+                throw new ArgumentException($"Specified file `{filename}` doesn't exist on disk.");
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Delete from DB
@@ -238,14 +261,12 @@ namespace Somewhere
         {
             ValidateArgs(args);
             string filename = args[0];
-            if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Update tags
             string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Save as lower case
             string[] allTags = UpdateTags(filename, tags);
-            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} tags: `{string.Join(", ", allTags)}`." };
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
         [Command("Run desktop version of Somewhere.")]
         public IEnumerable<string> UI(params string[] args)
@@ -272,14 +293,12 @@ namespace Somewhere
         {
             ValidateArgs(args);
             string filename = args[0];
-            if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist.");
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Update tags
             string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Get as lower case
             string[] allTags = RemoveTags(filename, tags);
-            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} tags: `{string.Join(", ", allTags)}`." };
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
         #endregion
 
@@ -288,7 +307,12 @@ namespace Somewhere
         /// Add a file entry to database
         /// </summary>
         public void AddFile(string filename)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name) values (@name)", new { name = filename });
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, EntryDate) values (@name, @date)", new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd") });
+        /// <summary>
+        /// Add a file entry to database with initial content
+        /// </summary>
+        public void AddFile(string filename, string content)
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd") });
         /// <summary>
         /// Remove a file entry from database
         /// </summary>
@@ -298,7 +322,12 @@ namespace Somewhere
         /// Rename a file entry in database
         /// </summary>
         public void RenameFile(string filename, string newFilename)
-            => Connection.ExecuteQuery("update File set Name=@newFileName where Name=@fileName", new { filename, newFilename });
+            => Connection.ExecuteQuery("update File set Name=@newFilename where Name=@filename", new { filename, newFilename });
+        /// <summary>
+        /// Update the text content of a file
+        /// </summary>
+        public void UpdateFileContent(string filename, string content)
+            => Connection.ExecuteSQLNonQuery("update File set Content=@content where Name=@filename", new { filename, content });
         /// <summary>
         /// Add a log entry to database in yaml
         /// </summary>
@@ -411,7 +440,8 @@ namespace Somewhere
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
 	                    ""Name""	TEXT UNIQUE,
 	                    ""Content""	BLOB,
-	                    ""Meta""	TEXT
+	                    ""Meta""	TEXT,
+                        ""EntryDate""	TEXT
                     )",
                     @"CREATE TABLE ""FileTag"" (
 	                    ""FileID""	INTEGER,
@@ -446,17 +476,17 @@ namespace Somewhere
         /// <summary>
         /// Given a filename check whether the file is reocrded in the database
         /// </summary>
-        private bool IsFileInDatabase(string fileName)
-            => Connection.ExecuteQuery("select count(*) from File where Name = @name", new { name = fileName })
+        private bool IsFileInDatabase(string filename)
+            => Connection.ExecuteQuery("select count(*) from File where Name = @name", new { name = filename })
             .Single<int>() == 1;
-        private bool FileExistsAtHomeFolder(string fileName)
-            => File.Exists(Path.Combine(HomeDirectory, fileName));
+        private bool FileExistsAtHomeFolder(string filename)
+            => File.Exists(Path.Combine(HomeDirectory, filename));
         private bool DirectoryExistsAtHomeFolder(string directoryName)
             => Directory.Exists(Path.Combine(HomeDirectory, directoryName));
-        private void DeleteFileFromHomeFolder(string fileName)
-            => File.Delete(Path.Combine(HomeDirectory, fileName));
-        private void MoveFileInHomeFolder(string fileName, string newFileName)
-            => File.Move(Path.Combine(HomeDirectory, fileName), Path.Combine(HomeDirectory, newFileName));
+        private void DeleteFileFromHomeFolder(string filename)
+            => File.Delete(Path.Combine(HomeDirectory, filename));
+        private void MoveFileInHomeFolder(string filename, string newFilename)
+            => File.Move(Path.Combine(HomeDirectory, filename), Path.Combine(HomeDirectory, newFilename));
         /// <summary>
         /// Validate argument (count) for a given command; 
         /// Throw exception when not valid

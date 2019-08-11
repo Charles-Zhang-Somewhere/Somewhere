@@ -69,6 +69,16 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void CreateVirtualFileShouldNotAffectDiskFile()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Create("My Note", "Initial Content", "my tag");            
+            Assert.True(!TestFileExists("My Note"));
+        }
+
+        [Fact]
         public void LogShouldIncreseCount()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -91,6 +101,30 @@ namespace SomewhereTest
             Commands Commands = CreateNewCommands();
             Commands.New();
             Assert.True(TestFileExists(Commands.DBName));
+        }
+
+        [Fact]
+        public void ShouldBeAbleToAddTagToVirtualFile()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Create("My Note", "Initial Content", "my tag");
+            Commands.Tag("My Note", "Some tag");
+            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetTags("My Note")));
+        }
+
+        [Fact]
+        public void ShouldBeAbleToRenameVirtualFile()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Create("My Note", "Initial Content", "my tag");
+            Commands.Tag("My Note", "Some tag");
+            Commands.MV("My Note", "Yo Neki");
+            Assert.Empty(new string[] { }.Except(Commands.GetTags("My Note")));  // Non existing
+            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetTags("Yo Neki")));
         }
 
         [Fact]
