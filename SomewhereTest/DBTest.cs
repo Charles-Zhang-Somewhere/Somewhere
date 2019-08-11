@@ -9,6 +9,7 @@ namespace SomewhereTest
 {
     public class UnitTest1
     {
+        #region Test Cases
         [Fact]
         public void AddFileShouldAllowAddingTags()
         {
@@ -185,7 +186,7 @@ namespace SomewhereTest
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Assert.True(TestFileExists("SomewhereDoc.txt"));
-            Assert.Throws<InvalidOperationException>(()=> { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
+            Assert.Throws<InvalidOperationException>(() => { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
         }
 
         [Fact]
@@ -199,7 +200,7 @@ namespace SomewhereTest
             Assert.Equal(1, Commands.FileCount);
             Assert.Equal(3, Commands.GetTags("File1.txt").Length);
             Commands.Untag("File1.txt", "A Tag, One More Tag, Nonexisting Tag");
-            Assert.Empty(new string[] { "another tag"}.Except(Commands.GetTags("File1.txt")));
+            Assert.Empty(new string[] { "another tag" }.Except(Commands.GetTags("File1.txt")));
         }
 
         [Fact]
@@ -216,8 +217,7 @@ namespace SomewhereTest
             Commands.Tag("File2.txt", "Tag1, Tag2");
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File2.txt")));
         }
-
-        
+        #endregion
 
         #region Subroutines
         private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
