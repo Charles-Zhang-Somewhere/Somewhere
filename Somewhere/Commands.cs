@@ -291,9 +291,15 @@ namespace Somewhere
         {
             ValidateArgs(args);
             List<string> result = new List<string>();
-            result.Add($"Total: {TagCount}");
+            result.Add($"{"ID", -8}{"Name", -16}{"Usage Count", 8}");
+            result.Add(new string('-', result.First().Length));
             // single line comma delimited list
-            // get tags along with file count Connection.ExecuteQuery("select ");
+            // Get tags along with file count
+            List<QueryRows.TagCount> tagCount = GetTagCount();
+            foreach (QueryRows.TagCount item in tagCount.OrderBy(t => t.Name))
+                /* Since we are not using comma delimited list, give ID part some decoration so it's easier to extract using regular expression if one needs. */
+                result.Add($"{$"({item.ID})", -8}{item.Name, -10}{$"x{item.Count}", 8}");
+            result.Add($"Total: {TagCount}");
             return result;
         }
         [Command("Run desktop version of Somewhere.")]
@@ -463,6 +469,15 @@ namespace Somewhere
         public List<TagRow> GetTagIDs(IEnumerable<string> tags)
             => Connection.ExecuteQueryDictionary($"select * from Tag where Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))})", 
                 tags.Select((t, i) => new KeyValuePair<string, string>($"tag{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<TagRow>();
+        /// <summary>
+        /// Get a list of tags along with their count of usage
+        /// </summary>
+        public List<QueryRows.TagCount> GetTagCount()
+            => Connection.ExecuteQuery(@"select Tag.ID, Tag.Name, Count
+                from 
+	                (select TagID, count(*) as Count
+	                from FileTag group by TagID), Tag
+                where TagID = Tag.ID").Unwrap<QueryRows.TagCount>();
         /// <summary>
         /// Try add tag and return tag ID, if tag already exist then return existing ID
         /// </summary>

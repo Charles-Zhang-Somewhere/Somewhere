@@ -41,7 +41,7 @@ namespace Somewhere
                     {
                         // Handle commands (in lower case)
                         var commandName = line.Substring(0, line.IndexOf(' ') == -1 ? line.Length : line.IndexOf(' '));
-                        string[] arguments = line.Substring(line.IndexOf(' ') == -1 ? line.Length - 1 : line.IndexOf(' ')).BreakCommandLineArguments();
+                        string[] arguments = line.IndexOf(' ') == -1 ? new string[] { } : line.Substring(line.IndexOf(' ')).BreakCommandLineArguments();
                         HandleCommand(Commands, commandName, arguments);
                     }
                 }

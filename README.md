@@ -1,6 +1,4 @@
 ```
-Tags: show all tags (along with ID and total and tag usage count) (in a plain ordered single line comma delimited list
-
 Files + count + recent: show all files with: ID, add date, name, tags, remark (if any) in command line, per count number of lines each time (Add Date, Revision Date, Revision Count are all derived, not in meta)
 
 File (Read) - Name: Shows all detail about a particular file (inckluding virtual file)
@@ -93,6 +91,7 @@ This app is absolutely intended for personal use. Sharing files on network drive
 14. (deprecated)Master-slave copy: ...
 15. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
 16. Simple + focused....
+17. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
 
 ## References
 
@@ -129,16 +128,21 @@ A functional and effective application may not just end here, I have several sim
 	* Front Page: search, (edit, import, export)
 	* View Page (dedicated for items and item types)
 	* REST API (rename etc...)
+7. **Add and Move with a Style** with embedded scripts (Cross Platform friendly, Lua?) in a loop inside a resource file, or at least basic regular expression (search and replace syntax) + tag (filter and name reference)  support.
 
 ## Software Components
 
 1. SQLite Handling Layer: .Net Core
-2. **Somewhere Application** (Library, Command Line, WPF): 
+2. **Somewhere Application** (Library, Command Line): 
 	* Commands (also as library functions): 
 		- ✓: add, rm, mv, new (home), sync; 
 		- ☆: tag, untag, tags
 		- ⓘ: status, log, search, help
 	* UI Interface: ...
+3. (Deprecated) GUI Desktop APplication (WPF)
+	* I think I can make it more efficient just with command line, maybe a website though
+	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
+4. (Pending) ASP.Net Core Viewer
 
 ## Underlying SQLite Table Schemes
 
