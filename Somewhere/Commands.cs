@@ -255,6 +255,15 @@ namespace Somewhere
             else
                 return new string[] { $"Virtual file `{filename}` has been renamed to `{newFilename}`." };
         }
+        [Command("Move Tags, renames specified tag.",
+            "If source tag doesn't exist in database then will issue a warning instead of doing anything. " +
+            "If the target tag name already exist, then this action will merge the two tags.")]
+        [CommandArgument("sourcetag", "old name for the tag")]
+        [CommandArgument("targettag", "new name for the tag")]
+        public IEnumerable<string> MVT(params string[] args)
+        {
+
+        }
         [Command("Create a new Somewhere home at current home directory.")]
         public IEnumerable<string> New(params string[] args)
         {

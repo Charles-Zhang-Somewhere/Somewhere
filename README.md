@@ -1,17 +1,10 @@
 ```
+mvt and unit test
+
 File (Read) - Name: Shows all detail about a particular file (inckluding virtual file)
-
-Large scale performance test: generate 50000 files and add each to home and generate 1000 random tags and apply 5-10 to each file, then inspect using command line and sqlite browser manually.
-
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
-
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
-
-Clean: clean all deleted files. Require confirmation. Show report list after action.
-
-Database schemas: the idea of adding tags to physics file resources is quite simple. In fact cefore creating this application I am already doing it at work manually for documents, reading materials, test data, and misc resource files - that's much slower,  but the advantage of having a database for this purpose is very superior, by avoiding the limits of underlying OS FS, I gain the ability to annotate files (notably name length limit, hierarchical structure, and no meta data available) like never before and this enables much easier later retrieval.
-
-Feature Requests (Usability): Add whole file version revision, either simply natively, or using git. Per file based, require message.
+Clean ("purge"): clean all deleted files. Require confirmation. Show report list after action.
 ```
 
 > (let) Organization ends here. Already in final compact form. (The next step would be to enable embedding as an option, and support compression)
@@ -119,7 +112,8 @@ A functional and effective application may not just end here, I have several sim
 2. Emoji text support
 3. Embedded browser and wbesite bookmark
 4. Meta-based dedicated note (called "remark") section
-5. Simple embedded revision control (full file based, like google drive)
+5. Feature Requests (Usability): Simple embedded revision control (full file based, like google drive)
+	* Add whole file version revision, either simply natively, or using git. Per file based, require message.
 6. ASP.Net Core Server Web client for viewr and navigation purpose (or Single page app, allowing static hosting, JS based)
 	* Front Page: search, (edit, import, export)
 	* View Page (dedicated for items and item types)
@@ -131,16 +125,30 @@ A functional and effective application may not just end here, I have several sim
 1. SQLite Handling Layer: .Net Core
 2. **Somewhere Application** (Library, Command Line): 
 	* Commands (also as library functions): 
-		- ✓: add, rm, mv, new (home), sync; 
-		- ☆: tag, untag, tags
-		- ⓘ: status, log, search, help
-	* UI Interface: ...
+		- ✓: add, rm, mv (intelligent; if existing then physically move), mvt, rmt, delete (tag based, files), purge (clean up marked `_delete`), new (home), sync (discover physically renamed and update managed file names; if managed file is deleted, then issue warning); 
+		- ☆: create, tag, untag
+		- ⓘ: status, files, tags, read, log, find ("search", shorter), help
+	* UI Interface: 
+		- Left Pane (DockPanel: 
+			+ Top: Name search, type (suffix) dropdown filter
+			+ Main Area: List of (managed) files - just name + type suffix (round button icon)
+		- Right Pane:
+			+ Top: Filter tag flow list; tag search area, autosave check box (if checked all text preview editing will be saved when selected file is  changed, otherwise a copy will be saved for the text file in "content" field, which also makes it a "virtual note"), "Edit Tag" tag manager pop up button; All tags scroll panel flow list
+			+ Middle: File preview and inforpanel
+				* Left: Dedicated Preview area (for texts it also support editing), in the future this is also for embedded web browser
+				* Right: Info and meta area: name, tag, meta edit; For name edit it will automatically rename underlying file using FS filename comliant format, this is done transparently)
+			+ Bottom: Actions Buttons Panel
+				* Basic: (Row 1) Import (Files, add as copy), Import as Folder (add folder, cut whole folder), Export, (Save), (Edit/Clear) | (Row 2) Physical (make virtual notes a physical file), Create, Open, New (Home)
+				* Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
+		- Bottom Row: Stat & Help row
 3. (Deprecated) GUI Desktop APplication (WPF)
 	* I think I can make it more efficient just with command line, maybe a website though
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
 4. (Pending) ASP.Net Core Viewer
 
 ## Underlying SQLite Table Schemes
+
+Database schemas: the idea of adding tags to physics file resources is quite simple. In fact cefore creating this application I am already doing it at work manually for documents, reading materials, test data, and misc resource files - that's much slower,  but the advantage of having a database for this purpose is very superior, by avoiding the limits of underlying OS FS, I gain the ability to annotate files (notably name length limit, hierarchical structure, and no meta data available) like never before and this enables much easier later retrieval.
 
 In summary, those tables:
 
