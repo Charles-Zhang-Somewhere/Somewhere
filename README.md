@@ -1,8 +1,6 @@
 ```
 File (Read) - Name: Shows all detail about a particular file (inckluding virtual file)
 
-Tag: replace quote characters (which can still be entered) with underscore at handler, skip empty entries
-
 Large scale performance test: generate 50000 files and add each to home and generate 1000 random tags and apply 5-10 to each file, then inspect using command line and sqlite browser manually.
 
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count

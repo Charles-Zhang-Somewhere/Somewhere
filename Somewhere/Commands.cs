@@ -320,10 +320,10 @@ namespace Somewhere
         }
         [Command("Tag a specified file.", 
             "Tags are case-insensitive and will be stored in lower case; Though allowed, it's recommended tags don't contain spaces. " +
-            "Use underscore \"_\" to connect words. Spaces immediately before and after comma delimiters are trimmed. Commas are not allowed in tags, otherwise any character is allowed." +
+            "Use underscore \"_\" to connect words. Spaces immediately before and after comma delimiters are trimmed. Commas are not allowed in tags, otherwise any character is allowed. " +
             "If specified file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
         [CommandArgument("filename", "name of file")]
-        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed.")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; double quotes will be replaced by underscore if entered.")]
         public IEnumerable<string> Tag(params string[] args)
         {
             ValidateArgs(args);
@@ -331,7 +331,8 @@ namespace Somewhere
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Update tags
-            string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Save as lower case
+            string[] tags = args[1].Split(',', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
+                .Where(t => !string.IsNullOrEmpty(t)).ToArray(); // Skip empty or white space entries
             string[] allTags = UpdateTags(filename, tags);
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
