@@ -1,6 +1,4 @@
 ```
-Files + count + recent: show all files with: ID, add date, name, tags, remark (if any) in command line, per count number of lines each time (Add Date, Revision Date, Revision Count are all derived, not in meta)
-
 File (Read) - Name: Shows all detail about a particular file (inckluding virtual file)
 
 Tag: replace quote characters (which can still be entered) with underscore at handler, skip empty entries
@@ -155,7 +153,7 @@ In summary, those tables:
 3. **Configuration**: key, value
 4. (Future) Rule (A,B,C)
 5. (Future) Hierarchy (A/B/C)
-6. (Future) Revision: FileID, RevisionID, Content, EntryDate
+6. (Future) Revision: FileID, RevisionID, Content, RevisionTime
 
 # Usage
 

@@ -15,5 +15,16 @@ namespace Somewhere
             public string Name { get; set; }
             public int Count { get; set; }
         }
+
+        public class FileDetail
+        {
+            public int ID { get; set; }
+            public DateTime EntryDate { get; set; }
+            public string Name { get; set; }
+            public string Tags { get; set; }
+            public string Meta { get; set; }
+            public DateTime? RevisionTime { get; set; }
+            public int RevisionCount { get; set; }
+        }
     }
 }

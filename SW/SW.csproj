@@ -15,4 +15,8 @@
     <OutputPath>..\BinaryOutput\</OutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Somewhere\Somewhere.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -10,10 +10,10 @@ using StringHelper;
 
 namespace Somewhere
 {
-    class Program
+    public class Program
     {
         #region Program Entry
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Commands Commands = new Commands(Directory.GetCurrentDirectory());
             // Print working directory for identification
@@ -37,6 +37,7 @@ namespace Somewhere
                     Console.Write("> ");
                     string line = Console.ReadLine();
                     if (line.ToLower() == "exit") break;    // Exit signal
+                    else if (line.ToLower() == "pwd") Console.WriteLine(Commands.HomeDirectory);    // View home directory
                     else
                     {
                         // Handle commands (in lower case)

@@ -67,5 +67,15 @@ namespace StringHelper
                 arguments.Add(sofar);
             return arguments.ToArray();
         }
+
+        /// <summary>
+        /// Limit the length of a string
+        /// </summary>
+        /// <param name="targetLength">Include end filler length</param>
+        public static string Limit(this string v, int targetLength, string endFiller = "...")
+        {
+            int actualLength = targetLength - endFiller.Length;
+            return v.Length > actualLength ? v.Substring(0, actualLength) + endFiller : v;
+        }
     }
 }

@@ -190,9 +190,18 @@ namespace SQLiteExtension
                 {
                     string propertyName = prop.Name;
                     if (columnNameMapping.ContainsKey(propertyName))
-                        prop.SetValue(instance, reader[columnNameMapping[propertyName]] == DBNull.Value
-                            ? null
-                            : Convert.ChangeType(reader[columnNameMapping[propertyName]], prop.PropertyType));
+                    {
+                        var value = reader[columnNameMapping[propertyName]];
+                        if (value == DBNull.Value)
+                            prop.SetValue(instance, null);
+                        else
+                        {
+                            // Add handling for nullable type
+                            System.Type t = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                            object safeValue = (value == null) ? null : Convert.ChangeType(value, t);
+                            prop.SetValue(instance, safeValue, null);
+                        }
+                    }
                 }
                 // Add to return
                 returnValues.Add(instance);

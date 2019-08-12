@@ -1,4 +1,5 @@
 ﻿using SQLiteExtension;
+using StringHelper;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -143,6 +144,54 @@ namespace Somewhere
             string[] allTags = UpdateTags(filename, tags);
             return new string[] { $"File `{filename}` has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
+        /// <remarks>Due to it's particular function of pagination, this command function behaves slightly different from usual ones;
+        /// Instead of returning lines of output for the caller to output, it manages output and keyboard input itself</remarks>
+        [Command("Show a list of all files.",
+            "Use command line arguments for more advanced display setup.")]
+        [CommandArgument("pageitemcount", "number of items to show each time", true)]
+        [CommandArgument("datefilter", "a formatted string filtering items with a given entry date; valid formats: specific date string, recent (10 days)", true)]
+        public IEnumerable<string> Files(params string[] args)
+        {
+            ValidateArgs(args);
+            int pageItemCount = args.Length >= 1 ? Convert.ToInt32(args[1]) : 20;
+            string dateFilter = args.Length >= 2 ? args[2] : null;  // TODO: This feature is not implemented yet
+            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-12}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
+            Console.WriteLine(headerLine);
+            Console.WriteLine(new string('-', headerLine.Length));
+            // Get tags along with file count
+            List<QueryRows.FileDetail> fileDetails = GetFileDetails();
+            int itemCount = 0, pageCount = 1;
+            foreach (QueryRows.FileDetail item in fileDetails.OrderBy(t => t.Name))
+            {
+                Console.WriteLine($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
+                    $"{item.RevisionTime?.ToString("yyyy-MM-dd") ?? "",-12}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
+                if (!string.IsNullOrEmpty(item.Tags))
+                    Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
+                if(!string.IsNullOrEmpty(item.Meta))
+                {
+                    FileMeta meta = new Deserializer().Deserialize<FileMeta>(item.Meta);
+                    if(!string.IsNullOrEmpty(meta.Remark))
+                        Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
+                }
+                itemCount++;
+                // Pagination
+                if (itemCount == pageItemCount)
+                {
+                    Console.WriteLine($"Page {pageCount}/{(fileDetails.Count + pageItemCount - 1)/pageItemCount} (Press q to quit)");
+                    var keyInfo = Console.ReadKey();  // Wait for continue
+                    if (keyInfo.Key == ConsoleKey.Q)
+                    {
+                        Console.WriteLine();
+                        break;
+                    }
+                    itemCount = 0;
+                    pageCount++;
+                }
+            }
+            if(pageCount == (fileDetails.Count + pageItemCount - 1) / pageItemCount)
+                Console.WriteLine($"Total: {fileDetails.Count}");
+            return new string[] { }; // Return nothing instead
+        }
         [Command("Generate documentation of Somewhere program.")]
         [CommandArgument("path", "path for the generated file.")]
         public IEnumerable<string> Doc(params string[] args)
@@ -248,7 +297,9 @@ namespace Somewhere
             "We also don't check folders. The (reasons) last two points are made clear in design document.")]
         public IEnumerable<string> Status(params string[] args)
         {
-            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f).Except(new string[] { DBName });  // Exlude db file itself
+            var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f)
+                .Select(filepath => Path.GetFileName(filepath))
+                .Except(new string[] { DBName });  // Exlude db file itself
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
@@ -291,14 +342,13 @@ namespace Somewhere
         {
             ValidateArgs(args);
             List<string> result = new List<string>();
-            result.Add($"{"ID", -8}{"Name", -16}{"Usage Count", 8}");
+            result.Add($"{"ID", -8}{"Name", -64}{"Usage Count", 8}");
             result.Add(new string('-', result.First().Length));
-            // single line comma delimited list
             // Get tags along with file count
             List<QueryRows.TagCount> tagCount = GetTagCount();
             foreach (QueryRows.TagCount item in tagCount.OrderBy(t => t.Name))
                 /* Since we are not using comma delimited list, give ID part some decoration so it's easier to extract using regular expression if one needs. */
-                result.Add($"{$"({item.ID})", -8}{item.Name, -10}{$"x{item.Count}", 8}");
+                result.Add($"{$"({item.ID})", -8}{item.Name, -64}{$"x{item.Count}", 8}");   // single line formatted list
             result.Add($"Total: {TagCount}");
             return result;
         }
@@ -505,6 +555,24 @@ namespace Somewhere
         public void AddTags(IEnumerable<string> tags)
             => Connection.ExecuteSQLNonQuery("insert into Tag(Name) values(@tag)", tags.Select(tag => new { tag }));
         /// <summary>
+        /// Get details of each file
+        /// </summary>
+        public List<QueryRows.FileDetail> GetFileDetails()
+            => Connection.ExecuteQuery(
+@"select FileTagDetails.*,
+	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
+from 
+	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	from File, 
+		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
+		from Tag, FileTag
+		where FileTag.TagID = Tag.ID) as FileTags
+	on FileTags.FileID = File.ID
+	group by File.ID) as FileTagDetails 
+	left join Revision
+on Revision.FileID = FileTagDetails.ID
+group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
+        /// <summary>
         /// Get tags for the file, if no tags are added, return empty array
         /// </summary>
         public string[] GetTags(string filename)
@@ -602,11 +670,13 @@ namespace Somewhere
                     )",
                     @"CREATE TABLE ""Revision"" (
 	                    ""FileID""	INTEGER,
-	                    ""DateTime""	TEXT,
+	                    ""RevisionID""	INTEGER,
+	                    ""RevisionTime""	TEXT,
 	                    ""Content""	BLOB,
-	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID"")
+	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID""),
+	                    PRIMARY KEY(""FileID"",""RevisionID"")
                     )",
-                    // Assign initial db meta values
+                    // Assign initial db configuration/status values
                     @"INSERT INTO Configuration (Key, Value) 
                         values ('Version', 'V1.0.0')",
                     @"INSERT INTO Configuration (Key, Value) 
