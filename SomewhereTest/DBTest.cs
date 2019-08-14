@@ -19,7 +19,7 @@ namespace SomewhereTest
             Commands.New();
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
-            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File1.txt")));    // Notice we are comparing lower case
+            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetFileTags("File1.txt")));    // Notice we are comparing lower case
         }
 
         [Fact]
@@ -35,7 +35,7 @@ namespace SomewhereTest
             Assert.Equal(1, Commands.TryAddTag("mydoc")); // Tentative, we shouldn't depend on this index, but this is expected
             Assert.Equal(2, Commands.TryAddTag("mydoc2")); // Tentative, we shouldn't depend on this index, but this is expected
             Commands.Tag("SomewhereDoc.txt", "MyDoc2");
-            Assert.Empty(new string[] { "mydoc", "mydoc2" }.Except(Commands.GetTags("SomewhereDoc.txt")));
+            Assert.Empty(new string[] { "mydoc", "mydoc2" }.Except(Commands.GetFileTags("SomewhereDoc.txt")));
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace SomewhereTest
             Commands.Doc("File2.txt"); // Create file for test
             Commands.Add("*", "A Tag, Another Tag");
             Assert.Equal(2, Commands.FileCount);
-            Assert.Empty(new string[] { "a tag", "another tag" }.Except(Commands.GetTags("File2.txt")));
+            Assert.Empty(new string[] { "a tag", "another tag" }.Except(Commands.GetFileTags("File2.txt")));
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace SomewhereTest
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");
             Commands.Tag("My Note", "Some tag");
-            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetTags("My Note")));
+            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetFileTags("My Note")));
         }
 
         [Fact]
@@ -155,13 +155,13 @@ namespace SomewhereTest
             Commands.New();
             // Add virtual notes
             string[] tempTag = new string[] { "virtual notes" };
-            Commands.AddFilesBatch(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => "Initial Content..."));
-            Commands.UpdateTagsInBatch(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => tempTag));
+            Commands.AddFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => "Initial Content..."));
+            Commands.AddTagsToFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => tempTag));
             // Add physicla files
             names.ForEach(f => File.Create(GetFilePath(f)).Dispose());
-            Commands.AddFilesBatch(names);
+            Commands.AddFiles(names);
             // Assign tags
-            Commands.UpdateTagsInBatch(names.ToDictionary( n => n, n => Enumerable.Range(1, rand.Next(fileTagCount)).Select(i => rand.Next(tagCount)).Select(i => tags[i]).ToArray()));
+            Commands.AddTagsToFiles(names.ToDictionary( n => n, n => Enumerable.Range(1, rand.Next(fileTagCount)).Select(i => rand.Next(tagCount)).Select(i => tags[i]).ToArray()));
 
             // Assertions
             Assert.Equal(fileCount + noteCount, Commands.FileCount);
@@ -178,8 +178,8 @@ namespace SomewhereTest
             Commands.Create("My Note", "Initial Content", "my tag");
             Commands.Tag("My Note", "Some tag");
             Commands.MV("My Note", "Yo Neki");
-            Assert.Empty(new string[] { }.Except(Commands.GetTags("My Note")));  // Non existing
-            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetTags("Yo Neki")));
+            Assert.Empty(new string[] { }.Except(Commands.GetFileTags("My Note")));  // Non existing
+            Assert.Empty(new string[] { "my tag", "some tag" }.Except(Commands.GetFileTags("Yo Neki")));
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void RenameShouldUpdatePhysicalFile()
+        public void RenameFileShouldUpdatePhysicalFile()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = CreateNewCommands();
@@ -268,7 +268,7 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void RenameShouldNotWorkIfFileIsNotManaged()
+        public void RenameFileShouldNotWorkIfFileIsNotManaged()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = CreateNewCommands();
@@ -276,6 +276,45 @@ namespace SomewhereTest
             Commands.Doc(); // Create a doc file for test
             Assert.True(TestFileExists("SomewhereDoc.txt"));
             Assert.Throws<InvalidOperationException>(() => { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
+        }
+
+        [Fact]
+        public void RenameTagShouldNotWorkIfTagDoesNotExist()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc(); // Create a doc file for test
+            Assert.Equal(0, Commands.TagCount);
+            Assert.Throws<InvalidOperationException>(() => { Commands.MVT("my tag", "my new tag"); });
+        }
+
+        [Fact]
+        public void RenameTagShouldMergeTags()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("file1.txt"); // Create test file
+            Commands.Add("file1.txt", "tag1");
+            Commands.Doc("file2.txt"); // Create test file
+            Commands.Add("file2.txt", "tag2");
+            Assert.Equal(2, Commands.TagCount);
+            Commands.MVT("tag1", "tag2");
+            Assert.Equal(1, Commands.TagCount);
+        }
+
+        [Fact]
+        public void RenameTagShouldRenameTag()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("file1.txt"); // Create test file
+            Commands.Add("file1.txt", "tag1");
+            Commands.MVT("tag1", "tag2");
+            Assert.Empty(new string[] { "tag1" }.Except(Commands.GetFileTags("file1.txt")));
+            Assert.Equal(1, Commands.TagCount);
         }
 
         [Fact]
@@ -287,9 +326,9 @@ namespace SomewhereTest
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Add("*", "A Tag, Another Tag, One More Tag");
             Assert.Equal(1, Commands.FileCount);
-            Assert.Equal(3, Commands.GetTags("File1.txt").Length);
+            Assert.Equal(3, Commands.GetFileTags("File1.txt").Length);
             Commands.Untag("File1.txt", "A Tag, One More Tag, Nonexisting Tag");
-            Assert.Empty(new string[] { "another tag" }.Except(Commands.GetTags("File1.txt")));
+            Assert.Empty(new string[] { "another tag" }.Except(Commands.GetFileTags("File1.txt")));
         }
 
         [Fact]
@@ -304,7 +343,7 @@ namespace SomewhereTest
             Commands.Add("File2.txt");
             Commands.Tag("File1.txt", "Tag1");
             Commands.Tag("File2.txt", "Tag1, Tag2");
-            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetTags("File2.txt")));
+            Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetFileTags("File2.txt")));
         }
         #endregion
 

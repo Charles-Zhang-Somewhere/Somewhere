@@ -215,7 +215,7 @@ namespace SQLiteExtension
         /// Get a single value of given type from the single cell of the read result;
         /// Throw exception when invalid
         /// </summary>
-        public static Type Single<Type>(this SQLiteDataReader reader, bool returnDefaultWhenEmptyForValueType = false) where Type : IConvertible
+        public static Type Single<Type>(this SQLiteDataReader reader, bool returnDefaultWhenEmptyForValueType = false)
         {
             // If there is no row and type is not nullable then throw an exception otherwise return null
             bool canBeNull = !typeof(Type).IsValueType || (Nullable.GetUnderlyingType(typeof(Type)) != null);

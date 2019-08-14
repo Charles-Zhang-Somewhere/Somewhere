@@ -81,6 +81,9 @@ This app is absolutely intended for personal use. Sharing files on network drive
 15. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
 16. Simple + focused....
 17. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
+18. （Experimental） Flat notes/tags and knowledge sub-system: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
+	* Operators: up, down, filter (scope and scroll details), import (multi line list, assign tags)
+	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
 
 ## References
 
@@ -188,6 +191,11 @@ Cautious:
 	* Do note by design any characters are allowed in tags in the underlying databse, but command line and gui interface enforce no comma and no space policy
 2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
 3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
+
+## Case Studies
+
+1. (General Tagging) Think about how you would like to (be able to) access it: "ECE, Formula" vs "ECE_Formula"
+2. (Knowledge Tag System) Think about how you would like to ask questions - technically speaking, a proper **filename is also byitself a tag** (e.g. "a handbook of practical structures" -> "practical structures"), knowledge points should be **infitestimal small** and **self-contained** and at the same time contain **all other relevant knowledge**. So a proper knowledge point should have only: (plaintext) content, (plaintext) tags - wihtout any indirection. All other heavilifting should be done by the system, e.g. the system shall keep a "tag table" (a tag by itself) which contains all current tags, and this system should detect rather than interfere with normal file tag system (i.e. the main Somewhere application itself). And of course, *tags as either words or phrases, should be tagged on as well*. If everything can be treated as a tag, then tags can have two levels, according to its abstraction level - either up or down, and sentences, being the most specific ones, are on the bottomest level.
 
 ## Questions
 
