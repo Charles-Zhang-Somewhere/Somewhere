@@ -1,5 +1,5 @@
 ```
-`create` knowledge without title
+`create` for knowledge when file without title (instead of creating a seperate **knowledge** table, it would be nice if we have all existing commands)
 `add` wiht cut from foreign
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.

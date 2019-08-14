@@ -378,12 +378,14 @@ namespace Somewhere
         {
             var files = Directory.GetFiles(HomeDirectory).OrderBy(f => f)
                 .Select(filepath => Path.GetFileName(filepath))
+                .Where(filename => filename.IndexOf("_deleted") != filename.Length - "_deleted".Length)
                 .Except(new string[] { DBName });  // Exlude db file itself
+            var directories = Directory.GetDirectories(HomeDirectory);
             var managed = Connection.ExecuteQuery("select Name from File").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
             result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
-                $"{managed.Count} {(managed.Count > 1 ? "files" : "file")} in database.");
+                $"{directories.Count()} {(directories.Count() > 1 ? "directories" : "directory")} on disk.");
             result.Add($"------------");
             int newCount = 0;
             foreach (string file in files)
@@ -394,7 +396,7 @@ namespace Somewhere
                     newCount++;
                 }
             }
-            result.Add($"{newCount} new.");
+            result.Add($"{newCount} new. " + $"{managed.Count} {(managed.Count > 1 ? "items" : "item")} in database.");
             return result;
         }
         [Command("Tag a specified file.", 
