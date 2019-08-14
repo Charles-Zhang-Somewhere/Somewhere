@@ -46,5 +46,12 @@ namespace SomewhereTest
             string[] arguments = "a1 \"a2\" \"\"\"Something's fishy.\"\" He said.\" a3 \"Hello World\"".BreakCommandLineArguments();
             Assert.Empty(new string[] { "a1", "a2", "\"Something's fishy.\" He said.", "a3", "Hello World" }.Except(arguments));
         }
+
+        [Fact]
+        public void SplitTags()
+        {
+            Assert.Empty(new string[] { "t1", "t2", "hello world", "how's your day", "_oh' my god_" }
+                .Except("t1, t2, hello world, how's your day, \"oh' my god\"".SplitTags()));
+        }
     }
 }

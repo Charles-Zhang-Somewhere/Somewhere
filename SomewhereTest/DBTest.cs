@@ -290,6 +290,40 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void RemoveTagShouldActuallyRemoveTheTag()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("file1.txt"); // Create test file
+            Commands.Add("file1.txt", "tag1");
+            Commands.Doc("file2.txt"); // Create test file
+            Commands.Add("file2.txt", "tag2");
+            Assert.Equal(2, Commands.TagCount);
+            Commands.RMT("tag1");
+            Assert.Equal(1, Commands.TagCount);
+            Assert.Empty(new string[] { }.Except(Commands.GetFileTags("file1.txt")));
+            Assert.Empty(new string[] { }.Except(Commands.GetFileTags("file2.txt")));
+        }
+
+        [Fact]
+        public void RemoveTagShouldBeAbleToRemoveMoreThanOneTag()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("file1.txt"); // Create test file
+            Commands.Add("file1.txt", "tag1");
+            Commands.Doc("file2.txt"); // Create test file
+            Commands.Add("file2.txt", "tag2");
+            Assert.Equal(2, Commands.TagCount);
+            Commands.RMT("tag1, tag2");
+            Assert.Equal(0, Commands.TagCount);
+            Assert.Empty(new string[] { }.Except(Commands.GetFileTags("file1.txt")));
+            Assert.Empty(new string[] { }.Except(Commands.GetFileTags("file2.txt")));
+        }
+
+        [Fact]
         public void RenameTagShouldMergeTags()
         {
             CleanOrCreateTestFolderRemoveAllFiles();
@@ -313,7 +347,7 @@ namespace SomewhereTest
             Commands.Doc("file1.txt"); // Create test file
             Commands.Add("file1.txt", "tag1");
             Commands.MVT("tag1", "tag2");
-            Assert.Empty(new string[] { "tag1" }.Except(Commands.GetFileTags("file1.txt")));
+            Assert.Empty(new string[] { "tag2" }.Except(Commands.GetFileTags("file1.txt")));
             Assert.Equal(1, Commands.TagCount);
         }
 

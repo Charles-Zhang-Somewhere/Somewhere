@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace StringHelper
@@ -77,5 +78,12 @@ namespace StringHelper
             int actualLength = targetLength - endFiller.Length;
             return v.Length > actualLength ? v.Substring(0, actualLength) + endFiller : v;
         }
+
+        /// <summary>
+        /// Split a comma delimited string of tags into array, lower cased and removed empty
+        /// </summary>
+        public static IEnumerable<string> SplitTags(this string v)
+            => v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
+            .Where(t => !string.IsNullOrEmpty(t)); // Skip empty or white space entries
     }
 }

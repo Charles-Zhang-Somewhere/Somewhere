@@ -107,7 +107,7 @@ namespace Somewhere
                 else
                 {
                     AddFile(filename);
-                    if (args.Length == 2) AddTagsToFile(filename, args[1].Split(',').Select(a => a.Trim().ToLower()));
+                    if (args.Length == 2) AddTagsToFile(filename, args[1].SplitTags());
                     return new string[] { $"File `{filename}` added to database with a total of {FileCount} {(FileCount > 1 ? "files": "file")}." };
                 }
             }
@@ -118,7 +118,7 @@ namespace Somewhere
                     .Select(filepath => Path.GetFileName(filepath)) // Returned strings contain folder path
                     .Where(filename => !IsFileInDatabase(filename) && filename != DBName)
                     .ToArray();    // Exclude DB file itself
-                string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();
+                string[] tags = args[1].SplitTags().ToArray();
                 List<string> result = new List<string>();
                 result.Add($"Add {newFiles.Length} files");
                 result.Add("------------");
@@ -148,7 +148,7 @@ namespace Somewhere
             string content = args[1];
             AddFile(filename, content);
             // Get tags
-            string[] tags = args[2].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Save as lower case
+            string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(filename, tags);
             return new string[] { $"File `{filename}` has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
@@ -333,6 +333,38 @@ namespace Somewhere
                 return new string[] { $"File `{filename}` is marked as \"_deleted\"." };
             }
         }
+        [Command("Removes a tag.", 
+            "This command deletes the tag from the database, there is no going back.")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes")]
+        public IEnumerable<string> RMT(params string[] args)
+        {
+            ValidateArgs(args);
+            string[] tags = args[0].SplitTags().ToArray();   // Get as lower case
+            // Specially handle single tag specifically with existence validation
+            if(tags.Length == 1)
+            {
+                string tag = tags[0];
+                var tagID = GetTagID(tag);
+                if (tagID == null)
+                    throw new ArgumentException($"Specified tag `{tag}` doesn't exist in database.");
+                // Delete file tags
+                DeleteFileTag(tagID.Value);
+                // Delete tag itself
+                DeleteTag(tag);
+                return new string[] { $"Tag `{tag}` has been deleted from database." };
+            }
+            // For more than one tag we don't enforce strict existence validation
+            else
+            {
+                List<TagRow> realTags = GetTagRows(tags);
+                // Delete from FileTag table
+                DeleteFileTags(realTags.Select(t => t.ID), false);
+                // Delete from Tag table
+                DeleteTags(realTags.Select(t=>t.ID));
+                return new string[] { $"Tags `{string.Join(", ", realTags.Select(t => t .Name))}` " +
+                    $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
+            }            
+        }
         [Command("Displays the state of the Home directory and the staging area.",
             "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
             "Notice only the files in current directory are checked, we don't go through children folders. " +
@@ -373,8 +405,7 @@ namespace Somewhere
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Add tags
-            string[] tags = args[1].Split(',', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
-                .Where(t => !string.IsNullOrEmpty(t)).ToArray(); // Skip empty or white space entries
+            string[] tags = args[1].SplitTags().ToArray();
             string[] allTags = AddTagsToFile(filename, tags);
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
@@ -423,7 +454,7 @@ namespace Somewhere
             if (!IsFileInDatabase(filename))
                 throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
             // Remove tags
-            string[] tags = args[1].Split(',').Select(a => a.Trim().ToLower()).ToArray();   // Get as lower case
+            string[] tags = args[1].SplitTags().ToArray();   // Get as lower case
             string[] allTags = RemoveTags(filename, tags);
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
@@ -613,6 +644,16 @@ namespace Somewhere
         public void DeleteTag(string tagName)
             => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", new { name = tagName});
         /// <summary>
+        /// Delete from Tag table
+        /// </summary>
+        public void DeleteTags(IEnumerable<string> tagNames)
+            => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", tagNames.Select(name => new { name }) );
+        /// <summary>
+        /// Delete from Tag table
+        /// </summary>
+        public void DeleteTags(IEnumerable<int> tagIDs)
+            => Connection.ExecuteSQLNonQuery("delete from Tag where ID = @id", tagIDs.Select(id => new { id }));
+        /// <summary>
         /// Add tags with given names to database
         /// </summary>
         /// <remarks>
@@ -651,8 +692,34 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Delete file tags record
         /// </summary>
+        public void DeleteFileTag(int tagID)
+            => Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@tagID", new { tagID });
+        /// <summary>
+        /// <summary>
+        /// Delete file tags record
+        /// </summary>
         public void DeleteFileTags(int fileID, IEnumerable<int> tagIDs)
             => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", tagIDs.Select(tagID => new { fileID, tagID }));
+        /// <summary>
+        /// Delete file tags record
+        /// </summary>
+        public void DeleteFileTags(int id, bool isFileID)
+        {
+            if (isFileID)
+                Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id });
+            else
+                Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@id", new { id });
+        }
+        /// <summary>
+        /// Delete file tags record
+        /// </summary>
+        public void DeleteFileTags(IEnumerable<int> IDs, bool isFileID)
+        {
+            if (isFileID)
+                Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", IDs.Select(id => new { id }) );
+            else
+                Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@id", IDs.Select(id => new { id }));
+        }
         /// <summary>
         /// Delete file tags record
         /// </summary>

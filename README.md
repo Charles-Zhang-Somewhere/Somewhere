@@ -1,10 +1,13 @@
 ```
-mvt and unit test
-
-File (Read) - Name: Shows all detail about a particular file (inckluding virtual file)
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
+File (Read) - Name: Shows all detail about a particular file (including virtual file)
 Clean ("purge"): clean all deleted files. Require confirmation. Show report list after action.
+retag tags add/remove tags: filter select items then apply accordingly
+update file newtags: remove all old tags from a file and apply a new set of tags
+untag: When we do untag, remove empty tags
+For all operations that involve physical files, add filename translation (clipping), clip to a length of (including path)...  Keep `_delete` and file extension
+For Add *: check and add only if the file is not home database and is not already added.
 ```
 
 > (let) Organization ends here. Already in final compact form. (The next step would be to enable embedding as an option, and support compression)
@@ -81,9 +84,11 @@ This app is absolutely intended for personal use. Sharing files on network drive
 15. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
 16. Simple + focused....
 17. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
-18. （Experimental） Flat notes/tags and knowledge sub-system: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
+18. （Experimental; Feature） Flat notes/tags and knowledge sub-system: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
 	* Operators: up, down, filter (scope and scroll details), import (multi line list, assign tags)
 	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
+19. Reflection on Hierarchical Structure: some might mistakenly think hierarchical structures are thus not useful or even bad - however hierarchical structures are indeed very powerful structures for organizing knowledge for trees are very efficient for searching purpose. However the biggest issue as we shall identify here, is trees are good only for relatively static data, e.g. English dictionary with thumb index - the reorganization cost is high - but that's exactly the case for personal data. Also it might occur that trees are better to model topological features (e.g. shapes of words or animals) rather than semantically features (which doesn't have solid forms).
+20. Everything: unambiguous, folder and file names can be utilized, not intended for organizing, very specific; XYPlorer: not pure, temporary for work sessions is good, limited capacity due to mechanism (click and drag) - again, only suitable for sessional work not permanent organization.
 
 ## References
 
@@ -191,6 +196,7 @@ Cautious:
 	* Do note by design any characters are allowed in tags in the underlying databse, but command line and gui interface enforce no comma and no space policy
 2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
 3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
+4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
 
 ## Case Studies
 
