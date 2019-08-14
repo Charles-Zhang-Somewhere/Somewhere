@@ -1,4 +1,6 @@
 ```
+`create` knowledge without title
+`add` wiht cut from foreign
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
 File (Read) - Name: Shows all detail about a particular file (including virtual file)

@@ -163,42 +163,47 @@ namespace Somewhere
             ValidateArgs(args);
             int pageItemCount = args.Length >= 1 ? Convert.ToInt32(args[1]) : 20;
             string dateFilter = args.Length >= 2 ? args[2] : null;  // TODO: This feature is not implemented yet
-            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-12}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
-            Console.WriteLine(headerLine);
-            Console.WriteLine(new string('-', headerLine.Length));
             // Get tags along with file count
             List<QueryRows.FileDetail> fileDetails = GetFileDetails();
-            int itemCount = 0, pageCount = 1;
-            foreach (QueryRows.FileDetail item in fileDetails.OrderBy(t => t.Name))
-            {
-                Console.WriteLine($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
-                    $"{item.RevisionTime?.ToString("yyyy-MM-dd") ?? "",-12}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
-                if (!string.IsNullOrEmpty(item.Tags))
-                    Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
-                if(!string.IsNullOrEmpty(item.Meta))
-                {
-                    FileMeta meta = new Deserializer().Deserialize<FileMeta>(item.Meta);
-                    if(!string.IsNullOrEmpty(meta.Remark))
-                        Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
-                }
-                itemCount++;
-                // Pagination
-                if (itemCount == pageItemCount)
-                {
-                    Console.WriteLine($"Page {pageCount}/{(fileDetails.Count + pageItemCount - 1)/pageItemCount} (Press q to quit)");
-                    var keyInfo = Console.ReadKey();  // Wait for continue
-                    if (keyInfo.Key == ConsoleKey.Q)
-                    {
-                        Console.WriteLine();
-                        break;
-                    }
-                    itemCount = 0;
-                    pageCount++;
-                }
-            }
-            if(pageCount == (fileDetails.Count + pageItemCount - 1) / pageItemCount)
-                Console.WriteLine($"Total: {fileDetails.Count}");
+            InteractiveFileRows(fileDetails, pageItemCount);
             return new string[] { }; // Return nothing instead
+        }
+        [Command("Find with (or without) action.",
+            "Find with filename, tags and extra information, and optionally perform an action with find results.")]
+        [CommandArgument("searchtype (either `name` or `tag`)", "indicates search type; more will be added")]
+        [CommandArgument("searchstring", "for `name`, use part of file name to search; for `tag`, use comma delimited list of tags to search")]
+        [CommandArgument("action (either `show` or `open`)", "optional action to perform on search results; default `show`; more will be added", optional: true)]
+        public IEnumerable<string> Find(params string[] args)
+        {
+            ValidateArgs(args);
+            List<QueryRows.FileDetail> fileRows = null;
+            // Switch search type
+            switch (args[0].ToLower())
+            {
+                case "name":
+                    fileRows = FilterByNameDetailed(args[1]);
+                    break;
+                case "tag":
+                    fileRows = FilterByTagsDetailed(args[1].SplitTags());
+                    break;
+                default:
+                    throw new ArgumentException($"Unrecognized search type: `{args[0].ToLower()}`");
+            }
+            // Perform actions
+            string action = "show";
+            List<string> result = new List<string>();
+            if (args.Length == 3)
+                action = args[2].ToLower();
+            switch (action)
+            {
+                case "show":
+                    // Interactive display
+                    InteractiveFileRows(fileRows);
+                    // Return empty results
+                    return result;
+                default:
+                    throw new ArgumentException($"Unrecognized action: `{action}`");
+            }
         }
         [Command("Generate documentation of Somewhere program.")]
         [CommandArgument("path", "path for the generated file.")]
@@ -284,7 +289,7 @@ namespace Somewhere
             else
             {
                 // Get files with old tag
-                List<FileRow> sourceFiles = Filter(new string[] { sourceTag});
+                List<FileRow> sourceFiles = FilterByTags(new string[] { sourceTag});
                 List<TagRow> tagIDs = GetTagRows(new string[] { sourceTag, targetTag });
                 int sourceTagID = tagIDs.Where(t => t.Name == sourceTag).Single().ID, 
                     targetTagID = tagIDs.Where(t => t.Name == targetTag).Single().ID;
@@ -538,11 +543,52 @@ namespace Somewhere
         /// <summary>
         /// Get all files that contain specified tags
         /// </summary>
-        public List<FileRow> Filter(IEnumerable<string> tags)
+        public List<FileRow> FilterByTags(IEnumerable<string> tags)
             => Connection.ExecuteQueryDictionary($"select File.* from Tag, File, FileTag " +
                 $"where Tag.Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))}) " +
                 $"and FileTag.FileID = File.ID and FileTag.TagID = Tag.ID",
                 tags.Select((t, i) => new KeyValuePair<string, string>($"tag{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<FileRow>();
+        /// <summary>
+        /// Get all file that contain specified tags with details 
+        /// </summary>
+        public List<QueryRows.FileDetail> FilterByTagsDetailed(IEnumerable<string> tags)
+            => Connection.ExecuteQueryDictionary(   // Notice unlike GetFileDetails, here we don't use left join for File and FileTagDetails
+@"select FileTagDetails.*,
+	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
+from 
+	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	from File, 
+		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
+		from Tag, FileTag
+		where FileTag.TagID = Tag.ID
+        and Tag.Name " + $"in ({string.Join(", ", tags.Select((t, i) => $"@name{i}"))})" + @"
+        ) as FileTags
+	on FileTags.FileID = File.ID
+	group by File.ID) as FileTagDetails 
+	left join Revision
+on Revision.FileID = FileTagDetails.ID
+group by FileTagDetails.ID",
+    tags.Select((t, i) => new KeyValuePair<string, string>($"name{i}", t)).ToDictionary(p => p.Key, p => p.Value as object))
+            .Unwrap<QueryRows.FileDetail>();
+        /// <summary>
+        /// Get all file that contain part of name with details 
+        /// </summary>
+        public List<QueryRows.FileDetail> FilterByNameDetailed(string name)
+            => Connection.ExecuteQuery(   // Notice unlike GetFileDetails, here we don't use left join for File and FileTagDetails
+@"select FileTagDetails.*,
+	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
+from 
+	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	from File,
+		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
+		from Tag, FileTag
+		where FileTag.TagID = Tag.ID) as FileTags
+	on FileTags.FileID = File.ID
+    where File.Name like '%' || @name || '%'
+	group by File.ID) as FileTagDetails 
+	left join Revision
+on Revision.FileID = FileTagDetails.ID
+group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         #endregion
 
         #region Low-Level Public (Database) CRUD Interface; Database Query Wrappers; Notice data handling is generic (as long as DB allows) and assumed input parameters make sense (e.g. file actually exists on disk, tag names are lower cases)
@@ -670,7 +716,7 @@ namespace Somewhere
 	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
 from 
 	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
-	from File, 
+	from File left join
 		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
 		from Tag, FileTag
 		where FileTag.TagID = Tag.ID) as FileTags
@@ -891,6 +937,45 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             foreach (var argument in arguments)
                 commandHelp.Add($"\t\t{argument.Name}{(argument.Optional ? "(Optional)" : "")} - {argument.Explanation}");
             return commandHelp;
+        }
+        /// <summary>
+        /// Show interactive scrollable file rows
+        /// </summary>
+        private void InteractiveFileRows(IEnumerable<QueryRows.FileDetail> fileRows, int pageItemCount = 20)
+        {
+            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-12}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
+            Console.WriteLine(headerLine);
+            Console.WriteLine(new string('-', headerLine.Length));
+            int itemCount = 0, pageCount = 1;
+            foreach (QueryRows.FileDetail item in fileRows.OrderBy(t => t.Name))
+            {
+                Console.WriteLine($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
+                    $"{item.RevisionTime?.ToString("yyyy-MM-dd") ?? "",-12}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
+                if (!string.IsNullOrEmpty(item.Tags))
+                    Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
+                if (!string.IsNullOrEmpty(item.Meta))
+                {
+                    FileMeta meta = new Deserializer().Deserialize<FileMeta>(item.Meta);
+                    if (!string.IsNullOrEmpty(meta.Remark))
+                        Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
+                }
+                itemCount++;
+                // Pagination
+                if (itemCount == pageItemCount)
+                {
+                    Console.WriteLine($"Page {pageCount}/{(fileRows.Count() + pageItemCount - 1) / pageItemCount} (Press q to quit)");
+                    var keyInfo = Console.ReadKey();  // Wait for continue
+                    if (keyInfo.Key == ConsoleKey.Q)
+                    {
+                        Console.WriteLine();
+                        break;
+                    }
+                    itemCount = 0;
+                    pageCount++;
+                }
+            }
+            if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)
+                Console.WriteLine($"Total: {fileRows.Count()}");
         }
         #endregion
     }
