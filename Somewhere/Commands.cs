@@ -205,7 +205,7 @@ namespace Somewhere
                     throw new ArgumentException($"Unrecognized action: `{action}`");
             }
         }
-        [Command("Generate documentation of Somewhere program.")]
+        [Command("Generate documentation of Somewhere program.", logged: false)]
         [CommandArgument("path", "path for the generated file.")]
         public IEnumerable<string> Doc(params string[] args)
         {
@@ -894,9 +894,9 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     )",
                     // Assign initial db configuration/status values
                     @"INSERT INTO Configuration (Key, Value) 
-                        values ('Version', 'V1.0.0')",
+                        values ('Version', 'V0.0.5')",
                     @"INSERT INTO Configuration (Key, Value) 
-                        values ('Change Log', 'V1.0.0: Basic implementations.')"
+                        values ('Change Log', 'V0.0.5: Basic implementations.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }

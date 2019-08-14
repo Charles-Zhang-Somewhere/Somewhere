@@ -217,11 +217,88 @@ Cautious:
 
 # Commands
 
-All commands are **case-insensitive**.
+All commands are **case-insensitive**. Below is generated directly by issuing `sw doc` command.
 
-1. `add`: 
+```
+Available Commands: 
+	add - Add a file to home.
+	create - Create a virtual file (virtual text note).
+	doc - Generate documentation of Somewhere program.
+	files - Show a list of all files.
+	find - Find with (or without) action.
+	help - Show available commands and general usage help. Use `help commandname` to see more.
+	mv - Rename file.
+	mvt - Move Tags, renames specified tag.
+	new - Create a new Somewhere home at current home directory.
+	rm - Remove a file from Home directory, deletes the file both physically and from database.
+	rmt - Removes a tag.
+	status - Displays the state of the Home directory and the staging area.
+	tag - Tag a specified file.
+	tags - Show all tags currently exist.
+	ui - Run desktop version of Somewhere.
+	untag - Untag a file.
 
-
+add - Add a file to home.
+	Options:
+		filename - name of file; use * to add all in current directory
+		tags(Optional) - tags for the file
+create - Create a virtual file (virtual text note).
+	Options:
+		filename - name for the virtual file, must be unique among all managed files
+		content - initial content for the virtual file
+		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed.
+doc - Generate documentation of Somewhere program.
+	Options:
+		path - path for the generated file.
+files - Show a list of all files.
+	Use command line arguments for more advanced display setup.
+	Options:
+		pageitemcount(Optional) - number of items to show each time
+		datefilter(Optional) - a formatted string filtering items with a given entry date; valid formats: specific date string, recent (10 days)
+find - Find with (or without) action.
+	Find with filename, tags and extra information, and optionally perform an action with find results.
+	Options:
+		searchtype (either `name` or `tag`) - indicates search type; more will be added
+		searchstring - for `name`, use part of file name to search; for `tag`, use comma delimited list of tags to search
+		action (either `show` or `open`)(Optional) - optional action to perform on search results; default `show`; more will be added
+help - Show available commands and general usage help. Use `help commandname` to see more.
+	Options:
+		commandname(Optional) - name of command
+mv - Rename file.
+	If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.
+	Options:
+		filename - name of file
+		newfilename - new name of file
+mvt - Move Tags, renames specified tag.
+	If source tag doesn't exist in database then will issue a warning instead of doing anything. If the target tag name already exist, then this action will merge the two tags.
+	Options:
+		sourcetag - old name for the tag
+		targettag - new name for the tag
+new - Create a new Somewhere home at current home directory.
+rm - Remove a file from Home directory, deletes the file both physically and from database.
+	If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.
+	Options:
+		filename - name of file
+		-f(Optional) - force physical deletion instead of mark as "_deleted"
+rmt - Removes a tag.
+	This command deletes the tag from the database, there is no going back.
+	Options:
+		tags - comma delimited list of tags in double quotes
+status - Displays the state of the Home directory and the staging area.
+	Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. Notice only the files in current directory are checked, we don't go through children folders. We also don't check folders. The (reasons) last two points are made clear in design document.
+tag - Tag a specified file.
+	Tags are case-insensitive and will be stored in lower case; Though allowed, it's recommended tags don't contain spaces. Use underscore "_" to connect words. Spaces immediately before and after comma delimiters are trimmed. Commas are not allowed in tags, otherwise any character is allowed. If specified file doesn't exist on disk or in database then will issue a warning instead of doing anything.
+	Options:
+		filename - name of file
+		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; double quotes will be replaced by underscore if entered.
+tags - Show all tags currently exist.
+	The displayed result will be a plain alphanumerically ordered list of tag names, along with ID and tag usage count.
+ui - Run desktop version of Somewhere.
+untag - Untag a file.
+	Options:
+		filename - name of file
+		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; if the file doesn't have a specified tag then the tag is not effected
+```
 
 # Comprehension Command Reference
 
