@@ -217,10 +217,12 @@ namespace Somewhere
             {
                 foreach (string line in Help(null))
                     writer.WriteLine(line);
-                writer.WriteLine(); // Add empty line
                 foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
+                {
+                    writer.WriteLine(); // Add empty line
                     foreach (string line in Help(new string[] { commandName }))
                         writer.WriteLine(line);
+                }
             }
             return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
         }
