@@ -1,5 +1,12 @@
 ```
 Finish draft GUI
+Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command
+Files command rename to items
+Add command during add if directory append trailing slash to differentiate it from regular files
+Open: switch home directory
+Archive: zip the home directory (and put the archive inside it)
+Find action: copy (file to clipboard), copynames, copypaths
+
 Add file watcher
 `create` for knowledge when file without title (instead of creating a seperate **knowledge** table, it would be nice if we have all existing commands)
 `add` wiht cut from foreign
@@ -154,9 +161,16 @@ A functional and effective application may not just end here, I have several sim
 				* Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
 		- Bottom Row: Stat & Help row
 3. (Deprecated) GUI Desktop Application (WPF)
-	* I think I can make it more efficient just with command line, maybe a website though
+	* I think I can make it more efficient just with command line, maybe a website though (End remark: I would do it in CLI, especially since we are going to do auto-complete tag and tweak with some ReadKey() level code - but CLI's support for UNICODE display is arcane and code won't be clean if we do that, so WPF/ASP.Net is better option)
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
 4. (Pending) ASP.Net Core Viewer
+
+## Design (CLI Focused, Remove GUI completely - "I hate clicking") (also promotes a more purer experience and enhanced memory capacity, also GUI is I herently a bad and easily abused feature/design by many software developers and is not inherently efficient, even for monitoring purpose? Maybe j should write an article on "when to use GUI - a software development choice", and definitely don't consider users, but purely from the perspective and efficiency of tools) And to be a bit more opinionated - windows has put a great deal of shit into its anti-human GUI and make people stupid (just check out Excels and Office suite with its strange nonintuitove and non standard keyboard shortcuts.) - A great console app (like vim) can be very great, and especially better if it combines some GUI elements (e.g. Unicode support and helpful hints).)
+
+1. FileSystemWatcher: when running as dedicated console app, this monitors changes
+2. NTFS reader: supports and replaces Everything - thank you free software
+3. ConsoleX: tab completion with advanced customization (position and lambdas); Useful CLI information (later development after GUI is drafted)
+4. (Windows only) Shell (Windows Explorer) integration for editing Item information (tags and notes)
 
 ## Underlying SQLite Table Schemes
 
@@ -174,6 +188,8 @@ In summary, those tables:
 6. (Future) Revision: FileID, RevisionID, Content, RevisionTime
 
 # Usage
+
+Download: Package with Cmder (for Unicode, colors and better overall experience)
 
 Tricks: 
 
@@ -217,9 +233,9 @@ Cautious:
 6. What will happen if I put an emoji in my filename?
 7. How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
 
-# Commands
+# Comprehensive Commands Reference
 
-All commands are **case-insensitive**. Below is generated directly by issuing `sw doc` command.
+Below is generated directly from the application by issuing `sw doc` command. All commands are **case-insensitive**.
 
 ```
 Available Commands: 
@@ -302,7 +318,12 @@ untag - Untag a file.
 		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; if the file doesn't have a specified tag then the tag is not effected
 ```
 
-# Comprehension Command Reference
+# Developer Doc
 
-Below is generated directly from the application by using `sw doc` command.
+(Add detailed examples on interoperability)
 
+To extend and define custom functions, open solution in VS, and create a new project by .....Add reference....
+
+Example (see Examples solution folder for real and simplified examples):
+
+1. An ASP.Net core website (see ASPNETCoreExample)
