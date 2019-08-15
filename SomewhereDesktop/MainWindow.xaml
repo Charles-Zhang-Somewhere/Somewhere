@@ -5,8 +5,418 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SomewhereDesktop"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Somewhere Desktop"
+        WindowState="Maximized" WindowStyle="None" AllowsTransparency="False"
+        Closing="Window_Closing"
+        Background="{StaticResource Base0}"
+        DataContext="{Binding RelativeSource={RelativeSource self}}">
+    <Window.CommandBindings>
+        <!-- Inventory Commands -->
+        <CommandBinding Command="Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
+        <CommandBinding Command="BrowseBack" CanExecute="HideCommand_CanExecute" Executed="HideCommand_Executed"/>
+        <!-- Notebook Commands -->
+        <CommandBinding Command="New" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <!-- Inventory Commands -->
+        <KeyBinding Key="F3" Command="Find"/>
+        <KeyBinding Key="Esc" Command="BrowseBack"/>
+        <!-- Notebook Commands -->
+        <KeyBinding Key="F2" Command="New"/>
+    </Window.InputBindings>
+    <Window.Resources>
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Background" Value="{StaticResource Base0}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Base1}"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Accent3}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Base3}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Accent2}"/>
+        </Style>
+        <Style x:Key="Content" TargetType="TextBox">
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Accent3}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Base3}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Accent2}"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="AcceptsTab" Value="True"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="MinWidth" Value="85"/>
+        </Style>
+        <Style x:Key="Title" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Margin" Value="8"/>
+        </Style>
+        <Style x:Key="TitleDim" TargetType="Label" BasedOn="{StaticResource Title}">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+        <Style x:Key="Header" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        <Style TargetType="ListView">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="MinWidth" Value="200"/>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border CornerRadius="2" BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}" 
+                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}" >
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="Stretch" 
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!-- Color for hover selection -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for selected -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for hovering -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Background" Value="{StaticResource Base0}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Base2}"/>
+            <Setter Property="Foreground" Value="{StaticResource Accent2}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <!-- Disabled State Colors Override -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border CornerRadius="2" BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="{StaticResource Base4}"/>
+                    <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Accent1}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+        </Style>
+        <!-- Lengthy Combobox Styling ... -->
+        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="20" />
+                </Grid.ColumnDefinitions>
+                <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="0" 
+                        Background="{StaticResource Base1}" BorderBrush="{StaticResource Base2}"
+                        BorderThickness="1" />
+                <Border Grid.Column="0" CornerRadius="0" Margin="1" 
+                        Background="{StaticResource Base0}" BorderBrush="{StaticResource Base2}"
+                        BorderThickness="0,0,1,0" />
+                <Path x:Name="Arrow" Grid.Column="1" Fill="{StaticResource Base3}" 
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Data="M0,0 L0,2 L4,6 L8,2 L8,0 L4,4 z" />
+            </Grid>
+            <!--<ControlTemplate.Triggers>
+            <Trigger Property="ToggleButton.IsMouseOver" Value="true">
+                <Setter TargetName="Border" Property="Background" Value="#808080" />
+            </Trigger>
+            <Trigger Property="ToggleButton.IsChecked" Value="true">
+                <Setter TargetName="Border" Property="Background" Value="#E0E0E0" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Border" Property="Background" Value="#EEEEEE" />
+                <Setter TargetName="Border" Property="BorderBrush" Value="#AAAAAA" />
+                <Setter Property="Foreground" Value="#888888"/>
+                <Setter TargetName="Arrow" Property="Fill" Value="#888888" />
+            </Trigger>
+        </ControlTemplate.Triggers>-->
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="ComboBoxTextBox" TargetType="TextBox">
+            <Border x:Name="PART_ContentHost" Focusable="False" Background="{TemplateBinding Background}" />
+        </ControlTemplate>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="SnapsToDevicePixels" Value="true"/>
+            <Setter Property="OverridesDefaultStyle" Value="true"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="MinHeight" Value="20"/>
+            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton Name="ToggleButton" Template="{StaticResource ComboBoxToggleButton}" 
+                                          Grid.Column="2" Focusable="false" ClickMode="Press"
+                                          IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}">
+                            </ToggleButton>
+                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False"  Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="3,3,23,3" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <TextBox x:Name="PART_EditableTextBox" Style="{x:Null}" 
+                                     Template="{StaticResource ComboBoxTextBox}" HorizontalAlignment="Left" 
+                                     VerticalAlignment="Center" Margin="3,3,23,3" Focusable="True" Background="#FF3F3F3F" Foreground="Green"
+                                     Visibility="Hidden" IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                            <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" 
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder" Background="{StaticResource Base0}" 
+                                            BorderThickness="1" BorderBrush="{StaticResource Base1}"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="DropDownBorder" Property="MinHeight" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Foreground" Value="#888888"/>
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="true">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                            </Trigger>
+                            <Trigger SourceName="Popup" Property="Popup.AllowsTransparency" Value="true">
+                                <Setter TargetName="DropDownBorder" Property="CornerRadius" Value="0"/>
+                                <Setter TargetName="DropDownBorder" Property="Margin" Value="0,2,0,0"/>
+                            </Trigger>
+                            <Trigger Property="IsEditable"  Value="true">
+                                <Setter Property="IsTabStop" Value="false"/>
+                                <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ContentSite" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+            </Style.Triggers>
+        </Style>
+
+        <!-- SimpleStyles: ComboBoxItem -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="SnapsToDevicePixels" Value="true"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="OverridesDefaultStyle" Value="true"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border Name="Border" Padding="2" SnapsToDevicePixels="true">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="true">
+                                <Setter TargetName="Border" Property="Background" Value="#FF4F4F4F"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Foreground" Value="#888888"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
-        
+        <DockPanel LastChildFill="True">
+            <Grid Background="{StaticResource Base1}" DockPanel.Dock="Top">
+                <StackPanel Orientation="Horizontal">
+                    <Label x:Name="InventoryTabLabel" Content="Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="NotebookTabLabel" Content="Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="SettingsTabLabel" Content="Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                </StackPanel>
+                <DockPanel HorizontalAlignment="Right">
+                    <Button Content="➖" Width="35" Height="35" />
+                    <Button Content="▣" Width="35" Height="35"/>
+                    <Button Content="✖" Width="35" Height="35"/>
+                </DockPanel>
+            </Grid>
+            <Grid>
+                <DockPanel x:Name="InventoryPanel" Visibility="Visible">
+                    <Border Style="{StaticResource Panel}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Label Content="Search Name"/>
+                                <TextBox/>
+                                <Label Content="Type Filter"/>
+                                <ComboBox/>
+                            </DockPanel>
+                            <ListView>
+                            </ListView>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Tag Filters"/>
+                                <ListView />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Search Tag"/>
+                                <ListView />
+                            </StackPanel>
+                            <StackPanel>
+                                <Label Content="Tags" Style="{StaticResource Header}"/>
+                                <ListView />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Panel}">
+                        <StackPanel>
+
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Panel}">
+                        <StackPanel>
+
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
+                <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
+                    <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
+                        <DockPanel>
+                            <Label Content="Search" DockPanel.Dock="Left"/>
+                            <TextBlock DockPanel.Dock="Bottom">
+                                Enter tags, names, and keywords, seperated by spaces, to search all existing notes.
+                            </TextBlock>
+                            <Button Content="Export All" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
+                            <Button Content="Cancel" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
+                            <TextBox DockPanel.Dock="Left"/>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Panel}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Bottom" Content="Create Note" Command="New"/>
+                            <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
+                                  SelectedItem="{Binding ActiveNote}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Label Content="{Binding Name}" Style="{StaticResource Header}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Panel}">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top">
+                                <Label Content="Name" />
+                                <TextBlock DockPanel.Dock="Bottom">
+                                    Enter the name of the note; Name can be anything that helps you remember.
+                                    <LineBreak/>
+                                    It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
+                                </TextBlock>
+                                <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
+                            </DockPanel>
+                            <DockPanel DockPanel.Dock="Top">
+                                <Label Content="Tags"/>
+                                <TextBlock DockPanel.Dock="Bottom">
+                                    Enter tags for the note, seperated by comma.
+                                    <LineBreak/>
+                                    Tags are used to organize notes and help quickly search for note.
+                                </TextBlock>
+                                <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteTag}"/>
+                            </DockPanel>
+                            <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteContent}" Style="{StaticResource Content}"/>
+                        </DockPanel>
+                    </Border>
+                </DockPanel>
+                <DockPanel x:Name="SettingsPanel" Visibility="Collapsed">
+
+                </DockPanel>
+            </Grid>
+        </DockPanel>
     </Grid>
 </Window>

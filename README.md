@@ -1,4 +1,6 @@
 ```
+Finish draft GUI
+Add file watcher
 `create` for knowledge when file without title (instead of creating a seperate **knowledge** table, it would be nice if we have all existing commands)
 `add` wiht cut from foreign
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
@@ -143,7 +145,7 @@ A functional and effective application may not just end here, I have several sim
 			+ Top: Name search, type (suffix) dropdown filter
 			+ Main Area: List of (managed) files - just name + type suffix (round button icon)
 		- Right Pane:
-			+ Top: Filter tag flow list; tag search area, autosave check box (if checked all text preview editing will be saved when selected file is  changed, otherwise a copy will be saved for the text file in "content" field, which also makes it a "virtual note"), "Edit Tag" tag manager pop up button; All tags scroll panel flow list
+			+ Top: Filter tag flow list; tag search area, autosave check box (if checked all text preview editing will be saved when selected file is changed - consider deprecating this function, always use external editor, otherwise a copy will be saved for the text file in "content" field, which also makes it a "virtual note"), "Edit Tag" tag manager pop up button; All tags scroll panel flow list
 			+ Middle: File preview and inforpanel
 				* Left: Dedicated Preview area (for texts it also support editing), in the future this is also for embedded web browser
 				* Right: Info and meta area: name, tag, meta edit; For name edit it will automatically rename underlying file using FS filename comliant format, this is done transparently)
@@ -151,7 +153,7 @@ A functional and effective application may not just end here, I have several sim
 				* Basic: (Row 1) Import (Files, add as copy), Import as Folder (add folder, cut whole folder), Export, (Save), (Edit/Clear) | (Row 2) Physical (make virtual notes a physical file), Create, Open, New (Home)
 				* Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
 		- Bottom Row: Stat & Help row
-3. (Deprecated) GUI Desktop APplication (WPF)
+3. (Deprecated) GUI Desktop Application (WPF)
 	* I think I can make it more efficient just with command line, maybe a website though
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
 4. (Pending) ASP.Net Core Viewer
