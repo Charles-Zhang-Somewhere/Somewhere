@@ -37,6 +37,8 @@ namespace SomewhereDesktop
                 Commands = new Commands(Arguments["dir"]);
             else
                 Commands = new Commands(Directory.GetCurrentDirectory());
+            // Update status
+            StatusText = $"Home Directory: {Commands.HomeDirectory}";
         }
         #endregion
 
@@ -49,6 +51,11 @@ namespace SomewhereDesktop
         /// Commands object
         /// </summary>
         private Commands Commands { get; }
+        #endregion
+
+        #region Public View Properties
+        private string _StatusText;
+        public string StatusText { get => _StatusText; set => SetField(ref _StatusText, value); }
         #endregion
 
         #region Inventory View Properties
