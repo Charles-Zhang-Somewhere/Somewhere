@@ -1,4 +1,5 @@
 ```
+FileSystemWaster for COmmands
 Finish draft GUI
 Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command
 Files command rename to items
@@ -164,6 +165,8 @@ A functional and effective application may not just end here, I have several sim
 	* I think I can make it more efficient just with command line, maybe a website though (End remark: I would do it in CLI, especially since we are going to do auto-complete tag and tweak with some ReadKey() level code - but CLI's support for UNICODE display is arcane and code won't be clean if we do that, so WPF/ASP.Net is better option)
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
 4. (Pending) ASP.Net Core Viewer
+
+Notice to compile and link SomewhereStandard and SQLite we need to uncheck **Prefer 32-bit** for SomewhereDesktop project.
 
 ## Design (CLI Focused, Remove GUI completely - "I hate clicking") (also promotes a more purer experience and enhanced memory capacity, also GUI is I herently a bad and easily abused feature/design by many software developers and is not inherently efficient, even for monitoring purpose? Maybe j should write an article on "when to use GUI - a software development choice", and definitely don't consider users, but purely from the perspective and efficiency of tools) And to be a bit more opinionated - windows has put a great deal of shit into its anti-human GUI and make people stupid (just check out Excels and Office suite with its strange nonintuitove and non standard keyboard shortcuts.) - A great console app (like vim) can be very great, and especially better if it combines some GUI elements (e.g. Unicode support and helpful hints).)
 

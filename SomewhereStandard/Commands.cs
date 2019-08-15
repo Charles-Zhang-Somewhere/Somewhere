@@ -15,12 +15,15 @@ namespace Somewhere
     public class Commands
     {
         #region Constructor
-        public Commands(string workingDirectory)
-            => HomeDirectory = workingDirectory;
+        public Commands(string initialWorkingDirectory)
+            => HomeDirectory = initialWorkingDirectory;
         #endregion
 
         #region Public Properties
-        public string HomeDirectory { get; }
+        /// <summary>
+        /// Get or set working directory
+        /// </summary>
+        public string HomeDirectory { get; set; }
         /// <summary>
         /// Returns a list of all Command methods
         /// </summary>
@@ -804,6 +807,16 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public List<FileRow> GetAllFiles()
             => Connection.ExecuteQuery(@"select * from File").Unwrap<FileRow>();
         /// <summary>
+        /// Get raw list of all configurations
+        /// </summary>
+        public List<ConfigurationRow> GetAllConfigurations()
+            => Connection.ExecuteQuery(@"select * from Configuration").Unwrap<ConfigurationRow>();
+        /// <summary>
+        /// Get raw list of all logs
+        /// </summary>
+        public List<LogRow> GetAllLogs()
+            => Connection.ExecuteQuery(@"select * from Log").Unwrap<LogRow>();
+        /// <summary>
         /// Get joined table between File, Tag and FileTag database tables
         /// </summary>
         public List<FileTagMapping> GetAllFileTagMappings()
@@ -884,6 +897,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     @"CREATE TABLE ""Configuration"" (
 	                    ""Key""	TEXT,
 	                    ""Value""	TEXT,
+                        ""Type""	TEXT,
+                        ""Comment""	TEXT,
 	                    PRIMARY KEY(""Key"")
                     )",
                     @"CREATE TABLE ""Revision"" (
@@ -895,10 +910,10 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
 	                    PRIMARY KEY(""FileID"",""RevisionID"")
                     )",
                     // Assign initial db configuration/status values
-                    @"INSERT INTO Configuration (Key, Value) 
-                        values ('Version', 'V0.0.5')",
-                    @"INSERT INTO Configuration (Key, Value) 
-                        values ('Change Log', 'V0.0.5: Basic implementations.')"
+                    @"INSERT INTO Configuration (Key, Value, Type, Comment) 
+                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')",
+                    @"INSERT INTO Configuration (Key, Value, Type, Comment) 
+                        values ('Change Log', 'V0.0.5: Basic implementations.', 'string', 'A record of implementation changes.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }

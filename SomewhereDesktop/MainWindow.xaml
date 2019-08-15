@@ -6,18 +6,23 @@
         xmlns:local="clr-namespace:SomewhereDesktop"
         mc:Ignorable="d"
         Title="Somewhere Desktop"
-        WindowState="Maximized" WindowStyle="None" AllowsTransparency="False"
-        Closing="Window_Closing"
+        WindowState="Normal" WindowStyle="None" AllowsTransparency="False"
+        Closing="Window_Closing" ResizeMode="CanResizeWithGrip" MouseDown="Window_MouseDown"
         Background="{StaticResource Base0}"
         DataContext="{Binding RelativeSource={RelativeSource self}}">
     <Window.CommandBindings>
+        <!-- Window Commands -->
+        <CommandBinding Command="Close" CanExecute="CloseWindowCommand_CanExecute" Executed="CloseWindowCommand_Executed"/>
+        <CommandBinding Command="Zoom" CanExecute="MaximizeWIndowCommand_CanExecute" Executed="MaximizeWindowCommand_Executed"/>
+        <CommandBinding Command="BrowseBack" CanExecute="HideWindowCommand_CanExecute" Executed="HideWindowCommand_Executed"/>
         <!-- Inventory Commands -->
         <CommandBinding Command="Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
-        <CommandBinding Command="BrowseBack" CanExecute="HideCommand_CanExecute" Executed="HideCommand_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="New" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
+        <!-- Window Commands -->
+        <KeyBinding Key="F11" Command="Zoom"/>
         <!-- Inventory Commands -->
         <KeyBinding Key="F3" Command="Find"/>
         <KeyBinding Key="Esc" Command="BrowseBack"/>
@@ -313,15 +318,17 @@
                 <StackPanel Orientation="Horizontal">
                     <Label x:Name="InventoryTabLabel" Content="Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NotebookTabLabel" Content="Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="LogsTabLabel" Content="Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="SettingsTabLabel" Content="Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
-                    <Button Content="➖" Width="35" Height="35" />
-                    <Button Content="▣" Width="35" Height="35"/>
-                    <Button Content="✖" Width="35" Height="35"/>
+                    <Button Content="➖" Width="35" Height="35" Command="BrowseBack"/>
+                    <Button Content="▣" Width="35" Height="35" Command="Zoom"/>
+                    <Button Content="✖" Width="35" Height="35" Command="Close"/>
                 </DockPanel>
             </Grid>
             <Grid>
+                <!-- Items Panel -->
                 <DockPanel x:Name="InventoryPanel" Visibility="Visible">
                     <Border Style="{StaticResource Panel}">
                         <StackPanel>
@@ -362,6 +369,7 @@
                         </StackPanel>
                     </Border>
                 </DockPanel>
+                <!-- Notebook Panel -->
                 <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
                     <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
                         <DockPanel>
@@ -413,8 +421,21 @@
                         </DockPanel>
                     </Border>
                 </DockPanel>
+                <!-- Logs Panel -->
+                <DockPanel x:Name="LogsPanel" Visibility="Collapsed">
+                    <DockPanel LastChildFill="True">
+                        <TextBox IsReadOnly="True" Text="{Binding LogsText}"/>
+                    </DockPanel>
+                </DockPanel>
+                <!-- Settings Panel -->
                 <DockPanel x:Name="SettingsPanel" Visibility="Collapsed">
-
+                    <DockPanel LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Top">
+                            To edit settings, please use <Bold>CLI (Command Line Interface)</Bold> command `<Italic>config</Italic>`, 
+                            or use <Bold>SQLite DB Browser</Bold> to edit <Italic>Configuration</Italic> table directly.
+                        </TextBlock>
+                        <TextBox IsReadOnly="True" Text="{Binding ConfigurationsText}"/>
+                    </DockPanel>
                 </DockPanel>
             </Grid>
         </DockPanel>

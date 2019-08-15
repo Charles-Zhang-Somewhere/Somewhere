@@ -80,7 +80,7 @@ namespace Somewhere
 
                     // Log the command
                     if (attribute.Logged)
-                        Commands.AddLog(new { Command = commandName, Arguments = arguments, result = builder.ToString() });
+                        Commands.AddLog(new LogEvent { Command = commandName, Arguments = arguments, Result = builder.ToString() });
                 }
                 catch (Exception e) { Console.WriteLine($"{e.InnerException.Message}"); }
             }
