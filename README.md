@@ -36,6 +36,22 @@ For Add *: check and add only if the file is not home database and is not alread
 5. Absolutely self contained
 6. Cutting Edge technology, C#.Net Core based, last for another 100 years.
 7. Dark mode, B/W color scheme
+8. Long and expressive item names as you like: even something like this (notice each line is **real**):
+
+```
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
+This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********".txt
+```
+
+Though names like that is not really recommended - you should name your file whatever way you wish but keep it succint and meaningful so you can easily find it.
 
 **Who should use it**
 

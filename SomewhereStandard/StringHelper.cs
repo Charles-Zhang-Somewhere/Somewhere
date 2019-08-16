@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -70,13 +71,48 @@ namespace StringHelper
         }
 
         /// <summary>
+        /// Strictly escape invalid filename characters into underscore for both Linux and Windows systems;
+        /// This only escapes names, the name might still be invalid to use due to existence of file with same name etc.
+        /// </summary>
+        public static string EscapeFilename(this string v)
+        {
+            // Basic escaping
+            string characterEscaped = 
+                // Linux
+                v.Replace('/', '_')
+                // Windows
+                .Replace('<', '_')
+                .Replace('>', '_')
+                .Replace(':', '_')
+                .Replace('"', '_')
+                .Replace('\\', '_')
+                .Replace('|', '_')
+                .Replace('?', '_')
+                .Replace('*', '_')
+                // We additionally support new lines in file name
+                .Replace('\r', '_')
+                .Replace('\n', '_')
+                // Windows names cannot end with space or dot
+                .TrimEnd()
+                .TrimEnd('.');
+            // Invalid name replacing (i.e. with or without extension)
+            string pureName = Path.GetFileNameWithoutExtension(characterEscaped);
+            string extension = Path.GetExtension(characterEscaped);
+            if (new string[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" }
+                .Contains(pureName.ToUpper()))  // Windows is not case sensitive
+                return $"{pureName}_{extension}";   // Do return as properly cased name for readability
+            else
+                return characterEscaped;
+        }
+
+        /// <summary>
         /// Limit the length of a string
         /// </summary>
         /// <param name="targetLength">Include end filler length</param>
-        public static string Limit(this string v, int targetLength, string endFiller = "...")
+        public static string Limit(this string v, int targetLength, string endFiller = "...", string requiredEnding = null)
         {
-            int actualLength = targetLength - endFiller.Length;
-            return v.Length > actualLength ? v.Substring(0, actualLength) + endFiller : v;
+            int actualLength = targetLength - endFiller.Length - (requiredEnding != null ? requiredEnding.Length : 0);
+            return (v.Length > actualLength) ? v.Substring(0, actualLength) + endFiller + requiredEnding : v + requiredEnding;
         }
 
         /// <summary>

@@ -79,13 +79,89 @@ namespace Somewhere
         public int NoteCount
             => Connection.ExecuteQuery("select count(*) from File where Content is not null").Single<int>();
         public bool FileExistsAtHomeFolder(string filename)
-            => File.Exists(Path.Combine(HomeDirectory, filename));
+            => File.Exists(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
         public bool DirectoryExistsAtHomeFolder(string directoryName)
             => Directory.Exists(Path.Combine(HomeDirectory, directoryName));
         public void DeleteFileFromHomeFolder(string filename)
-            => File.Delete(Path.Combine(HomeDirectory, filename));
-        public void MoveFileInHomeFolder(string filename, string newFilename)
-            => File.Move(Path.Combine(HomeDirectory, filename), Path.Combine(HomeDirectory, newFilename));
+            => File.Delete(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
+        /// <summary>
+        /// Renames a file, also handles name escape and validation
+        /// </summary>
+        public void MoveFileInHomeFolder(int itemID, string itemname, string newItemname)
+        {
+            if (itemname == newItemname)
+                return;
+            File.Move(Path.Combine(HomeDirectory, GetPhysicalName(itemname)),
+                Path.Combine(HomeDirectory, GetNewPhysicalName(newItemname, itemID)));
+        }
+        /// <summary>
+        /// Get physical name with additional information for further processsing
+        /// </summary>
+        public string GetPhysicalName(string itemName, out string escapedNameWithoutExtension, out string extension, out int availableNameLength, int pathLengthLimit = 256)
+        {
+            // Get properly formatted file name first
+            string characterEscapedName = itemName.EscapeFilename();
+            // Shorten file name
+            escapedNameWithoutExtension = Path.GetFileNameWithoutExtension(characterEscapedName);
+            extension = Path.GetExtension(characterEscapedName);
+            availableNameLength = 260 /* Windows MAX PATH */
+                - HomeDirectory.Length /* Folder name/path */
+                - 1 /* Trailing folder slash */
+                - 1 /* Reserved for End-of-Line character*/
+                - extension.Length /* Reserved for extension */;
+            if (availableNameLength <= 0)
+                throw new InvalidOperationException("Not enough available length for file name. Please move your Home folder to a shorter path.");
+            string shortenedName = escapedNameWithoutExtension.Limit(availableNameLength, $"..", extension /* Notic extension already contains a dot*/);  // Shorten and preserve extension
+            // Return expected shortened physical name
+            return shortenedName;
+        }
+        /// <summary>
+        /// Get physical name for the file, escaping all windows and linux special path characters, clamping to allowed system max filepath length
+        /// preserve extension, allow unicode characters, automatically (transparently) handle file name collisions (as long as item name is unique,
+        /// as is required).
+        /// Note due to those effects if home directory is renamed, file is renamed, or home directory is moved to a different location,
+        /// existing filename can become invalid when callling this function again; Caller should handle this gracefully.
+        /// </summary>
+        /// <remarks>
+        /// Notice item names can never have collision, even between folders and files - once they are managed by Somewhere they are treated the same;
+        /// The purpose of this function is to mostly deal with FS file path length and naming convention limit;
+        /// Invalid characters are systematically replaced with '_', and during name shortening if name collisions occur then
+        /// filenames are appended with their database item ID in the format "Shortened name#DDDDDDDD.ext", thus during a (shortened) name collision, it will require 
+        /// at most an additional 9 characters (in addition to shortened text and file extention) for file name;
+        /// If this caused the file's path exceed system length limit, an exception will be thrown.
+        /// </remarks>
+        public string GetPhysicalName(string itemName)
+            => GetPhysicalName(itemName, out _, out _, out _);
+        /// <summary>
+        /// Get physical name for a new file
+        /// </summary>
+        public string GetNewPhysicalName(string newItemname, int itemID, int pathLengthLimit = 256)
+        {
+            string physicalName = GetPhysicalName(newItemname, out string escapedNameWithoutExtension, out string extension, out int availableNameLength, pathLengthLimit);
+            // Get file ID string
+            string idString = $"#{itemID}";
+            // Validate existence
+            if (FileExistsAtHomeFolder(physicalName))
+            {
+                // Get a supposedly unique name
+                string uniqueName = escapedNameWithoutExtension.Limit(availableNameLength, "..", $"{idString}{extension}" /* Notic extension already contains a dot*/);
+                // Check name existence for collision and provide name correction
+                return uniqueName;  // Notice we didn't handle the case when unique name already exist
+            }
+            return physicalName;
+        }
+        /// <summary>
+        /// Get physical path for the file, escaping all windows and linux special path characters, clamping to system allowed file path length,
+        /// preserve extension, allow unicode characters, automatically (transparently) handle file name collisions (as long as item name is unique,
+        /// as is required).
+        /// </summary>
+        public void GetPhysicalPath(string itemname)
+            => Path.Combine(HomeDirectory, GetPhysicalName(itemname));
+        /// <summary>
+        /// Get physical path for a new file
+        /// </summary>
+        public void GetNewPhysicalPath(string itemname, int itemID)
+            => Path.Combine(HomeDirectory, GetNewPhysicalName(itemname, itemID));
         #endregion
 
         #region Constants
@@ -256,22 +332,25 @@ namespace Somewhere
         public IEnumerable<string> MV(params string[] args)
         {
             ValidateArgs(args);
-            string filename = args[0];
+            string itemname = args[0];
             string newFilename = args[1];
-            if (!IsFileInDatabase(filename))
-                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            int? id = GetFileID(itemname);
+            if (id == null)
+                throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
             if (FileExistsAtHomeFolder(newFilename) || IsFileInDatabase(newFilename))
-                throw new ArgumentException($"Filename `{filename}` is already used.");
-            // Update in DB
-            RenameFile(filename, newFilename);
+                throw new ArgumentException($"Itemname `{itemname}` is already used.");
             // Move in filesystem (if it's a physical file rather than a virtual file)
-            if (FileExistsAtHomeFolder(filename))
+            string[] result = null;
+            if (FileExistsAtHomeFolder(itemname))
             {
-                MoveFileInHomeFolder(filename, newFilename);
-                return new string[] { $"File (Physical) `{filename}` has been renamed to `{newFilename}`." };
+                MoveFileInHomeFolder(id.Value, itemname, newFilename);
+                result = new string[] { $"File (Physical) `{itemname}` has been renamed to `{newFilename}`." };
             }
             else
-                return new string[] { $"Virtual file `{filename}` has been renamed to `{newFilename}`." };
+                result = new string[] { $"Virtual file `{itemname}` has been renamed to `{newFilename}`." };
+            // Update in DB
+            RenameFile(itemname, newFilename);
+            return result;
         }
         [Command("Move Tags, renames specified tag.",
             "If source tag doesn't exist in database then will issue a warning instead of doing anything. " +
@@ -324,24 +403,28 @@ namespace Somewhere
         public IEnumerable<string> RM(params string[] args)
         {
             ValidateArgs(args);
-            string filename = args[0];
-            if (!FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified file `{filename}` doesn't exist on disk.");
-            if (!IsFileInDatabase(filename))
-                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
-            // Delete from DB
-            RemoveFile(filename);
+            string itemname = args[0];
+            // Validate file existence (in database)
+            int? id = GetFileID(itemname);
+            if (id == null)
+                throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
+            if (!IsFileInDatabase(itemname))
+                throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
             // Delete from filesystem
+            string[] result = null;
             if (args.Length == 2 && args[1] == "-f")
             {
-                DeleteFileFromHomeFolder(filename);
-                return new string[] { $"File `{filename}` is forever gone (deleted)." };
+                DeleteFileFromHomeFolder(itemname);
+                result = new string[] { $"File `{itemname}` is forever gone (deleted)." };
             }
             else
             {
-                MoveFileInHomeFolder(filename, filename + "_deleted");
-                return new string[] { $"File `{filename}` is marked as \"_deleted\"." };
+                MoveFileInHomeFolder(id.Value, itemname, itemname + "_deleted");
+                result = new string[] { $"File `{itemname}` is marked as \"_deleted\"." };
             }
+            // Delete from DB
+            RemoveFile(itemname);
+            return result;
         }
         [Command("Removes a tag.", 
             "This command deletes the tag from the database, there is no going back.")]
@@ -392,16 +475,16 @@ namespace Somewhere
             result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
                 $"{directories.Count()} {(directories.Count() > 1 ? "directories" : "directory")} on disk.");
             result.Add($"------------");
-            int newCount = 0;
+            int newFilesCount = 0;
             foreach (string file in files)
             {
                 if (!managed.ContainsKey(file))
                 {
                     result.Add($"[New] {file}");
-                    newCount++;
+                    newFilesCount++;
                 }
             }
-            result.Add($"{newCount} new. " + $"{managed.Count} {(managed.Count > 1 ? "items" : "item")} in database.");
+            result.Add($"{newFilesCount} new files. " + $"{managed.Count} {(managed.Count > 1 ? "items" : "item")} in database.");
             return result;
         }
         [Command("Tag a specified file.", 
@@ -646,7 +729,7 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
             => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
                 new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
         /// <summary>
-        /// Get ID of file in database, this can sometimes be useful, though practical application shouldn't depend on it
+        /// Get ID of file (item) in database, this can sometimes be useful, though practical application shouldn't depend on it
         /// and should treat it as transient
         /// </summary>
         public int? GetFileID(string filename)

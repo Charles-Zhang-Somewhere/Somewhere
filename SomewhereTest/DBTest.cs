@@ -78,9 +78,9 @@ namespace SomewhereTest
         }
 
         [Fact]
-        public void BaseTestLocationContainsExecutable()
+        public void BaseTestLocationIsInBinaryOutputFolder()
         {
-            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput" && File.Exists("Somewhere.exe"));
+            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput");
         }
 
         [Fact]
@@ -91,6 +91,92 @@ namespace SomewhereTest
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");            
             Assert.True(!TestFileExists("My Note"));
+        }
+        [Fact]
+        public void GetPhysicalNameShouldWorkForVirtualNotes()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Create("My Note", "Initial Content", "my tag");
+            Assert.True(!TestFileExists("My Note"));
+            // Should not throw exception
+            Commands.GetPhysicalName("My Note");
+        }
+        [Fact]
+        public void GetPhysicalNameShouldNotRaiseExceptionsForUnmanagedFiles()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Assert.True(TestFileExists("File.txt"));
+            // This is pure string function so it should just run fine
+            Commands.GetPhysicalName("File.txt");
+        }
+        [Fact]
+        public void GetPhysicalNameShouldProperlyEscapeSpecialCharacters()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Assert.Equal("Hello _World_.txt", Commands.GetPhysicalName("Hello \"World\".txt"));
+        }
+        [Fact]
+        public void GetPhysicalNameShouldProperlyHandleLongNames()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Commands.Add("File.txt");
+            string longItemName = @"This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********""
+This is /my file/ in Somewhere 
+so I should be able to do <anything> I want with it \\including ""!!!!????**********"".txt";
+            Commands.MoveFileInHomeFolder(Commands.GetFileID("File.txt").Value, "File.txt", longItemName);
+            string escapedName = // A simple very specific logic for expected properly formatted name string
+                longItemName.Substring(0, 260 - 1 /* Trailing null */ - Directory.GetCurrentDirectory().Length)
+                .Replace('/', '_')
+                .Replace('<', '_')
+                .Replace('>', '_')
+                .Replace('\\', '_')
+                .Replace('"', '_')
+                .Replace('?', '_')
+                .Replace('*', '_')
+                .Replace('\r', '_')
+                .Replace('\n', '_');
+            string escaped = Commands.GetPhysicalName(longItemName);
+            Assert.True(escapedName.IndexOf(escaped.Substring(0, escaped.Length - "...txt".Length)) == 0);
+            Assert.True(TestFileExists(escaped));
+        }
+
+        [Fact]
+        public void GetNewPhysicalNameShouldProperlyHandleNameCollisions()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Commands.Doc("File_.txt");
+            Assert.Equal("File_#1.txt", Commands.GetNewPhysicalName("File*.txt", 1));
         }
 
         [Fact]
@@ -106,7 +192,39 @@ namespace SomewhereTest
             Commands.AddLog("This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
             Assert.Equal(1, Commands.LogCount);
         }
-
+        [Fact]
+        public void MoveFileInHomeFolderShouldHandleInvalidCharacterEscape()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("test.txt");
+            Commands.Add("test.txt");
+            Commands.MoveFileInHomeFolder(1 /* Expected ID for new DB */, "test.txt", "test*.txt");
+            Commands.MoveFileInHomeFolder(1, "test*.txt", "test*//WOW.");
+            Assert.True(TestFileExists("test___WOW"));  // Notice this is not user level detail but is documented and standardized
+        }
+        [Fact]
+        public void MoveFileInHomeFolderShouldNotWorkForUnmanagedFile()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("test.txt");
+            Assert.Throws<InvalidOperationException>(() => Commands.MV("test.txt", "test*.txt"));
+        }
+        [Fact]
+        public void MoveFileInHomeFolderShouldHandleNameCollisionGracefully()
+        {
+            CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = CreateNewCommands();
+            Commands.New();
+            Commands.Doc("test.txt");
+            Commands.Add("test.txt");
+            Commands.Doc("test_.txt"); // Represent a manually added, non-managed file which can collide with managed file later
+            Commands.MoveFileInHomeFolder(Commands.GetFileID("test.txt").Value, "test.txt", "test*.txt");
+            Assert.True(TestFileExists("test_#1.txt"));  // Notice this is not user level detail but is documented and standardized
+        }
         [Fact]
         public void NewCommandGeneratesADBFile()
         {
@@ -385,7 +503,7 @@ namespace SomewhereTest
         private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
         {
             // Make sure we (the runtime) are in the test folder
-            BaseTestLocationContainsExecutable();
+            BaseTestLocationIsInBinaryOutputFolder();
 
             if (Directory.Exists(testFolderName))
                 Directory.Delete(testFolderName, true);

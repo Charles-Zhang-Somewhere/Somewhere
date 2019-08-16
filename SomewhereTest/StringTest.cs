@@ -53,5 +53,13 @@ namespace SomewhereTest
             Assert.Empty(new string[] { "t1", "t2", "hello world", "how's your day", "_oh' my god_" }
                 .Except("t1, t2, hello world, how's your day, \"oh' my god\"".SplitTags()));
         }
+
+        [Fact]
+        public void ShouldEscapeInvalidFilenames()
+        {
+            Assert.Equal("My_File", "My\\File".EscapeFilename());
+            Assert.Equal("_______.text", "<>?|\\/*.text".EscapeFilename());
+            Assert.Equal("aux_.text", "aux.text".EscapeFilename());   // windows is not case sensitive
+        }
     }
 }

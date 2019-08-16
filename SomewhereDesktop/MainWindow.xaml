@@ -87,7 +87,7 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="2"/>
         </Style>
-        <Style x:Key="Status" TargetType="Label">
+        <Style x:Key="Info" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="12"/>
@@ -326,6 +326,8 @@
                     <Label x:Name="InventoryTabLabel" Content="Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NotebookTabLabel" Content="Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="LogsTabLabel" Content="Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="NTFSSearchTabLabel" Content="NTFSSearch" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="StatusTabLabel" Content="Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="SettingsTabLabel" Content="Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
@@ -336,9 +338,9 @@
             </Grid>
             <Grid>
                 <DockPanel LastChildFill="True">
-                    <!-- Status Bar -->
-                    <DockPanel DockPanel.Dock="Bottom">
-                        <Label Content="{Binding StatusText}" Style="{StaticResource Status}" VerticalAlignment="Bottom"/>
+                    <!-- Info Bar -->
+                    <DockPanel DockPanel.Dock="Bottom" LastChildFill="True">
+                        <Label Content="{Binding InfoText}" Style="{StaticResource Info}"/>
                     </DockPanel>
                     <!-- Tabs -->
                     <Grid>
@@ -439,6 +441,12 @@
                         <DockPanel x:Name="LogsPanel" Visibility="Collapsed">
                             <DockPanel LastChildFill="True">
                                 <TextBox IsReadOnly="True" Text="{Binding LogsText}"/>
+                            </DockPanel>
+                        </DockPanel>
+                        <!-- Status Panel -->
+                        <DockPanel x:Name="StatusPanel" Visibility="Collapsed">
+                            <DockPanel LastChildFill="True">
+                                <TextBox IsReadOnly="True" Text="{Binding StatusText}"/>
                             </DockPanel>
                         </DockPanel>
                         <!-- Settings Panel -->

@@ -37,8 +37,8 @@ namespace SomewhereDesktop
                 Commands = new Commands(Arguments["dir"]);
             else
                 Commands = new Commands(Directory.GetCurrentDirectory());
-            // Update status
-            StatusText = $"Home Directory: {Commands.HomeDirectory}";
+            // Update info
+            InfoText = $"Home Directory: {Commands.HomeDirectory}";
         }
         #endregion
 
@@ -54,8 +54,8 @@ namespace SomewhereDesktop
         #endregion
 
         #region Public View Properties
-        private string _StatusText;
-        public string StatusText { get => _StatusText; set => SetField(ref _StatusText, value); }
+        private string _InfoText;
+        public string InfoText { get => _InfoText; set => SetField(ref _InfoText, value); }
         #endregion
 
         #region Inventory View Properties
@@ -107,6 +107,11 @@ namespace SomewhereDesktop
         #region Logs View Properties
         private string _LogsText;
         public string LogsText { get => _LogsText; set => SetField(ref _LogsText, value); }
+        #endregion
+
+        #region Status View Properties
+        private string _StatusText;
+        public string StatusText { get => _StatusText; set => SetField(ref _StatusText, value); }
         #endregion
 
         #region Setting View Properties
@@ -173,8 +178,8 @@ namespace SomewhereDesktop
             Style activeTitle = FindResource("Title") as Style;
             Style inactiveTitle = FindResource("TitleDim") as Style;
             // Reset styles
-            InventoryTabLabel.Style = NotebookTabLabel.Style = SettingsTabLabel.Style = LogsPanel.Style = inactiveTitle;
-            InventoryPanel.Visibility = NotebookPanel.Visibility = SettingsPanel.Visibility = LogsPanel.Visibility = Visibility.Collapsed;
+            InventoryTabLabel.Style = NotebookTabLabel.Style = SettingsTabLabel.Style = LogsTabLabel.Style = StatusTabLabel.Style = inactiveTitle;
+            InventoryPanel.Visibility = NotebookPanel.Visibility = SettingsPanel.Visibility = LogsPanel.Visibility = StatusPanel.Visibility = Visibility.Collapsed;
             // Toggle active panels, update header styles
             label.Style = activeTitle;
             if (label == InventoryTabLabel)
@@ -204,6 +209,14 @@ namespace SomewhereDesktop
                 }
                 ConfigurationsText = builder.ToString();
                 SettingsPanel.Visibility = Visibility.Visible;
+            }
+            else if(label == StatusTabLabel)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var line in Commands.Status())
+                    builder.AppendLine(line);
+                StatusText = builder.ToString();
+                StatusPanel.Visibility = Visibility.Visible;
             }
             e.Handled = true;
         }
