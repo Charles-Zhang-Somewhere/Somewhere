@@ -1,4 +1,6 @@
 ```
+Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors
+PopupSelectionWindow
 FileSystemWaster for COmmands
 Finish draft GUI
 Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command

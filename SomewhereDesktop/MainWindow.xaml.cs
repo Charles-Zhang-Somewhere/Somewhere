@@ -178,8 +178,12 @@ namespace SomewhereDesktop
             Style activeTitle = FindResource("Title") as Style;
             Style inactiveTitle = FindResource("TitleDim") as Style;
             // Reset styles
-            InventoryTabLabel.Style = NotebookTabLabel.Style = SettingsTabLabel.Style = LogsTabLabel.Style = StatusTabLabel.Style = inactiveTitle;
-            InventoryPanel.Visibility = NotebookPanel.Visibility = SettingsPanel.Visibility = LogsPanel.Visibility = StatusPanel.Visibility = Visibility.Collapsed;
+            InventoryTabLabel.Style = NotebookTabLabel.Style = SettingsTabLabel.Style 
+                = LogsTabLabel.Style = StatusTabLabel.Style = NTFSSearchTabLabel.Style
+                = inactiveTitle;
+            InventoryPanel.Visibility = NotebookPanel.Visibility = SettingsPanel.Visibility 
+                = LogsPanel.Visibility = StatusPanel.Visibility = NTFSSearchPanel.Visibility
+                = Visibility.Collapsed;
             // Toggle active panels, update header styles
             label.Style = activeTitle;
             if (label == InventoryTabLabel)
@@ -197,6 +201,10 @@ namespace SomewhereDesktop
                     builder.AppendLine($"{$"{config.Key}:",-60}{config.Value}{(string.IsNullOrEmpty(config.Comment) ? "" : $" - {config.Comment}")}");
                 ConfigurationsText = builder.ToString();
                 SettingsPanel.Visibility = Visibility.Visible;
+            }
+            else if (label == NTFSSearchTabLabel)
+            {
+                NTFSSearchPanel.Visibility = Visibility.Visible;
             }
             else if(label == LogsTabLabel)
             {
