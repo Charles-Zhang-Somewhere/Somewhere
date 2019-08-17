@@ -740,8 +740,9 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Add files in batch with initial contents (for virtual notes)
         /// </summary>
-        public void AddFiles(Dictionary<string, string> filenamesAndContents)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", filenamesAndContents.Select( fn=> new { name = fn.Key, content = fn.Value, date = DateTime.Now.ToString("yyyy-MM-dd") }));
+        public void AddFiles(IEnumerable<Tuple<string, string>> filenamesAndContents)
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", 
+                filenamesAndContents.Select( fn=> new { name = fn.Item1, content = fn.Item2, date = DateTime.Now.ToString("yyyy-MM-dd") }));
         /// <summary>
         /// Remove a file entry from database
         /// </summary>
@@ -982,9 +983,31 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public List<TagRow> GetAllTags()
             => Connection.ExecuteQuery(@"select * from Tag").Unwrap<TagRow>();
         /// <summary>
-        /// Get raw list of all files (exclude content meta)
+        /// Get raw list of all files
         /// </summary>
         public List<FileRow> GetAllFiles()
+            => Connection.ExecuteQuery(@"select * from File where Name is not null and Content is null
+                and Name not like '%/' and Name not like '%\'").Unwrap<FileRow>();
+        /// <summary>
+        /// Get raw list of all notes
+        /// </summary>
+        public List<FileRow> GetAllNotes()
+            => Connection.ExecuteQuery(@"select * from File where Content is not null").Unwrap<FileRow>();
+        /// <summary>
+        /// Get raw list of all folders
+        /// </summary>
+        public List<FileRow> GetAllFolders()
+            => Connection.ExecuteQuery(@"select * from File where Name is not null and Content is null
+                and (Name like '%/' or Name like '%\')").Unwrap<FileRow>();
+        /// <summary>
+        /// Get raw list of all knowledge
+        /// </summary>
+        public List<FileRow> GetAllKnolwedgGetAllKnowledge()
+            => Connection.ExecuteQuery(@"select * from File where Name is null and Content is not null").Unwrap<FileRow>();
+        /// <summary>
+        /// Get raw list of all items
+        /// </summary>
+        public List<FileRow> GetAllItems()
             => Connection.ExecuteQuery(@"select * from File").Unwrap<FileRow>();
         /// <summary>
         /// Get raw list of all configurations
@@ -1059,7 +1082,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     @"CREATE TABLE ""File"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
 	                    ""Name""	TEXT UNIQUE,
-	                    ""Content""	BLOB,
+	                    ""Content""	TEXT,
 	                    ""Meta""	TEXT,
                         ""EntryDate""	TEXT
                     )",
@@ -1085,7 +1108,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
 	                    ""FileID""	INTEGER,
 	                    ""RevisionID""	INTEGER,
 	                    ""RevisionTime""	TEXT,
-	                    ""Content""	BLOB,
+	                    ""Binary""	BLOB,
 	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID""),
 	                    PRIMARY KEY(""FileID"",""RevisionID"")
                     )",

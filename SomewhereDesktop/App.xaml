@@ -41,6 +41,9 @@
         <SolidColorBrush x:Key="Accent2" Color="#358E8E"/>
         <SolidColorBrush x:Key="Accent1" Color="#123E3E"/>
         <SolidColorBrush x:Key="Accent0" Color="#051515"/>
+        
+        <!-- Tag Colors -->
+        <SolidColorBrush x:Key="DefaultTagColor" Color="#EECC66"/>
 
         <!-- Window Control Elements -->
         <Style TargetType="Button">
@@ -84,6 +87,23 @@
             <Setter Property="Background" Value="{StaticResource Base0}"/>
             <Setter Property="BorderBrush" Value="{StaticResource Base1}"/>
         </Style>
+        <Style x:Key="TagButton" TargetType="Border">
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="{StaticResource DefaultTagColor}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style x:Key="KnowledgeRegionHighlight" TargetType="Border">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="{StaticResource Base1}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Base0}"/>
+        </Style>
         <Style TargetType="GridSplitter">
             <Setter Property="Width" Value="5"/>
             <Setter Property="Background" Value="{StaticResource Base1}"/>
@@ -114,12 +134,36 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="2"/>
         </Style>
+        <Style x:Key="Tag" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
         <Style x:Key="Info" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Margin" Value="2"/>
+        </Style>
+        <Style x:Key="KnowledgeRegionMark" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="MinWidth" Value="85"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="LayoutTransform">
+                <Setter.Value>
+                    <RotateTransform Angle="-90"/>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style TargetType="ListView">
             <Setter Property="FontFamily" Value="Segoe UI"/>
@@ -180,6 +224,25 @@
                     <Setter Property="Background" Value="{StaticResource Accent0}" />
                 </Trigger>
             </Style.Triggers>
+        </Style>
+        <Style x:Key="WrapList" TargetType="ListView">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="MinWidth" Value="200"/>
+            <Setter Property="MaxHeight" Value="450"/>
+            <!-- Don't show horizontal scrollbar and force wrapping -->
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="MinWidth" Value="150"/>
@@ -310,7 +373,7 @@
         <!-- SimpleStyles: ComboBoxItem -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="SnapsToDevicePixels" Value="true"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
             <Setter Property="OverridesDefaultStyle" Value="true"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -320,7 +383,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="true">
-                                <Setter TargetName="Border" Property="Background" Value="#FF4F4F4F"/>
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource Base2}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="false">
                                 <Setter Property="Foreground" Value="#888888"/>

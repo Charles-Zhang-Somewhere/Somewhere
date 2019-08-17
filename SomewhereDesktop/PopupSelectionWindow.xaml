@@ -6,10 +6,10 @@
         xmlns:local="clr-namespace:SomewhereDesktop"
         mc:Ignorable="d"
         Title="PopupSelectionWindow" 
-        WindowState="Normal" WindowStyle="None" AllowsTransparency="False"
+        WindowState="Normal" WindowStyle="None" AllowsTransparency="False" ShowInTaskbar="False"
         ResizeMode="NoResize" BorderThickness="2" BorderBrush="{StaticResource base02}"
         Background="{StaticResource Base0}" DataContext="{Binding RelativeSource={RelativeSource self}}">
     <Grid>
-        <ListView/>
+        <ListView ItemsSource="{Binding Options}"/>
     </Grid>
 </Window>

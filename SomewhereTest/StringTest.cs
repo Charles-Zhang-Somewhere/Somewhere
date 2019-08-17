@@ -48,6 +48,13 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void SystemPathGetExtensionWorksOnMultiline()
+        {
+            string multiLineName = "hello\nworld.txt";
+            Assert.Equal(".txt", System.IO.Path.GetExtension(multiLineName));
+        }
+
+        [Fact]
         public void SplitTags()
         {
             Assert.Empty(new string[] { "t1", "t2", "hello world", "how's your day", "_oh' my god_" }

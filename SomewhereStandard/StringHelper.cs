@@ -120,7 +120,8 @@ namespace StringHelper
         /// Split a comma delimited string of tags into array, lower cased and removed empty
         /// </summary>
         public static IEnumerable<string> SplitTags(this string v)
-            => v.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
-            .Where(t => !string.IsNullOrEmpty(t)); // Skip empty or white space entries
+            => v?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
+            .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
+            ?? new string[] { };    // Return empty for null string
     }
 }

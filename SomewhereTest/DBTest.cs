@@ -250,46 +250,6 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         }
 
         [Fact]
-        public void PerformanceTest()
-        {
-            // Configurations
-            int testSetSelector = 1;
-            List<Tuple<int, int, int, int>> testSets = new List<Tuple<int, int, int, int>>()
-            {
-                // File count, tag count, note count, file tag count
-                new Tuple<int, int, int, int>(50000, 1000, 3000, 10),   // Takes around 4 min including deleting files
-                new Tuple<int, int, int, int>(5000, 100, 300, 10)   // Currently using
-            };
-            int fileCount = testSets[testSetSelector].Item1;
-            int tagCount = testSets[testSetSelector].Item2;
-            int noteCount = testSets[testSetSelector].Item3;
-            int fileTagCount = testSets[testSetSelector].Item4;
-            Random rand = new Random();
-
-            Helper.CleanOrCreateTestFolderRemoveAllFiles();
-            // Generate tags and filenames
-            List<string> tags = Enumerable.Range(1, tagCount).Select(i => Guid.NewGuid().ToString()).ToList();
-            List<string> names = Enumerable.Range(1, fileCount).Select(i => Guid.NewGuid().ToString()).ToList();
-            // Generate database
-            Commands Commands = Helper.CreateNewCommands();
-            Commands.New();
-            // Add virtual notes
-            string[] tempTag = new string[] { "virtual notes" };
-            Commands.AddFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => "Initial Content..."));
-            Commands.AddTagsToFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => tempTag));
-            // Add physicla files
-            names.ForEach(f => File.Create(Helper.GetFilePath(f)).Dispose());
-            Commands.AddFiles(names);
-            // Assign tags
-            Commands.AddTagsToFiles(names.ToDictionary( n => n, n => Enumerable.Range(1, rand.Next(fileTagCount)).Select(i => rand.Next(tagCount)).Select(i => tags[i]).ToArray()));
-
-            // Assertions
-            Assert.Equal(fileCount + noteCount, Commands.FileCount);
-            Assert.True(Commands.TagCount >= fileTagCount);
-            Assert.Equal(noteCount, Commands.NoteCount);
-        }
-
-        [Fact]
         public void ShouldBeAbleToRenameVirtualFile()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();

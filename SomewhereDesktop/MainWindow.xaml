@@ -15,6 +15,8 @@
         <CommandBinding Command="Close" CanExecute="CloseWindowCommand_CanExecute" Executed="CloseWindowCommand_Executed"/>
         <CommandBinding Command="Zoom" CanExecute="MaximizeWIndowCommand_CanExecute" Executed="MaximizeWindowCommand_Executed"/>
         <CommandBinding Command="BrowseBack" CanExecute="HideWindowCommand_CanExecute" Executed="HideWindowCommand_Executed"/>
+        <!-- Repository Commands -->
+        <CommandBinding Command="Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
         <!-- Inventory Commands -->
         <CommandBinding Command="Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <!-- Notebook Commands -->
@@ -23,6 +25,8 @@
     <Window.InputBindings>
         <!-- Window Commands -->
         <KeyBinding Key="F11" Command="Zoom"/>
+        <!-- Repository Commands -->
+        <KeyBinding Key="F1" Command="Open"/>
         <!-- Inventory Commands -->
         <KeyBinding Key="F3" Command="Find"/>
         <KeyBinding Key="Esc" Command="BrowseBack"/>
@@ -45,6 +49,7 @@
                 <StackPanel Orientation="Horizontal">
                     <Label x:Name="InventoryTabLabel" Content="Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NotebookTabLabel" Content="Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="KnowledgeTabLabel" Content="Knowledge" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="LogsTabLabel" Content="Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NTFSSearchTabLabel" Content="NTFSSearch" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="StatusTabLabel" Content="Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
@@ -66,13 +71,14 @@
                     <Grid>
                         <!-- Items Panel -->
                         <DockPanel x:Name="InventoryPanel" Visibility="Visible">
+                            <!-- Items List Region -->
                             <Border Style="{StaticResource Panel}">
                                 <StackPanel>
                                     <DockPanel>
                                         <Label Content="Search Name"/>
-                                        <TextBox/>
+                                        <TextBox Text="{Binding SearchNameKeyword, UpdateSourceTrigger=PropertyChanged}"/>
                                         <Label Content="Type Filter"/>
-                                        <ComboBox/>
+                                        <ComboBox ItemsSource="{Binding TypeFilters}" SelectedItem="{Binding SelectedTypeFilter}"/>
                                     </DockPanel>
                                     <ListView ItemsSource="{Binding Items}" SelectionMode="Single"
                                               SelectedItem="{Binding ActiveItem}">
@@ -86,46 +92,67 @@
                                     </ListView>
                                 </StackPanel>
                             </Border>
+                            <!-- Tag Search Region -->
                             <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <Label Content="Tag Filters"/>
-                                        <ListView />
+                                        <ListView ItemsSource="{Binding TagFilters}"/>
                                     </StackPanel>
                                     <DockPanel LastChildFill="True">
                                         <Label Content="Search Tag"/>
-                                        <TextBox/>
+                                        <TextBox Text="{Binding SearchTagKeyword}"/>
                                     </DockPanel>
-                                    <StackPanel>
+                                    <DockPanel>
                                         <Label Content="Tags" Style="{StaticResource Header}"/>
-                                        <ListView />
-                                    </StackPanel>
+                                        <ListView ItemsSource="{Binding Tags}" Style="{StaticResource WrapList}">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Style="{StaticResource TagButton}">
+                                                        <Label Content="{Binding}" Style="{StaticResource Tag}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+                                    </DockPanel>
                                 </StackPanel>
                             </Border>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="7*"/>
-                                    <ColumnDefinition Width="5"/>
-                                    <ColumnDefinition Width="3*"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Style="{StaticResource Panel}" Grid.Column="0">
-                                    <!-- Preview Area -->
-                                </Border>
-                                <GridSplitter Grid.Column="1"/>
-                                <Border Style="{StaticResource Panel}" Grid.Column="2">
-                                    <DockPanel>
-                                        <DockPanel DockPanel.Dock="Top">
-                                            <Label Content="Name" />
-                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemName}"/>
+                            <DockPanel LastChildFill="True">
+                                <!-- Actions Region -->
+                                <DockPanel DockPanel.Dock="Bottom">
+                                    <StackPanel>
+                                        <Button Content="Open" Command="Open"/>
+                                    </StackPanel>
+                                    <StackPanel>
+
+                                    </StackPanel>
+                                </DockPanel>
+                                <!-- Item Preview Region -->
+                                <Grid DockPanel.Dock="Top">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="7*"/>
+                                        <ColumnDefinition Width="5"/>
+                                        <ColumnDefinition Width="3*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource Panel}" Grid.Column="0">
+                                        <!-- Preview Area -->
+                                    </Border>
+                                    <GridSplitter Grid.Column="1"/>
+                                    <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                        <DockPanel>
+                                            <DockPanel DockPanel.Dock="Top">
+                                                <Label Content="Name" />
+                                                <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemName}"/>
+                                            </DockPanel>
+                                            <DockPanel DockPanel.Dock="Top">
+                                                <Label Content="Tags"/>
+                                                <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemTags}"/>
+                                            </DockPanel>
+                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
                                         </DockPanel>
-                                        <DockPanel DockPanel.Dock="Top">
-                                            <Label Content="Tags"/>
-                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemTags}"/>
-                                        </DockPanel>
-                                        <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
-                                    </DockPanel>
-                                </Border>
-                            </Grid>
+                                    </Border>
+                                </Grid>
+                            </DockPanel>
                         </DockPanel>
                         <!-- Notebook Panel -->
                         <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
@@ -178,6 +205,52 @@
                                     <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteContent}" Style="{StaticResource Content}"/>
                                 </DockPanel>
                             </Border>
+                        </DockPanel>
+                        <!-- Knowledge Panel -->
+                        <DockPanel x:Name="KnowledgePanel" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource Panel}" Grid.Column="0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="8*"/>
+                                            <RowDefinition Height="135"/>
+                                            <RowDefinition Height="2*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="65"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- Region Labels -->
+                                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource KnowledgeRegionHighlight}">
+                                            <Label Content="Up" Style="{StaticResource KnowledgeRegionMark}"/>
+                                        </Border>
+                                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource KnowledgeRegionHighlight}">
+                                            <Label Content="Current"  Style="{StaticResource KnowledgeRegionMark}"/>
+                                        </Border>
+                                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource KnowledgeRegionHighlight}">
+                                            <Label Content="Down" Style="{StaticResource KnowledgeRegionMark}"/>
+                                        </Border>
+                                        <!-- Region Tags and Texts -->
+                                        <ListView Grid.Row="0" Grid.Column="1"/>
+                                        <TextBox IsReadOnly="True" Grid.Row="1" Grid.Column="1"/>
+                                        <DockPanel LastChildFill="True"  Grid.Row="2" Grid.Column="1">
+                                            <!-- Tags List -->
+                                            <ListView/>
+                                            <!-- Notes List -->
+                                            <ListView/>
+                                        </DockPanel>
+                                    </Grid>
+                                </Border>
+                                <GridSplitter Grid.Column="1"/>
+                                <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                    
+                                </Border>
+                            </Grid>
                         </DockPanel>
                         <!-- Logs Panel -->
                         <DockPanel x:Name="LogsPanel" Visibility="Collapsed">

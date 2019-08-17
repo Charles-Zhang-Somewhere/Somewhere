@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -16,7 +17,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using Somewhere;
+using StringHelper;
 
 namespace SomewhereDesktop
 {
@@ -30,17 +33,30 @@ namespace SomewhereDesktop
         {
             InitializeComponent();
 
+            // Create popup resource
+            Popup = new PopupSelectionWindow();
+            // Create background worker search queue
+            SearchKeywords = new ConcurrentBag<string>();
             // Parse command line arguments
             Arguments = ParseCommandlineArguments();
             // Create Commands object
             if (Arguments.ContainsKey("dir"))
-                Commands = new Commands(Arguments["dir"]);
+                OpenRepository(Arguments["dir"]);
             else
-                Commands = new Commands(Directory.GetCurrentDirectory());
+                OpenRepository(Directory.GetCurrentDirectory());
+        }
+        private void OpenRepository(string homeFolderpath)
+        {
+            if (Commands != null)
+                Commands.Dispose();
+
+            // Open a new one
+            Commands = new Commands(homeFolderpath);
             // Initialize items
-            Items = new ObservableCollection<FileItemObjectModel>(
-                Commands.GetFileDetails().Select(f => new FileItemObjectModel(f)));
-            Notes = new ObservableCollection<FileItemObjectModel>(Items.Where(i => i.Name == null || i.Content != null));
+            RefreshAllItems();
+            RefreshItems();
+            RefreshNotes();
+            RefreshTags();
             // Update info
             InfoText = $"Home Directory: {Commands.HomeDirectory}; {Items.Count} items.";
         }
@@ -54,7 +70,50 @@ namespace SomewhereDesktop
         /// <summary>
         /// Commands object
         /// </summary>
-        private Commands Commands { get; }
+        private Commands Commands { get; set; }
+        /// <summary>
+        /// An in-memory cache of all items
+        /// </summary>
+        private List<FileItemObjectModel> AllItems { get; set; }
+        #endregion
+
+        #region Private View Routines
+        private void RefreshAllItems()
+        {
+            // Update items list
+            AllItems = Commands.GetFileDetails().Select(f => new FileItemObjectModel(f)).ToList();
+            // Update type filters
+            TypeFilters = new ObservableCollection<string>(AllItems
+                .Select(i => GetItemExtensionType(i.Name)).Distinct().OrderBy(f => f));
+            TypeFilters.Insert(0, "");    // Empty filter cleans filtering
+        }
+        private string GetItemExtensionType(string name)
+        {
+            // Knowledge
+            if (name == null)
+                return "Knowledge";
+            // Folder
+            else if (name.EndsWith("/") || name.EndsWith("\\"))
+                return "Folder";
+            else
+            {
+                string extension = System.IO.Path.GetExtension(name);
+                if (string.IsNullOrEmpty(extension))
+                    return "None";  // Can be either virtual note or file without extension
+                else
+                    return extension;
+            }
+        }
+        private void RefreshItems()
+            => Items = new ObservableCollection<FileItemObjectModel>(AllItems);
+        private void RefreshNotes()
+            => Notes = new ObservableCollection<FileItemObjectModel>(AllItems
+                .Where(i => i.Name == null || i.Content != null));
+        private void RefreshTags()
+        {
+            // Update tags
+            Tags = new ObservableCollection<string>(Items.SelectMany(t => t.Tags.SplitTags()).Distinct());
+        }
         #endregion
 
         #region Public View Properties
@@ -62,7 +121,7 @@ namespace SomewhereDesktop
         public string InfoText { get => _InfoText; set => SetField(ref _InfoText, value); }
         #endregion
 
-        #region Items View Properties
+        #region Inventory View Properties
         private ObservableCollection<FileItemObjectModel> _Items;
         /// <summary>
         /// Collection of items
@@ -71,6 +130,63 @@ namespace SomewhereDesktop
         {
             get => _Items;
             set => SetField(ref _Items, value);
+        }
+        private string _SelectedTypeFilter;
+        public string SelectedTypeFilter
+        {
+            get => _SelectedTypeFilter;
+            set
+            {
+                SetField(ref _SelectedTypeFilter, value);
+                if (!string.IsNullOrEmpty(_SelectedTypeFilter))
+                    Items = new ObservableCollection<FileItemObjectModel>(
+                        AllItems.Where(i => GetItemExtensionType(i.Name) == _SelectedTypeFilter));
+                else
+                    RefreshItems();
+            }
+        }
+        private ObservableCollection<string> _TypeFilters;
+        public ObservableCollection<string> TypeFilters { get => _TypeFilters; set => SetField(ref _TypeFilters, value); }
+        private ObservableCollection<string> _TagFilters;
+        public ObservableCollection<string> TagFilters
+        {
+            get => _TagFilters;
+            set => SetField(ref _TagFilters, value);
+        }
+        private ObservableCollection<string> _Tags;
+        /// <summary>
+        /// Collection of tags
+        /// </summary>
+        public ObservableCollection<string> Tags
+        {
+            get => _Tags;
+            set => SetField(ref _Tags, value);
+        }
+        private string _SearchTagKeyword;
+        public string SearchTagKeyword
+        {
+            get => _SearchTagKeyword;
+            set
+            {
+                SetField(ref _SearchTagKeyword, value);
+                Tags = new ObservableCollection<string>(Tags.Where(t => t.ToLower().Contains(_SearchTagKeyword)));
+            }
+        }
+        private string _SearchNameKeyword;
+        public string SearchNameKeyword
+        {
+            get => _SearchNameKeyword;
+            set
+            {
+                SetField(ref _SearchNameKeyword, value);
+                if (!string.IsNullOrEmpty(_SearchNameKeyword))
+                    Items = new ObservableCollection<FileItemObjectModel>(
+                        AllItems.Where(i => i.Name?
+                        .ToLower()
+                        .Contains(_SearchNameKeyword.ToLower()) ?? false));
+                else
+                    RefreshItems();
+            }
         }
         private FileItemObjectModel _ActiveItem;
         public FileItemObjectModel ActiveItem
@@ -211,11 +327,22 @@ namespace SomewhereDesktop
             int id = Commands.AddFile(null, null);
             // Add to view collection
             var item = new FileItemObjectModel(Commands.GetFileDetail(id));
-            // Add to both item and note collection
-            Items.Add(item);
-            Notes.Add(item);
+            // Add to items cache
+            AllItems.Add(item);
+            // Update note collection
+            RefreshNotes();
             // Set active
             ActiveNote = item;
+        }
+        private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void OpenHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+            dialog.InitialDirectory = Commands.HomeDirectory;
+            dialog.IsFolderPicker = true;
+            if(dialog.ShowDialog() == CommonFileDialogResult.Ok)
+                OpenRepository(dialog.FileName);
         }
         #endregion
 
@@ -232,9 +359,11 @@ namespace SomewhereDesktop
             // Reset styles
             InventoryTabLabel.Style = NotebookTabLabel.Style = SettingsTabLabel.Style 
                 = LogsTabLabel.Style = StatusTabLabel.Style = NTFSSearchTabLabel.Style
+                = KnowledgeTabLabel.Style
                 = inactiveTitle;
             InventoryPanel.Visibility = NotebookPanel.Visibility = SettingsPanel.Visibility 
                 = LogsPanel.Visibility = StatusPanel.Visibility = NTFSSearchPanel.Visibility
+                = KnowledgePanel.Visibility
                 = Visibility.Collapsed;
             // Toggle active panels, update header styles
             label.Style = activeTitle;
@@ -270,6 +399,10 @@ namespace SomewhereDesktop
                 ConfigurationsText = builder.ToString();
                 SettingsPanel.Visibility = Visibility.Visible;
             }
+            else if(label == KnowledgeTabLabel)
+            {
+                KnowledgePanel.Visibility = Visibility.Visible;
+            }
             else if(label == StatusTabLabel)
             {
                 StringBuilder builder = new StringBuilder();
@@ -284,6 +417,38 @@ namespace SomewhereDesktop
         {
             // Dispose resources
             Commands.Dispose();
+            Popup.Close();
+            LastWorker?.Dispose();
+        }
+        #endregion
+
+        #region Searching Routines and Auxliary
+        private int WorkerCount { get; } = 0;
+        private PopupSelectionWindow Popup { get; }
+        private BackgroundWorker LastWorker { get; set; }
+        private ConcurrentBag<string> SearchKeywords { get; }
+        /// <summary>
+        /// Queue and start a new search
+        /// </summary>
+        private void QueueNewSearch(string keyword)
+        {
+            // Cancel last
+            if (LastWorker.IsBusy)
+                LastWorker.CancelAsync();
+            // Start new
+            SearchKeywords.Add(keyword);
+            LastWorker = new BackgroundWorker();
+            LastWorker.WorkerReportsProgress = false;
+            LastWorker.WorkerSupportsCancellation = true;
+            LastWorker.DoWork += BackgroundProcessQueueSearches();  // Notice it will automatically start
+            LastWorker.RunWorkerAsync();
+        }
+        /// <summary>
+        /// Process the last remaining queued item, and clear all others
+        /// </summary>
+        private DoWorkEventHandler BackgroundProcessQueueSearches()
+        {
+            throw new NotImplementedException();
         }
         #endregion
 

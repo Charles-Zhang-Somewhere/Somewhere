@@ -15,6 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Commands.cs~RF361182c.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.111" />
     <PackageReference Include="YamlDotNet" Version="6.1.2" />
   </ItemGroup>
