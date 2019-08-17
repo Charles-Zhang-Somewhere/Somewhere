@@ -33,16 +33,6 @@
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="New"/>
     </Window.InputBindings>
-    <Window.Resources>
-        <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
-        </Style>
-        
-    </Window.Resources>
     <Grid>
         <DockPanel LastChildFill="True">
             <Grid Background="{StaticResource Base1}" DockPanel.Dock="Top">
@@ -97,19 +87,28 @@
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <Label Content="Tag Filters"/>
-                                        <ListView ItemsSource="{Binding TagFilters}"/>
+                                        <ListView ItemsSource="{Binding TagFilters}" Style="{StaticResource WrapList}">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Style="{StaticResource TagFilterButton}">
+                                                        <TextBlock Text="{Binding}" Style="{StaticResource TagFilter}" MouseDown="RemoveTagFilter_MouseDown"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
                                     </StackPanel>
                                     <DockPanel LastChildFill="True">
                                         <Label Content="Search Tag"/>
-                                        <TextBox Text="{Binding SearchTagKeyword}"/>
+                                        <TextBox Text="{Binding SearchTagKeyword, UpdateSourceTrigger=PropertyChanged}"/>
                                     </DockPanel>
                                     <DockPanel>
                                         <Label Content="Tags" Style="{StaticResource Header}"/>
-                                        <ListView ItemsSource="{Binding Tags}" Style="{StaticResource WrapList}">
+                                        <ListView ItemsSource="{Binding SearchTags}" Style="{StaticResource WrapList}">
                                             <ListView.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Style="{StaticResource TagButton}">
-                                                        <Label Content="{Binding}" Style="{StaticResource Tag}"/>
+                                                        <!-- Use TextBlock to avoid underscore be escaped as access key -->
+                                                        <TextBlock Text="{Binding}" Style="{StaticResource Tag}" MouseDown="AddTagFilter_MouseDown"/>
                                                     </Border>
                                                 </DataTemplate>
                                             </ListView.ItemTemplate>
@@ -119,14 +118,16 @@
                             </Border>
                             <DockPanel LastChildFill="True">
                                 <!-- Actions Region -->
-                                <DockPanel DockPanel.Dock="Bottom">
-                                    <StackPanel>
-                                        <Button Content="Open" Command="Open"/>
-                                    </StackPanel>
-                                    <StackPanel>
+                                <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
+                                    <DockPanel>
+                                        <StackPanel>
+                                            <Button Content="Open" Command="Open"/>
+                                        </StackPanel>
+                                        <StackPanel>
 
-                                    </StackPanel>
-                                </DockPanel>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
                                 <!-- Item Preview Region -->
                                 <Grid DockPanel.Dock="Top">
                                     <Grid.ColumnDefinitions>

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StringHelper;
 
 namespace SomewhereDesktop
 {
@@ -31,6 +32,8 @@ namespace SomewhereDesktop
         #region Additional Property
         public string DisplayName
             => string.IsNullOrEmpty(Name) ? "Knowledge" : Name;
+        public IEnumerable<string> TagsList
+            => Tags.SplitTags();
         #endregion
 
         #region Data Binding One-In-All Notification Extension

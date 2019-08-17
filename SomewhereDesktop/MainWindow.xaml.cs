@@ -75,6 +75,10 @@ namespace SomewhereDesktop
         /// An in-memory cache of all items
         /// </summary>
         private List<FileItemObjectModel> AllItems { get; set; }
+        /// <summary>
+        /// An in-memory cache of all tags
+        /// </summary>
+        private List<string> AllTags { get; set; }
         #endregion
 
         #region Private View Routines
@@ -109,10 +113,36 @@ namespace SomewhereDesktop
         private void RefreshNotes()
             => Notes = new ObservableCollection<FileItemObjectModel>(AllItems
                 .Where(i => i.Name == null || i.Content != null));
+        /// <summary>
+        /// Refresh search all tags cache, search tags and tag filters so it is constrainted by currently displayed items
+        /// </summary>
         private void RefreshTags()
         {
-            // Update tags
-            Tags = new ObservableCollection<string>(Items.SelectMany(t => t.Tags.SplitTags()).Distinct());
+            // Update all tags
+            AllTags = Items.SelectMany(t => t.TagsList).Distinct().ToList();
+            // Update search tags
+            SearchTags = new ObservableCollection<string>(AllTags);
+            // Update filters
+            TagFilters = new ObservableCollection<string>();
+        }
+        private void FilterItems()
+        {
+            // Refresh
+            RefreshItems();
+            // Filter by search name keyword
+            if (!string.IsNullOrEmpty(_SearchNameKeyword))
+                Items = new ObservableCollection<FileItemObjectModel>(
+                    Items.Where(i => i.Name?
+                    .ToLower()
+                    .Contains(_SearchNameKeyword.ToLower()) ?? false));
+            // Filter by type
+            if (!string.IsNullOrEmpty(_SelectedTypeFilter))
+                Items = new ObservableCollection<FileItemObjectModel>(
+                    Items.Where(i => GetItemExtensionType(i.Name) == _SelectedTypeFilter));
+            // Filter by tags
+            if(TagFilters.Count != 0)            
+                Items = new ObservableCollection<FileItemObjectModel>(
+                    Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
         #endregion
 
@@ -138,11 +168,8 @@ namespace SomewhereDesktop
             set
             {
                 SetField(ref _SelectedTypeFilter, value);
-                if (!string.IsNullOrEmpty(_SelectedTypeFilter))
-                    Items = new ObservableCollection<FileItemObjectModel>(
-                        AllItems.Where(i => GetItemExtensionType(i.Name) == _SelectedTypeFilter));
-                else
-                    RefreshItems();
+                FilterItems();
+                RefreshTags();
             }
         }
         private ObservableCollection<string> _TypeFilters;
@@ -153,14 +180,14 @@ namespace SomewhereDesktop
             get => _TagFilters;
             set => SetField(ref _TagFilters, value);
         }
-        private ObservableCollection<string> _Tags;
+        private ObservableCollection<string> _SearchTags;
         /// <summary>
         /// Collection of tags
         /// </summary>
-        public ObservableCollection<string> Tags
+        public ObservableCollection<string> SearchTags
         {
-            get => _Tags;
-            set => SetField(ref _Tags, value);
+            get => _SearchTags;
+            set => SetField(ref _SearchTags, value);
         }
         private string _SearchTagKeyword;
         public string SearchTagKeyword
@@ -169,7 +196,10 @@ namespace SomewhereDesktop
             set
             {
                 SetField(ref _SearchTagKeyword, value);
-                Tags = new ObservableCollection<string>(Tags.Where(t => t.ToLower().Contains(_SearchTagKeyword)));
+                if (!string.IsNullOrEmpty(_SearchTagKeyword))
+                    SearchTags = new ObservableCollection<string>(AllTags.Except(TagFilters).Where(t => t.ToLower().Contains(_SearchTagKeyword)));
+                else
+                    SearchTags = new ObservableCollection<string>(AllTags.Except(TagFilters));
             }
         }
         private string _SearchNameKeyword;
@@ -179,13 +209,7 @@ namespace SomewhereDesktop
             set
             {
                 SetField(ref _SearchNameKeyword, value);
-                if (!string.IsNullOrEmpty(_SearchNameKeyword))
-                    Items = new ObservableCollection<FileItemObjectModel>(
-                        AllItems.Where(i => i.Name?
-                        .ToLower()
-                        .Contains(_SearchNameKeyword.ToLower()) ?? false));
-                else
-                    RefreshItems();
+                FilterItems();
             }
         }
         private FileItemObjectModel _ActiveItem;
@@ -347,6 +371,24 @@ namespace SomewhereDesktop
         #endregion
 
         #region Window Events
+        private void RemoveTagFilter_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Update tag display lists
+            string tag = (sender as TextBlock).Text as string;
+            TagFilters.Remove(tag);
+            SearchTags.Add(tag);
+            // Perform filtering
+            FilterItems();
+        }
+        private void AddTagFilter_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Update tag display lists
+            string tag = (sender as TextBlock).Text as string;
+            TagFilters.Add(tag);
+            SearchTags.Remove(tag);
+            // Perform filtering
+            FilterItems();
+        }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
             => this.DragMove();
         private void TabHeader_MouseDown(object sender, MouseButtonEventArgs e)
