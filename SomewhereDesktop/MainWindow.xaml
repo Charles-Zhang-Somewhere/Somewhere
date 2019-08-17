@@ -34,6 +34,28 @@
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="New"/>
     </Window.InputBindings>
+    <Window.Resources>
+        <Style x:Key="TextBlockBase" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="2"/>
+        </Style>
+        <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockBase}">
+            <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+        </Style>
+        <Style x:Key="Tag" TargetType="TextBlock" BasedOn="{StaticResource TextBlockBase}">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="TagFilter" TargetType="TextBlock" BasedOn="{StaticResource TextBlockBase}">
+            <Setter Property="Foreground" Value="AntiqueWhite"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <DockPanel LastChildFill="True">
             <Grid Background="{StaticResource Base1}" DockPanel.Dock="Top">
