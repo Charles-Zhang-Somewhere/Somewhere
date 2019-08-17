@@ -144,6 +144,36 @@ namespace SomewhereDesktop
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
+        private void UpdateItemPreview()
+        {
+            // Clear previous
+            PreviewText = null;
+            PreviewImage = null;
+            PreviewStatus = null;
+            if (ActiveItem == null)
+                return;
+            // Preview knowledge and note
+            if (ActiveItem.Content != null || ActiveItem.Name == null)
+                PreviewText = ActiveItem.Content;
+            // Preview folder
+            else if (ActiveItem.Name.EndsWith("/") || ActiveItem.Name.EndsWith("\\"))
+            {
+                StringBuilder builder = new StringBuilder("Folder Contents: " + Environment.NewLine);
+                foreach (string fileEntry in Directory.EnumerateFileSystemEntries(System.IO.Path.Combine(Commands.HomeDirectory, ActiveItem.Name)))
+                    builder.AppendLine($"{fileEntry}");
+                PreviewText = builder.ToString();
+            }
+            // Preview files
+            else
+            {
+                // Preview image
+                string extension = System.IO.Path.GetExtension(ActiveItem.Name).ToLower();
+                if (extension == ".png" || extension == ".img" || extension == ".jpg")
+                    PreviewImage = Commands.GetPhysicalPath(ActiveItem.Name);
+                else
+                    PreviewStatus = "No Preview Available for Binary Data";
+            }
+        }
         #endregion
 
         #region Public View Properties
@@ -212,6 +242,12 @@ namespace SomewhereDesktop
                 FilterItems();
             }
         }
+        private string _PreviewText;
+        public string PreviewText { get => _PreviewText; set => SetField(ref _PreviewText, value); }
+        private string _PreviewStatus;
+        public string PreviewStatus { get => _PreviewStatus; set => SetField(ref _PreviewStatus, value); }
+        private string _PreviewImage;
+        public string PreviewImage { get => _PreviewImage; set => SetField(ref _PreviewImage, value); }
         private FileItemObjectModel _ActiveItem;
         public FileItemObjectModel ActiveItem
         {
@@ -223,7 +259,7 @@ namespace SomewhereDesktop
                 NotifyPropertyChanged("ActiveItemTags");
                 NotifyPropertyChanged("ActiveItemMeta");
                 NotifyPropertyChanged("ActiveItemContent");
-                NotifyPropertyChanged("IsItemFieldReadOnly");
+                UpdateItemPreview();
             }
         }
         public string ActiveItemMeta
@@ -247,8 +283,6 @@ namespace SomewhereDesktop
         //    get => ActiveItem?.Content;
         //    set { ActiveItem.Content = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         //}
-        public bool IsItemFieldReadOnly
-            => true;   // Don't allow edit for items
         #endregion
 
         #region Notebook View Properties
@@ -312,6 +346,25 @@ namespace SomewhereDesktop
         private void SearchCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
         }
+        private void CommandAdd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void CommandAdd_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            var dialog = GetHomeDirectoryFileDialog("Select files and folders to add", true, true);
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                IEnumerable<string> result = null;
+                foreach (var name in dialog.FileNames)
+                    result = Commands.Add(name);
+                // Update panel and info
+                RefreshAllItems();
+                RefreshItems();
+                if (dialog.FileNames.Count() > 1)
+                    InfoText = $"{dialog.FileNames.Count()} items added.";
+                else
+                    InfoText = result.First();
+            }
+        }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
 
@@ -355,19 +408,29 @@ namespace SomewhereDesktop
             AllItems.Add(item);
             // Update note collection
             RefreshNotes();
-            // Set active
+            // Set activeadd
             ActiveNote = item;
         }
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void OpenHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
-            dialog.InitialDirectory = Commands.HomeDirectory;
-            dialog.IsFolderPicker = true;
-            if(dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            var dialog = GetHomeDirectoryFileDialog("Select home directory");
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 OpenRepository(dialog.FileName);
         }
+        private CommonOpenFileDialog GetHomeDirectoryFileDialog(string title, bool file = true, bool folder = false)
+        {
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+            dialog.InitialDirectory = Commands.HomeDirectory;
+            dialog.Title = title;
+            if (file && folder)
+                dialog.Multiselect = true;
+            else if (folder)
+                dialog.IsFolderPicker = true;
+            return dialog;
+        }
+
         #endregion
 
         #region Window Events

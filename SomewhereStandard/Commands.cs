@@ -25,10 +25,12 @@ namespace Somewhere
         #endregion
 
         #region Public Properties
+        private string _HomeDirectory { get; set; }
         /// <summary>
-        /// Get or set working directory
+        /// Get or set working directory; Expects to be a full path, 
+        /// because we are not calling "SetCurrentDirectory()" - to avoid messing up the host env
         /// </summary>
-        public string HomeDirectory { get; set; }
+        public string HomeDirectory { get => _HomeDirectory; set => _HomeDirectory = Path.GetFullPath(value) + Path.DirectorySeparatorChar; }
         /// <summary>
         /// Returns a list of all Command methods
         /// </summary>
@@ -105,6 +107,8 @@ namespace Somewhere
             => File.Exists(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
         public bool DirectoryExistsAtHomeFolder(string directoryName)
             => Directory.Exists(Path.Combine(HomeDirectory, directoryName));
+        public string GetPathInHomeHolder(string homeRelativePath)
+            => Path.Combine(HomeDirectory, homeRelativePath);
         public void DeleteFileFromHomeFolder(string filename)
             => File.Delete(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
         /// <summary>
@@ -178,12 +182,12 @@ namespace Somewhere
         /// preserve extension, allow unicode characters, automatically (transparently) handle file name collisions (as long as item name is unique,
         /// as is required).
         /// </summary>
-        public void GetPhysicalPath(string itemname)
+        public string GetPhysicalPath(string itemname)
             => Path.Combine(HomeDirectory, GetPhysicalName(itemname));
         /// <summary>
         /// Get physical path for a new file
         /// </summary>
-        public void GetNewPhysicalPath(string itemname, int itemID)
+        public string GetNewPhysicalPath(string itemname, int itemID)
             => Path.Combine(HomeDirectory, GetNewPhysicalName(itemname, itemID));
         #endregion
 
@@ -201,9 +205,33 @@ namespace Somewhere
             // Add single item
             if(args[0] != "*")
             {
-                string itemname = args[0];
-                if (!FileExistsAtHomeFolder(itemname) && !DirectoryExistsAtHomeFolder(itemname))
-                    throw new ArgumentException($"Specified item {itemname} doesn't exist on disk.");
+                string itemname = GetRelative(args[0]);
+                // Handle non-existing path and foreign (i.e. outside home) paths
+                if (!FileExistsAtHomeFolder(itemname) && !(itemname.Contains(HomeDirectory) && DirectoryExistsAtHomeFolder(itemname)))
+                {
+                    // Forbidden a relative path at this step to avoid confusion (otherwise a non-existing relative file can exist in a working directory
+                    // and cause unexpected behavior
+                    if(!itemname.Contains(Path.DirectorySeparatorChar))
+                        throw new ArgumentException($"Specified item by relative path {itemname} doesn't exist in Home folder `{HomeDirectory}`, but it does exist in current working directory `{Directory.GetCurrentDirectory()}`. Use an absolute path instead to avoid potential confusion.");
+                    // Non-existing path
+                    bool existAsFile = File.Exists(itemname), existAsDirectory = Directory.Exists(itemname);
+                    if (!existAsFile && !existAsDirectory)
+                        throw new ArgumentException($"Specified item {itemname} doesn't exist on disk.");
+                    // For foreign file, make a copy
+                    else if(File.Exists(itemname))
+                    {
+                        string name = Path.GetFileName(itemname);
+                        File.Copy(itemname, GetPathInHomeHolder(name));
+                        itemname = name;
+                    }
+                    // For foreign directories, cut it
+                    else
+                    {
+                        string name = Path.GetFileName(itemname);   // This function actually returns folder name because Path.GetDirectoryName() returns parent folder
+                        Directory.Move(itemname, GetPathInHomeHolder(name));
+                        itemname = name;
+                    }
+                }
                 if (DirectoryExistsAtHomeFolder(itemname))
                     itemname += Path.DirectorySeparatorChar;
                 if (IsFileInDatabase(itemname))
@@ -219,7 +247,7 @@ namespace Somewhere
             else
             {
                 string[] newFiles = Directory.EnumerateFiles(HomeDirectory)
-                    .Select(filepath => Path.GetFileName(filepath)) // Returned strings contain folder path
+                    .Select(filepath => Path.GetFileName(filepath)) // Returned strings contain complete folder path, strip it out
                     .Where(filename => !IsFileInDatabase(filename) && filename != DBName)
                     .ToArray();    // Exclude DB file itself
                 string[] tags = null;
@@ -558,7 +586,7 @@ namespace Somewhere
             using (System.Diagnostics.Process pProcess = new System.Diagnostics.Process())
             {
                 pProcess.StartInfo.FileName = @"SomewhereDesktop";  // Relative to assembly location, not working dir
-                pProcess.StartInfo.Arguments = ""; //argument
+                pProcess.StartInfo.Arguments = $"\"{HomeDirectory}\""; //argument
                 // pProcess.StartInfo.UseShellExecute = false;
                 // pProcess.StartInfo.RedirectStandardOutput = true;
                 // pProcess.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
@@ -1118,7 +1146,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
                         values ('Version', 'V0.0.5', 'string', 'String code of software version.')",
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('Change Log', 'V0.0.5: Basic implementations.', 'string', 'A record of implementation changes.')"
+                        values ('Change Log', 'V0.0.5: Basic commands implementations.
+V0.1.5: Basic Somewhere Desktop.', 'string', 'A record of implementation changes.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
@@ -1144,6 +1173,15 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 throw new InvalidOperationException($"Command {commandName} requires " +
                     $"{(maxLength != minLength ? $"{arguments.Length}": $"{minLength}-{maxLength}")} arguments, " +
                     $"{args.Length} is given. Use `help {commandName}`.");
+        }
+        /// <summary>
+        /// Given a path, get relative to Home directory if it contains that portion of path
+        /// </summary>
+        private string GetRelative(string path)
+        {
+            if (path.Contains(HomeDirectory))
+                return path.Substring(HomeDirectory.Length);
+            return path;
         }
         /// <summary>
         /// Get a formatted help info for a given command

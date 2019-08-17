@@ -19,6 +19,7 @@
         <CommandBinding Command="Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
         <!-- Inventory Commands -->
         <CommandBinding Command="Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="New" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
     </Window.CommandBindings>
@@ -122,6 +123,7 @@
                                     <DockPanel>
                                         <StackPanel>
                                             <Button Content="Open" Command="Open"/>
+                                            <Button Content="Add" Command="local:CustomCommands.Add"/>
                                         </StackPanel>
                                         <StackPanel>
 
@@ -137,19 +139,26 @@
                                     </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource Panel}" Grid.Column="0">
                                         <!-- Preview Area -->
+                                        <Grid>
+                                            <Label Content="{Binding PreviewText}"/>
+                                            <Image Source="{Binding PreviewImage}"/>
+                                            <TextBlock Text="{Binding PreviewStatus}"/>
+                                        </Grid>
                                     </Border>
                                     <GridSplitter Grid.Column="1"/>
                                     <Border Style="{StaticResource Panel}" Grid.Column="2">
                                         <DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Name" />
-                                                <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemName}"/>
+                                                <TextBox Text="{Binding ActiveItemName}"/>
                                             </DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Tags"/>
-                                                <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemTags}"/>
+                                                <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
+                                                <TextBox Text="{Binding ActiveItemTags}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                             </DockPanel>
-                                            <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
+                                            <Button Content="Save Changes" DockPanel.Dock="Bottom"/>
+                                            <TextBox Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
                                         </DockPanel>
                                     </Border>
                                 </Grid>

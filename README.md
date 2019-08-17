@@ -1,4 +1,6 @@
 ```
+Foreground for button text is not working again
+Popup selection window, tag searching and clicking
 Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors
 PopupSelectionWindow
 FileSystemWaster for COmmands
@@ -22,6 +24,8 @@ update file newtags: remove all old tags from a file and apply a new set of tags
 untag: When we do untag, remove empty tags
 For all operations that involve physical files, add filename translation (clipping), clip to a length of (including path)...  Keep `_delete` and file extension
 For Add *: check and add only if the file is not home database and is not already added.
+
+Allow customized color definitions per repository in `ColorSettings` property
 ```
 
 > (let) Organization ends here. Already in final compact form. (The next step would be to enable embedding as an option, and support compression)
@@ -157,6 +161,7 @@ A functional and effective application may not just end here, I have several sim
 	* View Page (dedicated for items and item types)
 	* REST API (rename etc...)
 7. **Add and Move with a Style** with embedded scripts (Cross Platform friendly, Lua?) in a loop inside a resource file, or at least basic regular expression (search and replace syntax) + tag (filter and name reference)  support.
+8. Test support for linux and mac for CLI.
 
 ## Software Components
 

@@ -21,7 +21,59 @@ namespace SomewhereTest
             Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetFileTags("File1.txt")));    // Notice we are comparing lower case
         }
-
+        [Fact]
+        public void AddFileShouldCopyForeignFile()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            if (!File.Exists("AddFileShouldCutForeignFileTempFile.txt"))
+            {
+                Commands.Doc("File.txt"); // Create file for test
+                File.Move(Helper.GetFilePath("File.txt"), "AddFileShouldCutForeignFileTempFile.txt");
+            }
+            string fullPath = Path.GetFullPath("AddFileShouldCutForeignFileTempFile.txt");
+            Assert.True(File.Exists(fullPath));
+            Commands.Add(fullPath, "Tag1, Tag2");    // Add using full path for foreign file
+            Assert.True(File.Exists(fullPath));
+            // Assert added name is relative
+            Assert.Equal("AddFileShouldCutForeignFileTempFile.txt", Commands.GetAllFiles().First().Name);
+        }
+        [Fact]
+        public void AddFileShouldThrowExceptionForNonExistingForeignFile()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            string nonExistingFilePath = Path.GetFullPath("NonExistingBecauseISaidSo");
+            Assert.Throws<ArgumentException>(()=> Commands.Add(nonExistingFilePath, "Tag1, Tag2"));
+        }
+        [Fact]
+        public void AddFileShouldTCutForeignFolder()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            // Create a folder outside test folder inside the output binary folder
+            string folderPath = Path.GetFullPath("TempFolder");
+            if(!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+            // Add a test file to that folder
+            string filePath = Path.Combine(folderPath, "TestFile.txt");
+            File.Create(filePath).Dispose();
+            Assert.True(Directory.Exists(folderPath));
+            Assert.True(File.Exists(filePath));
+            // Add to home
+            Commands.Add(folderPath);
+            // Assert old folder and file no longer exist
+            Assert.True(!Directory.Exists(folderPath));
+            Assert.True(!File.Exists(filePath));
+            // Assert new folder and file created
+            Assert.True(Directory.Exists(Helper.GetFilePath("TempFolder") /* The returned path can be used as a folder */));
+            Assert.True(File.Exists(Helper.GetFilePath(Path.Combine("TempFolder", "TestFile.txt"))));
+            // Assert added name is a folder
+            Assert.Equal("TempFolder" + Path.DirectorySeparatorChar, Commands.GetAllFolders().First().Name);
+        }
         [Fact]
         public void AddTagToFileGetsTag()
         {
@@ -52,6 +104,18 @@ namespace SomewhereTest
         }
 
         [Fact]
+        public void AddFileShoudSaveRelativePath()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt"); // Create file for test
+            Commands.Add(Path.GetFullPath(Helper.GetFilePath("File.txt")), "A Tag, Another Tag");
+            Assert.Equal(1, Commands.FileCount);
+            Assert.Equal("File.txt", Commands.GetAllFiles().Single().Name);
+        }
+
+        [Fact]
         public void AddFileShouldUpdateFileCount()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
@@ -70,7 +134,8 @@ namespace SomewhereTest
             Commands Commands = Helper.CreateNewCommands();
             Commands.New(); // Create a new db
             Assert.Empty(Commands.AllTags);
-            Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });
+            Directory.SetCurrentDirectory("AllTagShouldReturnNumberOfTags");
+            Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });   // File doesn't exit in home
             Commands.Doc(); // Create test file
             Assert.Empty(Commands.AllTags);
             Commands.Add("SomewhereDoc.txt", "MyTag");
