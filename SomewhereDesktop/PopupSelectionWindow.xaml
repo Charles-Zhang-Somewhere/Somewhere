@@ -1,0 +1,15 @@
+﻿<Window x:Class="SomewhereDesktop.PopupSelectionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SomewhereDesktop"
+        mc:Ignorable="d"
+        Title="PopupSelectionWindow" 
+        WindowState="Normal" WindowStyle="None" AllowsTransparency="False"
+        ResizeMode="NoResize" BorderThickness="2" BorderBrush="{StaticResource base02}"
+        Background="{StaticResource Base0}" DataContext="{Binding RelativeSource={RelativeSource self}}">
+    <Grid>
+        <ListView/>
+    </Grid>
+</Window>

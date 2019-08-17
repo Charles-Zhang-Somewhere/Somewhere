@@ -12,11 +12,16 @@ using YamlDotNet.Serialization;
 
 namespace Somewhere
 {
-    public class Commands
+    public class Commands: IDisposable
     {
-        #region Constructor
+        #region Constructor and Disposing
         public Commands(string initialWorkingDirectory)
             => HomeDirectory = initialWorkingDirectory;
+        public void Dispose()
+        {
+            if (_Connection != null)
+                _Connection.Dispose();
+        }
         #endregion
 
         #region Public Properties
@@ -59,10 +64,23 @@ namespace Somewhere
         public bool IsHomePresent
             => FileExistsAtHomeFolder(DBName);
         /// <summary>
-        /// Count of managed files (including virtual files)
+        /// Count of managed items
+        /// </summary>
+        public int ItemCount
+            => Connection.ExecuteQuery("select count(*) from File").Single<int>();
+        /// <summary>
+        /// Count of managed files
         /// </summary>
         public int FileCount
-            => Connection.ExecuteQuery("select count(*) from File").Single<int>();
+            => Connection.ExecuteQuery(@"select count(*) from File 
+                where Name is not null and Content is null
+                and Name not like '%/' and Name not like '%\'").Single<int>();
+        /// <summary>
+        /// Count of managed files
+        /// </summary>
+        public int FolderCount
+            => Connection.ExecuteQuery(@"select count(*) from File 
+                where Name like '%/' or Name like '%\' and Content is null").Single<int>();
         /// <summary>
         /// Get count of log entry
         /// </summary>
@@ -78,6 +96,11 @@ namespace Somewhere
         /// </summary>
         public int NoteCount
             => Connection.ExecuteQuery("select count(*) from File where Content is not null").Single<int>();
+        /// <summary>
+        /// Get count of Knowledge (virtual notes with title null)
+        /// </summary>
+        public int KnowledgeCount
+            => Connection.ExecuteQuery("select count(*) from File where Name is null").Single<int>();
         public bool FileExistsAtHomeFolder(string filename)
             => File.Exists(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
         public bool DirectoryExistsAtHomeFolder(string directoryName)
@@ -169,28 +192,30 @@ namespace Somewhere
         #endregion
 
         #region Commands (Public Interface as Library)
-        [Command("Add a file to home.")]
-        [CommandArgument("filename", "name of file; use * to add all in current directory")]
-        [CommandArgument("tags", "tags for the file", optional: true)]
+        [Command("Add an item to home.")]
+        [CommandArgument("itemname", "name of item; use * to add all items in current directory")]
+        [CommandArgument("tags", "tags for the item", optional: true)]
         public IEnumerable<string> Add(params string[] args)
         {
             ValidateArgs(args, true);
-            // Add single file
+            // Add single item
             if(args[0] != "*")
             {
-                string filename = args[0];
-                if (!FileExistsAtHomeFolder(filename) && !DirectoryExistsAtHomeFolder(filename))
-                    throw new ArgumentException($"Specified file (directory) {filename} doesn't exist on disk.");
-                if (IsFileInDatabase(filename))
-                    return new string[] { $"File `{filename}` already added in database." };
+                string itemname = args[0];
+                if (!FileExistsAtHomeFolder(itemname) && !DirectoryExistsAtHomeFolder(itemname))
+                    throw new ArgumentException($"Specified item {itemname} doesn't exist on disk.");
+                if (DirectoryExistsAtHomeFolder(itemname))
+                    itemname += Path.DirectorySeparatorChar;
+                if (IsFileInDatabase(itemname))
+                    return new string[] { $"Item `{itemname}` already added in database." };
                 else
                 {
-                    AddFile(filename);
-                    if (args.Length == 2) AddTagsToFile(filename, args[1].SplitTags());
-                    return new string[] { $"File `{filename}` added to database with a total of {FileCount} {(FileCount > 1 ? "files": "file")}." };
+                    AddFile(itemname);
+                    if (args.Length == 2) AddTagsToFile(itemname, args[1].SplitTags());
+                    return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files": "file")}." };
                 }
             }
-            // Add all files
+            // Add all files (don't add directories by default)
             else
             {
                 string[] newFiles = Directory.EnumerateFiles(HomeDirectory)
@@ -211,25 +236,29 @@ namespace Somewhere
                 return result;
             }
         }
-        [Command("Create a virtual file (virtual text note).")]
-        [CommandArgument("filename", "name for the virtual file, must be unique among all managed files")]
+        [Command("Create a virtual file (virtual text note).", 
+            "Virtual text notes may or may not have a name. " +
+            "If it doesn't have a name (i.e. empty), it's also called a \"knowledge\" item, as is used by Somewhere Knowledge subsystem.")]
+        [CommandArgument("notename", "name for the virtual file, must be unique among all managed files")]
         [CommandArgument("content", "initial content for the virtual file")]
-        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed.")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; tags are required", optional: false)]
         public IEnumerable<string> Create(params string[] args)
         {
             ValidateArgs(args);
-            string filename = args[0];
-            if (FileExistsAtHomeFolder(filename))
-                throw new ArgumentException($"Specified filename `{filename}` already exist on disk.");
-            if (IsFileInDatabase(filename))
-                throw new InvalidOperationException($"Specified filename `{filename}` is already used by another virtual file in database.");
+            string name = args[0];
+            if (string.IsNullOrEmpty(name))
+                name = null;    // Nullify empty name
+            if (name != null && FileExistsAtHomeFolder(name))
+                throw new ArgumentException($"Specified notename `{name}` already exist (as a physical file) on disk.");
+            if (name != null && IsFileInDatabase(name))
+                throw new InvalidOperationException($"Specified notename `{name}` is already used by another virtual file in database.");
             // Get content and save the file
             string content = args[1];
-            AddFile(filename, content);
+            int id = AddFile(name, content);
             // Get tags
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
-            string[] allTags = AddTagsToFile(filename, tags);
-            return new string[] { $"File `{filename}` has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
+            string[] allTags = AddTagsToFile(id, tags);
+            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
         }
         /// <remarks>Due to it's particular function of pagination, this command function behaves slightly different from usual ones;
         /// Instead of returning lines of output for the caller to output, it manages output and keyboard input itself</remarks>
@@ -469,7 +498,7 @@ namespace Somewhere
                 .Where(filename => filename.IndexOf("_deleted") != filename.Length - "_deleted".Length)
                 .Except(new string[] { DBName });  // Exlude db file itself
             var directories = Directory.GetDirectories(HomeDirectory);
-            var managed = Connection.ExecuteQuery("select Name from File").List<string>()
+            var managed = Connection.ExecuteQuery("select Name from File where Name is not null").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
             result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
@@ -567,6 +596,17 @@ namespace Somewhere
             int fileID = GetFileID(filename).Value;
             AddFileTags(fileID, newTags.Select(tag => TryAddTag(tag)));
             return GetFileTags(filename);
+        }
+        /// <summary>
+        /// Add to given file a set of tags which may or may not already be present (new tags are added, already existing tags are ignored)
+        /// Return an array of all current tags
+        /// </summary>
+        public string[] AddTagsToFile(int id, IEnumerable<string> tags)
+        {
+            string[] existingTags = GetFileTags(id);
+            IEnumerable<string> newTags = tags.Except(existingTags);
+            AddFileTags(id, newTags.Select(tag => TryAddTag(tag)));
+            return GetFileTags(id);
         }
         /// <summary>
         /// Add to all files given set of tags (add new tags) in large batch
@@ -685,13 +725,13 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Add a file entry to database
         /// </summary>
-        public void AddFile(string filename)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name, EntryDate) values (@name, @date)", new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd") });
+        public int AddFile(string filename)
+            => Connection.ExecuteSQLInsert("insert into File (Name, EntryDate) values (@name, @date)", new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd") });
         /// <summary>
         /// Add a file entry to database with initial content
         /// </summary>
-        public void AddFile(string filename, string content)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd") });
+        public int AddFile(string filename, string content)
+            => Connection.ExecuteSQLInsert("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd") });
         /// <summary>
         /// Add files in batch
         /// </summary>
@@ -798,9 +838,9 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         public void AddTags(IEnumerable<string> tags)
             => Connection.ExecuteSQLNonQuery("insert into Tag(Name) values(@tag)", tags.Select(tag => new { tag }));
         /// <summary>
-        /// Get details of each file
+        /// Get detail of a file
         /// </summary>
-        public List<QueryRows.FileDetail> GetFileDetails()
+        public QueryRows.FileDetail GetFileDetail(int id)
             => Connection.ExecuteQuery(
 @"select FileTagDetails.*,
 	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
@@ -809,8 +849,47 @@ from
 	from File left join
 		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
 		from Tag, FileTag
+		where FileTag.TagID = Tag.ID
+        and FileTag.FileID = @id) as FileTags
+	on FileTags.FileID = File.ID
+    where File.ID = @id
+	group by File.ID) as FileTagDetails 
+	left join Revision
+on Revision.FileID = FileTagDetails.ID
+group by FileTagDetails.ID", new { id }).Unwrap<QueryRows.FileDetail>().SingleOrDefault();
+        /// <summary>
+        /// Get details of each file
+        /// </summary>
+        public List<QueryRows.FileDetail> GetFileDetails()
+            => Connection.ExecuteQuery(
+@"select FileTagDetails.*,
+	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
+from 
+	(select File.ID, File.EntryDate, File.Name, File.Content, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	from File left join
+		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
+		from Tag, FileTag
 		where FileTag.TagID = Tag.ID) as FileTags
 	on FileTags.FileID = File.ID
+	group by File.ID) as FileTagDetails 
+	left join Revision
+on Revision.FileID = FileTagDetails.ID
+group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
+        /// <summary>
+        /// Get details of notes, including content
+        /// </summary>
+        public List<QueryRows.FileDetail> GetNoteDetails()
+            => Connection.ExecuteQuery(
+@"select FileTagDetails.*,
+	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
+from 
+	(select File.ID, File.EntryDate, File.Name, File.Content, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	from File left join
+		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
+		from Tag, FileTag
+		where FileTag.TagID = Tag.ID) as FileTags
+	on FileTags.FileID = File.ID
+    where File.Name is null or File.Content is not null
 	group by File.ID) as FileTagDetails 
 	left join Revision
 on Revision.FileID = FileTagDetails.ID
@@ -874,6 +953,24 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 where FileTag.FileID = File.ID
                 and FileTag.TagID = Tag.ID
                 and File.Name = @filename", new { filename }).List<string>()?.ToArray() ?? new string[] { };
+        /// <summary>
+        /// Get tags for the file, if no tags are added, return empty array
+        /// </summary>
+        public string[] GetFileTags(int id)
+            => Connection.ExecuteQuery(@"select Tag.Name from Tag, File, FileTag
+                where FileTag.FileID = File.ID
+                and FileTag.TagID = Tag.ID
+                and File.ID = @id", new { id }).List<string>()?.ToArray() ?? new string[] { };
+        /// <summary>
+        /// Get content for the file
+        /// </summary>
+        public string GetFileContent(string filename)
+            => Connection.ExecuteQuery(@"select Content from File where Name = filename", new { filename }).Single<string>();
+        /// <summary>
+        /// Get content for the file
+        /// </summary>
+        public string GetFileContent(int id)
+            => Connection.ExecuteQuery(@"select Content from File where ID = id", new { id }).Single<string>();
         /// <summary>
         /// Get raw list of all file tags
         /// </summary>
@@ -961,7 +1058,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     )",
                     @"CREATE TABLE ""File"" (
 	                    ""ID""	INTEGER PRIMARY KEY AUTOINCREMENT,
-	                    ""Name""	TEXT NOT NULL UNIQUE,
+	                    ""Name""	TEXT UNIQUE,
 	                    ""Content""	BLOB,
 	                    ""Meta""	TEXT,
                         ""EntryDate""	TEXT
@@ -1076,7 +1173,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     pageCount++;
                 }
             }
-            if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)
+            // Show total only if we are at last page page
+            if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)    // (Get ceiling)
                 Console.WriteLine($"Total: {fileRows.Count()}");
         }
         #endregion

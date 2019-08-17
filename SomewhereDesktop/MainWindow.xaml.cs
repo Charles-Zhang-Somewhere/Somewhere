@@ -37,8 +37,12 @@ namespace SomewhereDesktop
                 Commands = new Commands(Arguments["dir"]);
             else
                 Commands = new Commands(Directory.GetCurrentDirectory());
+            // Initialize items
+            Items = new ObservableCollection<FileItemObjectModel>(
+                Commands.GetFileDetails().Select(f => new FileItemObjectModel(f)));
+            Notes = new ObservableCollection<FileItemObjectModel>(Items.Where(i => i.Name == null || i.Content != null));
             // Update info
-            InfoText = $"Home Directory: {Commands.HomeDirectory}";
+            InfoText = $"Home Directory: {Commands.HomeDirectory}; {Items.Count} items.";
         }
         #endregion
 
@@ -58,7 +62,7 @@ namespace SomewhereDesktop
         public string InfoText { get => _InfoText; set => SetField(ref _InfoText, value); }
         #endregion
 
-        #region Inventory View Properties
+        #region Items View Properties
         private ObservableCollection<FileItemObjectModel> _Items;
         /// <summary>
         /// Collection of items
@@ -68,9 +72,6 @@ namespace SomewhereDesktop
             get => _Items;
             set => SetField(ref _Items, value);
         }
-        #endregion
-
-        #region Notebook View Properties
         private FileItemObjectModel _ActiveItem;
         public FileItemObjectModel ActiveItem
         {
@@ -80,9 +81,15 @@ namespace SomewhereDesktop
                 _ActiveItem = value;
                 NotifyPropertyChanged("ActiveItemName");
                 NotifyPropertyChanged("ActiveItemTags");
+                NotifyPropertyChanged("ActiveItemMeta");
                 NotifyPropertyChanged("ActiveItemContent");
-                NotifyPropertyChanged("IsFieldEditEnabled");
+                NotifyPropertyChanged("IsItemFieldEditEnabled");
             }
+        }
+        public string ActiveItemMeta
+        {
+            get => ActiveItem?.Meta;
+            set { ActiveItem.Meta = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
         public string ActiveItemName
         {
@@ -98,10 +105,50 @@ namespace SomewhereDesktop
         //public string ActiveItemContent
         //{
         //    get => ActiveItem?.Content;
-        //    set { ActiveItem.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveItem.BroadcastPropertyChange(); }
+        //    set { ActiveItem.Content = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         //}
-        public bool IsFieldEditEnabled
-            => ActiveItem != null;
+        public bool IsItemFieldEditEnabled
+            => false;   // Don't allow edit for items
+        #endregion
+
+        #region Notebook View Properties
+        private ObservableCollection<FileItemObjectModel> _Notes;
+        public ObservableCollection<FileItemObjectModel> Notes
+        {
+            get => _Notes;
+            set => SetField(ref _Notes, value);
+        }
+        private FileItemObjectModel _ActiveNote;
+        public FileItemObjectModel ActiveNote
+        {
+            get => _ActiveNote;
+            set
+            {
+                _ActiveNote = value;
+                NotifyPropertyChanged("ActiveNoteName");
+                NotifyPropertyChanged("ActiveNoteTags");
+                NotifyPropertyChanged("ActiveNoteContent");
+                NotifyPropertyChanged("IsNoteFieldEditEnabled");
+            }
+        }
+        public string ActiveNoteName
+        {
+            get => ActiveNote?.Name;
+            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+        }
+
+        public string ActiveNoteTags
+        {
+            get => ActiveNote?.Tags;
+            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+        }
+        //public string ActiveNoteContent
+        //{
+        //    get => ActiveNote?.Content;
+        //    set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+        //}
+        public bool IsNameFieldEditEnabled
+            => ActiveNote != null;
         #endregion
 
         #region Logs View Properties
@@ -160,10 +207,15 @@ namespace SomewhereDesktop
             => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // Add to view collection
-            // Items.Add(...);
             // Add to database
-            // ...
+            int id = Commands.AddFile(null, null);
+            // Add to view collection
+            var item = new FileItemObjectModel(Commands.GetFileDetail(id));
+            // Add to both item and note collection
+            Items.Add(item);
+            Notes.Add(item);
+            // Set active
+            ActiveNote = item;
         }
         #endregion
 
@@ -231,6 +283,7 @@ namespace SomewhereDesktop
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // Dispose resources
+            Commands.Dispose();
         }
         #endregion
 
@@ -259,6 +312,10 @@ namespace SomewhereDesktop
         private string this[string arg]
             => GetArgumentValue(arg);
         private void CommitActiveItemChange()
+        {
+            // Commit to database
+        }
+        private void CommitActiveNoteChange()
         {
             // Commit to database
         }

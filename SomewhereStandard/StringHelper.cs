@@ -111,6 +111,7 @@ namespace StringHelper
         /// <param name="targetLength">Include end filler length</param>
         public static string Limit(this string v, int targetLength, string endFiller = "...", string requiredEnding = null)
         {
+            if (v == null) return null;
             int actualLength = targetLength - endFiller.Length - (requiredEnding != null ? requiredEnding.Length : 0);
             return (v.Length > actualLength) ? v.Substring(0, actualLength) + endFiller + requiredEnding : v + requiredEnding;
         }

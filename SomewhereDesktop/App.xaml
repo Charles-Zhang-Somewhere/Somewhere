@@ -84,6 +84,11 @@
             <Setter Property="Background" Value="{StaticResource Base0}"/>
             <Setter Property="BorderBrush" Value="{StaticResource Base1}"/>
         </Style>
+        <Style TargetType="GridSplitter">
+            <Setter Property="Width" Value="5"/>
+            <Setter Property="Background" Value="{StaticResource Base1}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
         <Style TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
@@ -115,6 +120,66 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Margin" Value="2"/>
+        </Style>
+        <Style TargetType="ListView">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="MinWidth" Value="200"/>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border CornerRadius="2" BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}" 
+                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}" >
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="Stretch" 
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!-- Color for hover selection -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for selected -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for hovering -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="MinWidth" Value="150"/>

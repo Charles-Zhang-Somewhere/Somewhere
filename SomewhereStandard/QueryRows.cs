@@ -21,6 +21,7 @@ namespace Somewhere
             public int ID { get; set; }
             public DateTime EntryDate { get; set; }
             public string Name { get; set; }
+            public string Content { get; set; }
             public string Tags { get; set; }
             public string Meta { get; set; }
             public DateTime? RevisionTime { get; set; }

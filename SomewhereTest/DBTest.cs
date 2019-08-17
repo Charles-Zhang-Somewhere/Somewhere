@@ -14,8 +14,8 @@ namespace SomewhereTest
         [Fact]
         public void AddFileShouldAllowAddingTags()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Add("File1.txt", "Tag1, Tag2");    // Notice we are passing in upper case
@@ -25,8 +25,8 @@ namespace SomewhereTest
         [Fact]
         public void AddTagToFileGetsTag()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Commands.Add("SomewhereDoc.txt");
@@ -41,8 +41,8 @@ namespace SomewhereTest
         [Fact]
         public void AddAllShouldReallyAddAllAndWithTags()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Doc("File2.txt"); // Create file for test
@@ -54,8 +54,8 @@ namespace SomewhereTest
         [Fact]
         public void AddFileShouldUpdateFileCount()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New(); // Create a new db
             Assert.Equal(0, Commands.FileCount);
             Commands.Doc();
@@ -66,8 +66,8 @@ namespace SomewhereTest
         [Fact]
         public void AllTagShouldReturnNumberOfTags()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New(); // Create a new db
             Assert.Empty(Commands.AllTags);
             Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });
@@ -76,49 +76,51 @@ namespace SomewhereTest
             Commands.Add("SomewhereDoc.txt", "MyTag");
             Assert.Single(Commands.AllTags);
         }
-
         [Fact]
-        public void BaseTestLocationIsInBinaryOutputFolder()
+        public void AllowCreateKnowledgeItem()
         {
-            Assert.True(Path.GetFileName(Directory.GetCurrentDirectory()) == "BinaryOutput");
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New(); // Create a new db
+            Commands.Create("", "My knowledge", "Some subject");
+            Assert.Equal(1, Commands.KnowledgeCount);
         }
-
         [Fact]
         public void CreateVirtualFileShouldNotAffectDiskFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");            
-            Assert.True(!TestFileExists("My Note"));
+            Assert.True(!Helper.TestFileExists("My Note"));
         }
         [Fact]
         public void GetPhysicalNameShouldWorkForVirtualNotes()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");
-            Assert.True(!TestFileExists("My Note"));
+            Assert.True(!Helper.TestFileExists("My Note"));
             // Should not throw exception
             Commands.GetPhysicalName("My Note");
         }
         [Fact]
         public void GetPhysicalNameShouldNotRaiseExceptionsForUnmanagedFiles()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File.txt");
-            Assert.True(TestFileExists("File.txt"));
+            Assert.True(Helper.TestFileExists("File.txt"));
             // This is pure string function so it should just run fine
             Commands.GetPhysicalName("File.txt");
         }
         [Fact]
         public void GetPhysicalNameShouldProperlyEscapeSpecialCharacters()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File.txt");
             Assert.Equal("Hello _World_.txt", Commands.GetPhysicalName("Hello \"World\".txt"));
@@ -126,8 +128,8 @@ namespace SomewhereTest
         [Fact]
         public void GetPhysicalNameShouldProperlyHandleLongNames()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File.txt");
             Commands.Add("File.txt");
@@ -165,14 +167,14 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
                 .Replace('\n', '_');
             string escaped = Commands.GetPhysicalName(longItemName);
             Assert.True(escapedName.IndexOf(escaped.Substring(0, escaped.Length - "...txt".Length)) == 0);
-            Assert.True(TestFileExists(escaped));
+            Assert.True(Helper.TestFileExists(escaped));
         }
 
         [Fact]
         public void GetNewPhysicalNameShouldProperlyHandleNameCollisions()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File.txt");
             Commands.Doc("File_.txt");
@@ -182,8 +184,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void LogShouldIncreseCount()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc();
             Commands.Help();    // Help doesn't count as log entry
@@ -195,20 +197,20 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void MoveFileInHomeFolderShouldHandleInvalidCharacterEscape()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("test.txt");
             Commands.Add("test.txt");
             Commands.MoveFileInHomeFolder(1 /* Expected ID for new DB */, "test.txt", "test*.txt");
             Commands.MoveFileInHomeFolder(1, "test*.txt", "test*//WOW.");
-            Assert.True(TestFileExists("test___WOW"));  // Notice this is not user level detail but is documented and standardized
+            Assert.True(Helper.TestFileExists("test___WOW"));  // Notice this is not user level detail but is documented and standardized
         }
         [Fact]
         public void MoveFileInHomeFolderShouldNotWorkForUnmanagedFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("test.txt");
             Assert.Throws<InvalidOperationException>(() => Commands.MV("test.txt", "test*.txt"));
@@ -216,31 +218,31 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void MoveFileInHomeFolderShouldHandleNameCollisionGracefully()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("test.txt");
             Commands.Add("test.txt");
             Commands.Doc("test_.txt"); // Represent a manually added, non-managed file which can collide with managed file later
             Commands.MoveFileInHomeFolder(Commands.GetFileID("test.txt").Value, "test.txt", "test*.txt");
-            Assert.True(TestFileExists("test_#1.txt"));  // Notice this is not user level detail but is documented and standardized
+            Assert.True(Helper.TestFileExists("test_#1.txt"));  // Notice this is not user level detail but is documented and standardized
         }
         [Fact]
         public void NewCommandGeneratesADBFile()
         {
             // Make sure we start clean
-            CleanOrCreateTestFolderRemoveAllFiles();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
             // Create and assert
-            Commands Commands = CreateNewCommands();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
-            Assert.True(TestFileExists(Commands.DBName));
+            Assert.True(Helper.TestFileExists(Commands.DBName));
         }
 
         [Fact]
         public void ShouldBeAbleToAddTagToVirtualFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");
             Commands.Tag("My Note", "Some tag");
@@ -264,19 +266,19 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             int fileTagCount = testSets[testSetSelector].Item4;
             Random rand = new Random();
 
-            CleanOrCreateTestFolderRemoveAllFiles();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
             // Generate tags and filenames
             List<string> tags = Enumerable.Range(1, tagCount).Select(i => Guid.NewGuid().ToString()).ToList();
             List<string> names = Enumerable.Range(1, fileCount).Select(i => Guid.NewGuid().ToString()).ToList();
             // Generate database
-            Commands Commands = CreateNewCommands();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             // Add virtual notes
             string[] tempTag = new string[] { "virtual notes" };
             Commands.AddFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => "Initial Content..."));
             Commands.AddTagsToFiles(Enumerable.Range(1, noteCount).ToDictionary(i => $"My Note{i}", i => tempTag));
             // Add physicla files
-            names.ForEach(f => File.Create(GetFilePath(f)).Dispose());
+            names.ForEach(f => File.Create(Helper.GetFilePath(f)).Dispose());
             Commands.AddFiles(names);
             // Assign tags
             Commands.AddTagsToFiles(names.ToDictionary( n => n, n => Enumerable.Range(1, rand.Next(fileTagCount)).Select(i => rand.Next(tagCount)).Select(i => tags[i]).ToArray()));
@@ -290,8 +292,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void ShouldBeAbleToRenameVirtualFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Create("My Note", "Initial Content", "my tag");
             Commands.Tag("My Note", "Some tag");
@@ -303,17 +305,17 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void ShouldGenerateDoc()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.Doc();
-            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Assert.True(Helper.TestFileExists("SomewhereDoc.txt"));
         }
 
         [Fact]
         public void ShouldRunStatus()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New(); // Create a new db
             foreach (var item in Commands.Status())
                 Console.WriteLine(item);
@@ -322,16 +324,16 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void ShouldNotRunStatus()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Assert.Throws<InvalidOperationException>(() => { Commands.Status(); });
         }
 
         [Fact]
         public void ShouldRaiseExceptionDeleteNonExistingFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Assert.Throws<ArgumentException>(() => { Commands.RM("Some non existing file.extension"); });
         }
@@ -339,8 +341,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void ShouldRaiseExceptionDeleteNonTrackedFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Assert.Throws<ArgumentException>(() => { Commands.RM("Somewhere.exe"); });
         }
@@ -348,59 +350,59 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void ShouldDeleteFileByMarkAsDeletedInsteadOfActuallyDelete()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Commands.Add("SomewhereDoc.txt");
             Commands.RM("SomewhereDoc.txt");
-            Assert.True(TestFileExists("SomewhereDoc.txt_deleted"));
+            Assert.True(Helper.TestFileExists("SomewhereDoc.txt_deleted"));
         }
 
         [Fact]
         public void ShouldForceDeleteFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Commands.Add("SomewhereDoc.txt");
-            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Assert.True(Helper.TestFileExists("SomewhereDoc.txt"));
             Commands.RM("SomewhereDoc.txt", "-f");
-            Assert.True(!TestFileExists("SomewhereDoc.txt"));
+            Assert.True(!Helper.TestFileExists("SomewhereDoc.txt"));
         }
 
         [Fact]
         public void RenameFileShouldUpdatePhysicalFile()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Commands.Add("SomewhereDoc.txt");
-            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Assert.True(Helper.TestFileExists("SomewhereDoc.txt"));
             Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt");
-            Assert.True(!TestFileExists("SomewhereDoc.txt"));
-            Assert.True(TestFileExists("SomewhereDocNew.txt"));
+            Assert.True(!Helper.TestFileExists("SomewhereDoc.txt"));
+            Assert.True(Helper.TestFileExists("SomewhereDocNew.txt"));
             Assert.Equal(1, Commands.FileCount);
         }
 
         [Fact]
         public void RenameFileShouldNotWorkIfFileIsNotManaged()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
-            Assert.True(TestFileExists("SomewhereDoc.txt"));
+            Assert.True(Helper.TestFileExists("SomewhereDoc.txt"));
             Assert.Throws<InvalidOperationException>(() => { Commands.MV("SomewhereDoc.txt", "SomewhereDocNew.txt"); });
         }
 
         [Fact]
         public void RenameTagShouldNotWorkIfTagDoesNotExist()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc(); // Create a doc file for test
             Assert.Equal(0, Commands.TagCount);
@@ -410,8 +412,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void RemoveTagShouldActuallyRemoveTheTag()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("file1.txt"); // Create test file
             Commands.Add("file1.txt", "tag1");
@@ -427,8 +429,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void RemoveTagShouldBeAbleToRemoveMoreThanOneTag()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("file1.txt"); // Create test file
             Commands.Add("file1.txt", "tag1");
@@ -444,8 +446,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void RenameTagShouldMergeTags()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("file1.txt"); // Create test file
             Commands.Add("file1.txt", "tag1");
@@ -459,8 +461,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void RenameTagShouldRenameTag()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("file1.txt"); // Create test file
             Commands.Add("file1.txt", "tag1");
@@ -472,8 +474,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void UntagAFileRemovesTagsOnIt()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Add("*", "A Tag, Another Tag, One More Tag");
@@ -486,8 +488,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
         [Fact]
         public void UpdateFileTagsShouldSilentlyHandleExistingTags()
         {
-            CleanOrCreateTestFolderRemoveAllFiles();
-            Commands Commands = CreateNewCommands();
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("File1.txt"); // Create file for test
             Commands.Doc("File2.txt"); // Create file for test
@@ -497,27 +499,6 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Tag("File2.txt", "Tag1, Tag2");
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetFileTags("File2.txt")));
         }
-        #endregion
-
-        #region Subroutines
-        private void CleanOrCreateTestFolderRemoveAllFiles([CallerMemberName] string testFolderName = null)
-        {
-            // Make sure we (the runtime) are in the test folder
-            BaseTestLocationIsInBinaryOutputFolder();
-
-            if (Directory.Exists(testFolderName))
-                Directory.Delete(testFolderName, true);
-            Directory.CreateDirectory(testFolderName);
-        }
-        /// <summary>
-        /// Check whether a given test file exist in test folder
-        /// </summary>
-        private bool TestFileExists(string fileName, [CallerMemberName] string testFolderName = null)
-            => File.Exists(Path.Combine(testFolderName, fileName));
-        private string GetFilePath(string fileName, [CallerMemberName] string testFolderName = null)
-            => Path.Combine(testFolderName, fileName);
-        private Commands CreateNewCommands([CallerMemberName] string testFolderName = null)
-            => new Commands(testFolderName);
         #endregion
     }
 }

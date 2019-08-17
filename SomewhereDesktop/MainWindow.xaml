@@ -37,66 +37,7 @@
             <Setter Property="Padding" Value="2"/>
             <Setter Property="Foreground" Value="{StaticResource Base3}"/>
         </Style>
-        <Style TargetType="ListView">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="MinWidth" Value="200"/>
-        </Style>
-        <Style TargetType="ListViewItem">
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListViewItem">
-                        <Border CornerRadius="2" BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" 
-                                Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}" 
-                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}" >
-                            <ContentPresenter
-                                Content="{TemplateBinding Content}"
-                                ContentTemplate="{TemplateBinding ContentTemplate}"
-                                HorizontalAlignment="Stretch" 
-                                VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <!-- Color for hover selection -->
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsSelected" Value="True" />
-                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
-                    </MultiTrigger.Conditions>
-                    <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
-                    <Setter Property="Background" Value="{StaticResource Accent0}" />
-                </MultiTrigger>
-                <!-- Color for selected -->
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsSelected" Value="True" />
-                    </MultiTrigger.Conditions>
-                    <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
-                    <Setter Property="Background" Value="{StaticResource Accent0}" />
-                </MultiTrigger>
-                <!-- Color for hovering -->
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
-                    <Setter Property="Background" Value="{StaticResource Accent0}" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        
     </Window.Resources>
     <Grid>
         <DockPanel LastChildFill="True">
@@ -133,7 +74,15 @@
                                         <Label Content="Type Filter"/>
                                         <ComboBox/>
                                     </DockPanel>
-                                    <ListView>
+                                    <ListView ItemsSource="{Binding Items}" SelectionMode="Single"
+                                              SelectedItem="{Binding ActiveItem}">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Label Content="{Binding DisplayName}" Style="{StaticResource Header}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
                                     </ListView>
                                 </StackPanel>
                             </Border>
@@ -143,26 +92,40 @@
                                         <Label Content="Tag Filters"/>
                                         <ListView />
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
+                                    <DockPanel LastChildFill="True">
                                         <Label Content="Search Tag"/>
-                                        <ListView />
-                                    </StackPanel>
+                                        <TextBox/>
+                                    </DockPanel>
                                     <StackPanel>
                                         <Label Content="Tags" Style="{StaticResource Header}"/>
                                         <ListView />
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource Panel}">
-                                <StackPanel>
-
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource Panel}">
-                                <StackPanel>
-
-                                </StackPanel>
-                            </Border>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="7*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="3*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource Panel}" Grid.Column="0">
+                                    <!-- Preview Area -->
+                                </Border>
+                                <GridSplitter Grid.Column="1"/>
+                                <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                    <DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <Label Content="Name" />
+                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemName}"/>
+                                        </DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <Label Content="Tags"/>
+                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemTags}"/>
+                                        </DockPanel>
+                                        <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
                         </DockPanel>
                         <!-- Notebook Panel -->
                         <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
@@ -181,11 +144,11 @@
                                 <DockPanel>
                                     <Button DockPanel.Dock="Bottom" Content="Create Note" Command="New"/>
                                     <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
-                                  SelectedItem="{Binding ActiveNote}">
+                                              SelectedItem="{Binding ActiveNote}">
                                         <ListView.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Label Content="{Binding Name}" Style="{StaticResource Header}"/>
+                                                    <Label Content="{Binding DisplayName}" Style="{StaticResource Header}"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </ListView.ItemTemplate>
@@ -201,7 +164,7 @@
                                     <LineBreak/>
                                     It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
                                         </TextBlock>
-                                        <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
+                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
                                     </DockPanel>
                                     <DockPanel DockPanel.Dock="Top">
                                         <Label Content="Tags"/>
@@ -210,9 +173,9 @@
                                     <LineBreak/>
                                     Tags are used to organize notes and help quickly search for note.
                                         </TextBlock>
-                                        <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteTag}"/>
+                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteTag}"/>
                                     </DockPanel>
-                                    <TextBox IsEnabled="{Binding IsFieldEditEnabled}" Text="{Binding ActiveNoteContent}" Style="{StaticResource Content}"/>
+                                    <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteContent}" Style="{StaticResource Content}"/>
                                 </DockPanel>
                             </Border>
                         </DockPanel>

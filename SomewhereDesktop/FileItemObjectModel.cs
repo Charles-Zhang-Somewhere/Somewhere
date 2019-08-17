@@ -14,8 +14,23 @@ namespace SomewhereDesktop
     /// </summary>
     public class FileItemObjectModel : QueryRows.FileDetail, INotifyPropertyChanged
     {
-        #region Additional Property
+        #region Constructors
+        public FileItemObjectModel() { }
+        public FileItemObjectModel(QueryRows.FileDetail file)
+        {
+            this.ID = file.ID;
+            this.EntryDate = file.EntryDate;
+            this.Name = file.Name;
+            this.Tags = file.Tags;
+            this.Meta = file.Meta;
+            this.RevisionTime = file.RevisionTime;
+            this.RevisionCount = file.RevisionCount;
+        }
+        #endregion
 
+        #region Additional Property
+        public string DisplayName
+            => string.IsNullOrEmpty(Name) ? "Knowledge" : Name;
         #endregion
 
         #region Data Binding One-In-All Notification Extension
@@ -31,7 +46,9 @@ namespace SomewhereDesktop
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ID"));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Name"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DisplayName"));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Tag"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Meta"));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Content"));
         }
         #endregion
