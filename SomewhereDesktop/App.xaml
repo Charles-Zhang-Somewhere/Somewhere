@@ -95,6 +95,7 @@
             <Setter Property="Background" Value="{StaticResource DefaultTagColor}"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
             <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style x:Key="KnowledgeRegionHighlight" TargetType="Border">
             <Setter Property="Margin" Value="2"/>
@@ -225,6 +226,57 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="WrapListItem" TargetType="ListViewItem">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border CornerRadius="2" BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}" 
+                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}" >
+                            <ContentPresenter
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="Stretch" 
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!-- Color for hover selection -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for selected -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </MultiTrigger>
+                <!-- Color for hovering -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent2}"/>
+                    <Setter Property="Background" Value="{StaticResource Accent0}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="WrapList" TargetType="ListView">
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="18"/>
@@ -243,6 +295,7 @@
                     </ItemsPanelTemplate>
                 </Setter.Value>
             </Setter>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource WrapListItem}"/>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="MinWidth" Value="150"/>
