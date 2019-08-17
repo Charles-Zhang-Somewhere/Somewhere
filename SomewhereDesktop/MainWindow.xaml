@@ -265,10 +265,9 @@
                             </DockPanel>
                         </DockPanel>
                         <!-- Status Panel -->
-                        <DockPanel x:Name="StatusPanel" Visibility="Collapsed">
-                            <DockPanel LastChildFill="True">
-                                <TextBox IsReadOnly="True" Text="{Binding StatusText}"/>
-                            </DockPanel>
+                        <DockPanel x:Name="StatusPanel" Visibility="Collapsed" LastChildFill="True">
+                            <Button Content="Add All" Click="RepositoryAddAllFiles_Click" DockPanel.Dock="Bottom"/>
+                            <TextBox IsReadOnly="True" Text="{Binding StatusText}"/>
                         </DockPanel>
                         <!-- Settings Panel -->
                         <DockPanel x:Name="SettingsPanel" Visibility="Collapsed">

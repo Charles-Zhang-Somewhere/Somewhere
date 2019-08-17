@@ -129,9 +129,16 @@
             <Setter Property="Margin" Value="8"/>
         </Style>
         <Style x:Key="TitleDim" TargetType="Label" BasedOn="{StaticResource Title}">
+            <!-- Explicitly set foreground here so we can trigger it in property -->
+            <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="true">
+                    <Setter Property="Foreground" Value="{StaticResource Base3}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="Header" TargetType="Label" BasedOn="{StaticResource LabelBase}">
             <Setter Property="FontSize" Value="16"/>

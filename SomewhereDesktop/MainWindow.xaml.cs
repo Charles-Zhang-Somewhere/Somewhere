@@ -389,8 +389,11 @@ namespace SomewhereDesktop
             // Perform filtering
             FilterItems();
         }
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-            => this.DragMove();
+        private void RepositoryAddAllFiles_Click(object sender, RoutedEventArgs e)
+        {
+            Commands.Add("*");
+            ShowUpdateStatusPanel();
+        }
         private void TabHeader_MouseDown(object sender, MouseButtonEventArgs e)
         {
             // Get header name
@@ -446,15 +449,19 @@ namespace SomewhereDesktop
                 KnowledgePanel.Visibility = Visibility.Visible;
             }
             else if(label == StatusTabLabel)
-            {
-                StringBuilder builder = new StringBuilder();
-                foreach (var line in Commands.Status())
-                    builder.AppendLine(line);
-                StatusText = builder.ToString();
-                StatusPanel.Visibility = Visibility.Visible;
-            }
+                ShowUpdateStatusPanel();
             e.Handled = true;
         }
+        private void ShowUpdateStatusPanel()
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var line in Commands.Status())
+                builder.AppendLine(line);
+            StatusText = builder.ToString();
+            StatusPanel.Visibility = Visibility.Visible;
+        }
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+            => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // Dispose resources

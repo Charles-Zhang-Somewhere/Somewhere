@@ -222,7 +222,9 @@ namespace Somewhere
                     .Select(filepath => Path.GetFileName(filepath)) // Returned strings contain folder path
                     .Where(filename => !IsFileInDatabase(filename) && filename != DBName)
                     .ToArray();    // Exclude DB file itself
-                string[] tags = args[1].SplitTags().ToArray();
+                string[] tags = null;
+                if (args.Length == 2)
+                    tags = args[1].SplitTags().ToArray();
                 List<string> result = new List<string>();
                 result.Add($"Add {newFiles.Length} files");
                 result.Add("------------");
