@@ -143,13 +143,13 @@
                                         <DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Name" />
-                                                <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemName}"/>
+                                                <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemName}"/>
                                             </DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Tags"/>
-                                                <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemTags}"/>
+                                                <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemTags}"/>
                                             </DockPanel>
-                                            <TextBox IsEnabled="{Binding IsItemFieldEditEnabled}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
+                                            <TextBox IsReadOnly="{Binding IsItemFieldReadOnly}" IsReadOnlyCaretVisible="{Binding IsItemFieldReadOnly}" Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
                                         </DockPanel>
                                     </Border>
                                 </Grid>

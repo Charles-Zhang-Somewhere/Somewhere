@@ -223,7 +223,7 @@ namespace SomewhereDesktop
                 NotifyPropertyChanged("ActiveItemTags");
                 NotifyPropertyChanged("ActiveItemMeta");
                 NotifyPropertyChanged("ActiveItemContent");
-                NotifyPropertyChanged("IsItemFieldEditEnabled");
+                NotifyPropertyChanged("IsItemFieldReadOnly");
             }
         }
         public string ActiveItemMeta
@@ -247,8 +247,8 @@ namespace SomewhereDesktop
         //    get => ActiveItem?.Content;
         //    set { ActiveItem.Content = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         //}
-        public bool IsItemFieldEditEnabled
-            => false;   // Don't allow edit for items
+        public bool IsItemFieldReadOnly
+            => true;   // Don't allow edit for items
         #endregion
 
         #region Notebook View Properties
