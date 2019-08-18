@@ -6,7 +6,7 @@ Welcome to **Somewhere**, a simple program that enables you to tag your files in
 
 **Features**
 
-1. Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader* and *WindowsAPICodePack*);
+1. Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader*, *Markdig.WPF* and *WindowsAPICodePack*);
 2. **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
 3. Non-intrusive, File system friendly (existing FS based meta-layer), designed for custom files and decent interoperability with existing hierarchical structure;
 4. Heavily documented including methodology;
@@ -333,6 +333,12 @@ untag - Untag a file.
 		filename - name of file
 		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; if the file doesn't have a specified tag then the tag is not effected
 ```
+
+# Somewhere Desktop Shortcuts
+
+The list of shortcuts are also available using `F12` button inside Somewhere Desktop app.
+
+...
 
 # Developer Doc
 

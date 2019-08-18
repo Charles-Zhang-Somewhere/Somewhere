@@ -45,4 +45,7 @@ CLI Tab Positional Autoconplete: ConsoleX.ReadLine takes a function<int, string[
 Files: show a "total" at the end, like `tags`
 (Implemented much later, put to road map) Advanced action on folder: flatten 
 Zip Archive support for true homogeneous container.
+
+Move Conceptual treatments to portfolio blog instead, and leave repository purely technical and code related; Leave usage notes there.
+Add liscence;
 ```

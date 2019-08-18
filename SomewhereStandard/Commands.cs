@@ -453,7 +453,7 @@ namespace Somewhere
                 string path = GenerateDBFile();
                 return new string[] { $"Database generated at ${path}" };
             }
-            catch (Exception) { throw; }
+            catch (InvalidOperationException) { throw; }
         }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
@@ -1144,10 +1144,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     )",
                     // Assign initial db configuration/status values
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')",
-                    @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('Change Log', 'V0.0.5: Basic commands implementations.
-V0.1.5: Basic Somewhere Desktop.', 'string', 'A record of implementation changes.')"
+                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }

@@ -13,26 +13,45 @@
     <Window.CommandBindings>
         <!-- Window Commands -->
         <CommandBinding Command="Close" CanExecute="CloseWindowCommand_CanExecute" Executed="CloseWindowCommand_Executed"/>
-        <CommandBinding Command="Zoom" CanExecute="MaximizeWIndowCommand_CanExecute" Executed="MaximizeWindowCommand_Executed"/>
-        <CommandBinding Command="BrowseBack" CanExecute="HideWindowCommand_CanExecute" Executed="HideWindowCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.ShowShortcuts" CanExecute="ShowShortcutsCommand_CanExecute" Executed="ShowShortcutsCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Maximize" CanExecute="MaximizeWindowCommand_CanExecute" Executed="MaximizeWindowCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Hide" CanExecute="HideWindowCommand_CanExecute" Executed="HideWindowCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchInventory" CanExecute="SwitchInventoryCommand_CanExecute" Executed="SwitchInventoryCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchNotebook" CanExecute="SwitchNotebookCommand_CanExecute" Executed="SwitchNotebookCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchKnowledge" CanExecute="SwitchKnowledgeCommand_CanExecute" Executed="SwitchKnowledgeCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchLogs" CanExecute="SwitchLogsCommand_CanExecute" Executed="SwitchLogsCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchNTFSSearch" CanExecute="SwitchNTFSSearchCommand_CanExecute" Executed="SwitchNTFSSearchCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchSettings" CanExecute="SwitchSettingsCommand_CanExecute" Executed="SwitchSettingsCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.SwitchStatus" CanExecute="SwitchStatusCommand_CanExecute" Executed="SwitchStatusCommand_Executed"/>
         <!-- Repository Commands -->
-        <CommandBinding Command="Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.New" CanExecute="NewHomeCommand_CanExecute" Executed="NewHomeCommand_Executed"/>
         <!-- Inventory Commands -->
-        <CommandBinding Command="Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
         <!-- Notebook Commands -->
-        <CommandBinding Command="New" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <!-- Window Commands -->
-        <KeyBinding Key="F11" Command="Zoom"/>
+        <KeyBinding Key="F11" Command="local:CustomCommands.Maximize"/>
+        <KeyBinding Key="F12" Command="local:CustomCommands.ShowShortcuts"/>
+        <!-- Back tilt ` is less common key so we enable ESC as well -->
+        <KeyBinding Key="Oem3" Modifiers="Ctrl" Command="local:CustomCommands.Hide"/>
+        <KeyBinding Key="ESC" Command="local:CustomCommands.Hide"/>
+        <KeyBinding Key="D1" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchInventory"/>
+        <KeyBinding Key="D2" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchNotebook"/>
+        <KeyBinding Key="D3" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchKnowledge"/>
+        <KeyBinding Key="D4" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchLogs"/>
+        <KeyBinding Key="D5" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchNTFSSearch"/>
+        <KeyBinding Key="D6" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchStatus"/>
+        <KeyBinding Key="D7" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchSettings"/>
         <!-- Repository Commands -->
-        <KeyBinding Key="F1" Command="Open"/>
+        <KeyBinding Key="F1" Command="local:CustomCommands.Open"/>
         <!-- Inventory Commands -->
-        <KeyBinding Key="F3" Command="Find"/>
-        <KeyBinding Key="Esc" Command="BrowseBack"/>
+        <KeyBinding Key="F3" Command="local:CustomCommands.Find"/>
         <!-- Notebook Commands -->
-        <KeyBinding Key="F2" Command="New"/>
+        <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
     </Window.InputBindings>
     <Window.Resources>
         <Style x:Key="TextBlockBase" TargetType="TextBlock">
@@ -69,8 +88,8 @@
                     <Label x:Name="SettingsTabLabel" Content="Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
-                    <Button Content="➖" Width="35" Height="35" Command="BrowseBack"/>
-                    <Button Content="▣" Width="35" Height="35" Command="Zoom"/>
+                    <Button Content="➖" Width="35" Height="35" Command="local:CustomCommands.Hide"/>
+                    <Button Content="▣" Width="35" Height="35" Command="local:CustomCommands.Maximize"/>
                     <Button Content="✖" Width="35" Height="35" Command="Close"/>
                 </DockPanel>
             </Grid>
@@ -89,7 +108,7 @@
                                 <StackPanel>
                                     <DockPanel>
                                         <Label Content="Search Name"/>
-                                        <TextBox Text="{Binding SearchNameKeyword, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBox x:Name="SearchNameKeywordTextBox" Text="{Binding SearchNameKeyword, UpdateSourceTrigger=PropertyChanged}"/>
                                         <Label Content="Type Filter"/>
                                         <ComboBox ItemsSource="{Binding TypeFilters}" SelectedItem="{Binding SelectedTypeFilter}"/>
                                     </DockPanel>
@@ -142,13 +161,16 @@
                             <DockPanel LastChildFill="True">
                                 <!-- Actions Region -->
                                 <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
-                                    <DockPanel>
+                                    <DockPanel LastChildFill="True">
+                                        <Button Content="Advanced" DockPanel.Dock="Right"/>
                                         <StackPanel>
-                                            <Button Content="Open" Command="Open"/>
-                                            <Button Content="Add" Command="local:CustomCommands.Add"/>
-                                        </StackPanel>
-                                        <StackPanel>
-
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Add" Command="local:CustomCommands.Add"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Open" Command="local:CustomCommands.Open"/>
+                                                <Button Content="New" Command="local:CustomCommands.New"/>
+                                            </StackPanel>
                                         </StackPanel>
                                     </DockPanel>
                                 </Border>
@@ -201,7 +223,7 @@
                             </Border>
                             <Border Style="{StaticResource Panel}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Bottom" Content="Create Note" Command="New"/>
+                                    <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"/>
                                     <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
                                               SelectedItem="{Binding ActiveNote}">
                                         <ListView.ItemTemplate>

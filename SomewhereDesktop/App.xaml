@@ -4,6 +4,12 @@
              xmlns:local="clr-namespace:SomewhereDesktop"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/generic.xaml"></ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        
+        
         <!-- Solarized Color Style: https://ethanschoonover.com/solarized/ -->
         <SolidColorBrush x:Key="base03" Color="#002b36"/>
         <SolidColorBrush x:Key="base02" Color="#073642"/>
@@ -443,5 +449,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

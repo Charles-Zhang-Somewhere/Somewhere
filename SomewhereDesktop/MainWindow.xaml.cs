@@ -342,9 +342,12 @@ namespace SomewhereDesktop
 
         #region Commands
         private void SearchCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-            => e.CanExecute = InventoryPanel.Visibility == Visibility.Visible;
+            => e.CanExecute = true;
         private void SearchCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Just switch to Inventory tab and focus on keyname search input box
+            TabHeader_MouseDown(InventoryTabLabel, null);
+            SearchNameKeywordTextBox.Focus();
         }
         private void CommandAdd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
@@ -367,7 +370,6 @@ namespace SomewhereDesktop
         }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
-
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
@@ -375,9 +377,13 @@ namespace SomewhereDesktop
                 CommitActiveItemChange();
             this.Close();
         }
-        private void MaximizeWIndowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-            => e.CanExecute = true;
 
+        private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void ShowShortcutsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => new DialogWindow(this, "Keyboard Shorcuts", SomewhereDesktop.Properties.Resources.ShortcutsDocument).ShowDialog();
+        private void MaximizeWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
@@ -415,11 +421,29 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void OpenHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            var dialog = GetHomeDirectoryFileDialog("Select home directory");
+            var dialog = GetHomeDirectoryFileDialog("Select home directory", false, true);
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 OpenRepository(dialog.FileName);
         }
-        private CommonOpenFileDialog GetHomeDirectoryFileDialog(string title, bool file = true, bool folder = false)
+        private void NewHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void NewHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            var dialog = GetHomeDirectoryFileDialog("Select home directory", false, true);
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                try
+                {
+                    Commands.New(dialog.FileName);
+                    OpenRepository(dialog.FileName);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    new DialogWindow(this, "Failed to create Home", ex.Message).ShowDialog();
+                }   
+            }
+        }
+        private CommonOpenFileDialog GetHomeDirectoryFileDialog(string title, bool file, bool folder)
         {
             CommonOpenFileDialog dialog = new CommonOpenFileDialog();
             dialog.InitialDirectory = Commands.HomeDirectory;
@@ -430,7 +454,34 @@ namespace SomewhereDesktop
                 dialog.IsFolderPicker = true;
             return dialog;
         }
-
+        private void SwitchInventoryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchNotebookCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchKnowledgeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchLogsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchNTFSSearchCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchSettingsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchStatusCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void SwitchInventoryCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(InventoryTabLabel, null);
+        private void SwitchNotebookCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(NotebookTabLabel, null);
+        private void SwitchKnowledgeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(KnowledgeTabLabel, null);
+        private void SwitchLogsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(LogsTabLabel, null);
+        private void SwitchNTFSSearchCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(NTFSSearchTabLabel, null);
+        private void SwitchSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(SettingsTabLabel, null);
+        private void SwitchStatusCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => TabHeader_MouseDown(StatusTabLabel, null);
         #endregion
 
         #region Window Events
@@ -513,7 +564,8 @@ namespace SomewhereDesktop
             }
             else if(label == StatusTabLabel)
                 ShowUpdateStatusPanel();
-            e.Handled = true;
+            if(e != null)
+                e.Handled = true;
         }
         private void ShowUpdateStatusPanel()
         {
@@ -609,6 +661,7 @@ namespace SomewhereDesktop
             NotifyPropertyChanged(propertyName);
             return true;
         }
+
         #endregion
     }
 }
