@@ -200,7 +200,8 @@ namespace Somewhere
 
         #region Commands (Public Interface as Library)
         [Command("Add an item to home.")]
-        [CommandArgument("itemname", "name of item; use * to add all items in current directory")]
+        [CommandArgument("itemname", "name of item; use * to add all items in current directory; " +
+            "if given path is outside Home directory - for files they will be copied, for folders they will be cut and paste inside Home")]
         [CommandArgument("tags", "tags for the item", optional: true)]
         public IEnumerable<string> Add(params string[] args)
         {
