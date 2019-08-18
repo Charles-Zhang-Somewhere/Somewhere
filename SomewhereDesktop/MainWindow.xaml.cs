@@ -618,7 +618,7 @@ namespace SomewhereDesktop
                 foreach (var log in Commands.GetAllLogs())
                 {
                     LogEvent logEvent = log.LogEvent;
-                    builder.AppendLine($"{log.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),-25}{logEvent.Command, -20}{string.Join(" ", logEvent.Arguments)}");
+                    builder.AppendLine($"{log.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),-25}{logEvent.Command, -20}{(logEvent.Arguments != null ? string.Join(" ", logEvent.Arguments) : string.Empty)}");
                     builder.AppendLine($"{logEvent.Result}");
                 }
                 ConfigurationsText = builder.ToString();
