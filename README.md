@@ -1,48 +1,19 @@
-```
-Foreground for button text is not working again
-Popup selection window, tag searching and clicking
-Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors
-PopupSelectionWindow
-FileSystemWaster for COmmands
-Finish draft GUI
-Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command
-Files command rename to items
-Add command during add if directory append trailing slash to differentiate it from regular files
-Open: switch home directory
-Archive: zip the home directory (and put the archive inside it)
-Find action: copy (file to clipboard), copynames, copypaths
-
-Add file watcher
-`create` for knowledge when file without title (instead of creating a seperate **knowledge** table, it would be nice if we have all existing commands)
-`add` wiht cut from foreign
-Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
-Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
-File (Read) - Name: Shows all detail about a particular file (including virtual file)
-Clean ("purge"): clean all deleted files. Require confirmation. Show report list after action.
-retag tags add/remove tags: filter select items then apply accordingly
-update file newtags: remove all old tags from a file and apply a new set of tags
-untag: When we do untag, remove empty tags
-For all operations that involve physical files, add filename translation (clipping), clip to a length of (including path)...  Keep `_delete` and file extension
-For Add *: check and add only if the file is not home database and is not already added.
-
-Allow customized color definitions per repository in `ColorSettings` property
-```
-
-> (let) Organization ends here. Already in final compact form. (The next step would be to enable embedding as an option, and support compression)
-> this application has got an opinion.
+(This documentation is still work-in-progress)
 
 # Overview
 
+Welcome to **Somewhere**, a simple program that enables you to tag your files in a designated "**Home folder**". it's my best wish that this tool can come handy to you!
+
 **Features**
 
-1. Free, open source, dedicated, cross-platform, SQLite based, almost 0 dependency (except SQLite and YAML and .Net Runtime)
-2. Item based, first order/primary citizen (how to call it?) tags, (custom) theory backed 
-3. Non-intrusive, FS based, designed for custom files and decent interoperability with existing hierarchical structure
-4. Heavily documented including methodology
-5. Absolutely self contained
-6. Cutting Edge technology, C#.Net Core based, last for another 100 years.
-7. Dark mode, B/W color scheme
-8. Long and expressive item names as you like: even something like this (notice each line is **real**):
+1. Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader* and *WindowsAPICodePack*);
+2. **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
+3. Non-intrusive, File system friendly (existing FS based meta-layer), designed for custom files and decent interoperability with existing hierarchical structure;
+4. Heavily documented including methodology;
+5. Absolutely self contained;
+6. Cutting Edge technology, C#.Net Core/Standard based, last for another 100 years, will migrate to .Net Core 3.0 when it comes out;
+7. Dark mode, B/W color scheme, custom color scheme configuration (will be available in the future);
+8. Long and expressive item names as you like - even something like this (notice each line is **real**):
 
 ```
 This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
@@ -57,11 +28,13 @@ This is /my file/ in Somewhere so I should be able to do <anything> I want with 
 This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********".txt
 ```
 
-Though names like that is not really recommended - you should name your file whatever way you wish but keep it succint and meaningful so you can easily find it.
+However, names like that is *not really recommended* - you should name your file whatever way you wish but keep it **succinct and meaningful** so you can easily find it.
 
 **Who should use it**
 
-This app is absolutely intended for personal use. Sharing files on network drive is OK but it's not intended for multi-user simultaneously editing. The key use case is for heterogeneous file management - the more diverse the files, the more specific the file, the better this system can work. If you have tens of thousands of photos for very specific circumstances then you are OK or even better just stick with regular folders, but if you have a few thousand pictures that you refer to regularly and each contains a very different subject (much like my own Pinterest boards - which sucks because Pinterest's board based management approach is absolutely arcane - but well it's functional because "there is no better (I.e. tag based) solutions yet" (for me)), then this system will be much more efficient. Besides, you can mix the two as mentioned below.
+(I will change the tone below when I get a chance, doesn't sound very cool)
+
+This app is absolutely intended for **personal use**; By design it's not tested for inter-network usage, e.g. between enterprise shared drives. Sharing files on network drive might be OK but it's definitely not intended for *multi-user simultaneously editing*. The key use case is for **heterogeneous file management** - (which is defined as) the more diverse the files, the more specific the file, the better this system can work. If you have tens of thousands of photos for very specific circumstances then you are OK or even better just stick with **regular folders**, but if you have a few thousand pictures that you refer to regularly and each contains a very different **subject** (much like my own Pinterest boards - which is deficient despite the variety because Pinterest's board based management approach is absolutely arcane - but well it's functional because "there is no better (I.e. tag based) solutions yet" (for me)), then this system will be much more efficient. Besides, you can mix the two as mentioned below.
 
 1. Those who have been bothered by note and file organization
 2. Those who enjoy tags in other platforms
@@ -123,6 +96,12 @@ This app is absolutely intended for personal use. Sharing files on network drive
 	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
 19. Reflection on Hierarchical Structure: some might mistakenly think hierarchical structures are thus not useful or even bad - however hierarchical structures are indeed very powerful structures for organizing knowledge for trees are very efficient for searching purpose. However the biggest issue as we shall identify here, is trees are good only for relatively static data, e.g. English dictionary with thumb index - the reorganization cost is high - but that's exactly the case for personal data. Also it might occur that trees are better to model topological features (e.g. shapes of words or animals) rather than semantically features (which doesn't have solid forms).
 20. Everything: unambiguous, folder and file names can be utilized, not intended for organizing, very specific; XYPlorer: not pure, temporary for work sessions is good, limited capacity due to mechanism (click and drag) - again, only suitable for sessional work not permanent organization.
+21. Repository/Home: each Somewhere home is a repository, managed by SQLite database
+1. Physical (File) Name: File must exist and must be managed by Somewhere. This name for max efficiency depends on its database presence. We require only a max of'#DDDDDDDD' (database item ID) size of characters (when it's not unique). Notice a file's ID is guaranteed to be unique throughout **Somewhere repository lifetime**.
+2. Knowledge Link: knowledge item is linked by a either: item name (case sensitive), item ID (starting with # sign), tags list (start with t:), or a more general **search filter** (everything-lile, pending reference definition) (find: filter strings separated by space and quotes)
+3. (Reflection note) Key motivation: we find it perfectly fine for the purpose of managing personal data using a SQLite database as a back store for all tagging information or even with actual data contents, but manually editing data tables are not very efficient (even with the help of SQLite DB Browser it can still be less than optimal), and manually dealing with tabular cells is not that keyboard efficient as well. Instead of devising a completely new scheme, nowadays I value more data operability and wish to create a tool that augments existings infrastructure instead of creating new things, thus a very well-defined customized SQLite database with pre-defined table formats are used to manage those files.
+    * Later during the development, and partly inspired by some discussion with Author of Bookmark ninja, I realized this tool can also accomodating note taking purpose, with better integration with file linking (compared with and inspired by limitation of TiddlyWiki) - all we need is MD, and this can promote better data interopreability. In this case Tiddly Wiki becomes more of a plain indexed note tool. I do recognize this change of usage is mostly due to the limit of my phone's operating power, otherwise Tiddly wiki is very good for self-contained plain text notes.
+4. Homogenous Container: as proposed in MULTITUDE (theory treatment pending summary on detailed proposed knowledge management framework differentiating between tags and folders and how to properly use them).
 
 ## References
 
@@ -138,6 +117,14 @@ This app is absolutely intended for personal use. Sharing files on network drive
 9. RoboOS: Flattened FS inspiration
 10. (Anti)tagxfs: good [reading](http://tagxfs.sourceforge.net), some excerts of points..., too long a name, the scheme is not flexible, the underlying architecture/structure is not obvious, no **GUI support is not good** (even for efficient typers, GUI when utilized properly can provide much more information at a glance, so a proper GUI should be provided as a complement)
 11. Everything (voidtools): inspired the name for Somewhere.
+
+# Design Principal
+
+Minimal UI, Functional, Data Driven, Text based.
+
+1. Tags field are plain text box, for autocompletion pupup is used. No small tag button with even smaller cancel button is provided. So it's simple and less error prone, and plain enough to ensure data operability with CLI and GUI.
+2. No fancy features, strictly necessary. Arguments are positional.
+3. CLI driven, GUI is just a client.  
 
 # Developement Notes and Roadmap
 
@@ -162,6 +149,8 @@ A functional and effective application may not just end here, I have several sim
 	* REST API (rename etc...)
 7. **Add and Move with a Style** with embedded scripts (Cross Platform friendly, Lua?) in a loop inside a resource file, or at least basic regular expression (search and replace syntax) + tag (filter and name reference)  support.
 8. Test support for linux and mac for CLI.
+9. Enable embedding as an option (disabled, "Content" dedicated to text notes)
+10. Add support for compression and archiving
 
 ## Software Components
 
@@ -243,6 +232,7 @@ Cautious:
 2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
 3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
 4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
+5. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
 
 ## Case Studies
 
