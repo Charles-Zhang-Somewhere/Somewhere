@@ -16,7 +16,7 @@ namespace Somewhere
     {
         #region Constructor and Disposing
         public Commands(string initialWorkingDirectory)
-            => HomeDirectory = initialWorkingDirectory;
+            => HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar; 
         public void Dispose()
         {
             if (_Connection != null)
@@ -25,12 +25,15 @@ namespace Somewhere
         #endregion
 
         #region Public Properties
-        private string _HomeDirectory { get; set; }
         /// <summary>
-        /// Get or set working directory; Expects to be a full path, 
+        /// Get current working directory; Expects to be a full path, 
         /// because we are not calling "SetCurrentDirectory()" - to avoid messing up the host env
         /// </summary>
-        public string HomeDirectory { get => _HomeDirectory; set => _HomeDirectory = Path.GetFullPath(value) + Path.DirectorySeparatorChar; }
+        /// <remarks>
+        /// Changing HD is not allowed; 
+        /// To swtich a home directory, just create a new Commands instance with new path
+        /// </remarks>
+        public string HomeDirectory { get; }
         /// <summary>
         /// Returns a list of all Command methods
         /// </summary>
