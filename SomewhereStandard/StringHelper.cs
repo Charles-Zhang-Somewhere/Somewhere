@@ -16,7 +16,7 @@ namespace StringHelper
         /// <remarks>
         /// Not necessarily super efficient, but it works for such one-shot circumstances
         /// </remarks>
-        public static string[] BreakCommandLineArguments(this string v)
+        public static string[] BreakCommandLineArgumentPositions(this string v)
         {
             List<string> arguments = new List<string>();
             bool isInsideQuote = false;
@@ -69,6 +69,20 @@ namespace StringHelper
                 arguments.Add(sofar);
             return arguments.ToArray();
         }
+
+        /// <summary>
+        /// Get lower cased command name from an array of parsed command arguments
+        /// </summary>
+        public static string GetCommandName(this string[] commandLineArgumentsArray, bool lowerCase = true)
+            => lowerCase
+            ? commandLineArgumentsArray[0].ToLower()
+            : commandLineArgumentsArray[0];
+
+        /// <summary>
+        /// Get command line arguments since the second element of the array
+        /// </summary>
+        public static string[] GetArguments(this string[] commandLineArgumentsArray, bool lowerCase = true)
+            => commandLineArgumentsArray.ToList().GetRange(1, commandLineArgumentsArray.Length - 1).ToArray();
 
         /// <summary>
         /// Strictly escape invalid filename characters into underscore for both Linux and Windows systems;

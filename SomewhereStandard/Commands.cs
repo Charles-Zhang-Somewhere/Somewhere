@@ -1144,7 +1144,9 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     )",
                     // Assign initial db configuration/status values
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')"
+                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')",
+                    @"INSERT INTO Configuration (Key, Value, Type, Comment) 
+                        values ('ThemeColors', '', 'string', 'Theme colors in YAML format.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
@@ -1167,7 +1169,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             int maxLength = arguments.Length;
             int minLength = arguments.Where(a => a.Optional == false).Count();
             if (args.Length > maxLength || args.Length < minLength)
-                throw new InvalidOperationException($"Command {commandName} requires " +
+                throw new InvalidOperationException($"Command `{commandName}` requires " +
                     $"{(maxLength != minLength ? $"{arguments.Length}": $"{minLength}-{maxLength}")} arguments, " +
                     $"{args.Length} is given. Use `help {commandName}`.");
         }

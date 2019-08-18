@@ -12,39 +12,47 @@ namespace SomewhereTest
         [Fact]
         public void ParseEmptyStrings()
         {
-            string[] arguments = "".BreakCommandLineArguments();
+            string[] arguments = "".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { }.Except(arguments));
 
-            arguments = " ".BreakCommandLineArguments();
+            arguments = " ".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { }.Except(arguments));
         }
 
         [Fact]
         public void ParseSimpleSpaceSeperatedArguments()
         {
-            string[] arguments = "a1 a2 a3".BreakCommandLineArguments();
+            string[] arguments = "a1 a2 a3".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { "a1", "a2", "a3" }.Except(arguments));
         }
 
         [Fact]
         public void ParseSimpleSpaceSeperatedArgumentsWithQuotedComponents()
         {
-            string[] arguments = "a1 a2 \"a long\" a3".BreakCommandLineArguments();
+            string[] arguments = "a1 a2 \"a long\" a3".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { "a1", "a2", "a long", "a3" }.Except(arguments));
         }
 
         [Fact]
         public void ParseSimpleSpaceSeperatedArgumentsWithQuotedComponentsAndEscapedQuotes()
         {
-            string[] arguments = "a1 a2 \"a long\" a3 \"he said: \"\"Don't worry, it's going to be a good day tomorrow.\"\"\"".BreakCommandLineArguments();
+            string[] arguments = "a1 a2 \"a long\" a3 \"he said: \"\"Don't worry, it's going to be a good day tomorrow.\"\"\"".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { "a1", "a2", "a long", "a3", "he said: \"Don't worry, it's going to be a good day tomorrow.\"" }.Except(arguments));
         }
 
         [Fact]
         public void ParseCombined()
         {
-            string[] arguments = "a1 \"a2\" \"\"\"Something's fishy.\"\" He said.\" a3 \"Hello World\"".BreakCommandLineArguments();
+            string[] arguments = "a1 \"a2\" \"\"\"Something's fishy.\"\" He said.\" a3 \"Hello World\"".BreakCommandLineArgumentPositions();
             Assert.Empty(new string[] { "a1", "a2", "\"Something's fishy.\" He said.", "a3", "Hello World" }.Except(arguments));
+        }
+
+        [Fact]
+        public void ShoudTellDifferenceBetweenCommandNameAndArguemts()
+        {
+            string[] arguments = "Add note.txt note2.txt".BreakCommandLineArgumentPositions();
+            Assert.Equal("add", arguments.GetCommandName());
+            Assert.Empty(new string[] { "note.txt", "note2.txt" }.Except(arguments.GetArguments()));
         }
 
         [Fact]

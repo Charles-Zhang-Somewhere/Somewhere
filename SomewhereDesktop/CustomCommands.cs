@@ -21,6 +21,7 @@ namespace SomewhereDesktop
         public static readonly RoutedUICommand Maximize = new RoutedUICommand("Maximize window", "Maximize", typeof(CustomCommands));
         public static readonly RoutedUICommand Hide = new RoutedUICommand("Hide window", "Hide", typeof(CustomCommands));
         public static readonly RoutedUICommand ShowShortcuts = new RoutedUICommand("Show shortcuts dialog", "ShowShortcuts", typeof(CustomCommands));
+        public static readonly RoutedUICommand Refresh = new RoutedUICommand("Refresh Inventory panel", "Refresh", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchInventory = new RoutedUICommand("Switch to Inventory tab", "SwitchInventory", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchNotebook = new RoutedUICommand("Switch to Notebook tab", "SwitchNotebook", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchKnowledge = new RoutedUICommand("Switch to Knowledge tab", "SwitchKnowledge", typeof(CustomCommands));

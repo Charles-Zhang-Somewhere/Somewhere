@@ -147,14 +147,15 @@ namespace SomewhereDesktop
         private void UpdateItemPreview()
         {
             // Clear previous
-            PreviewText = null;
-            PreviewImage = null;
-            PreviewStatus = null;
+            PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
+            // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
-            // Preview knowledge and note
+            // Preview knowledge and note (default as markdown)
             if (ActiveItem.Content != null || ActiveItem.Name == null)
-                PreviewText = ActiveItem.Content;
+            {
+                PreviewMarkdown = ActiveItem.Content;
+            }
             // Preview folder
             else if (ActiveItem.Name.EndsWith("/") || ActiveItem.Name.EndsWith("\\"))
             {
@@ -170,6 +171,9 @@ namespace SomewhereDesktop
                 string extension = System.IO.Path.GetExtension(ActiveItem.Name).ToLower();
                 if (extension == ".png" || extension == ".img" || extension == ".jpg")
                     PreviewImage = Commands.GetPhysicalPath(ActiveItem.Name);
+                // Preview markdown
+                else if (extension == ".md")
+                    PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
                 else
                     PreviewStatus = "No Preview Available for Binary Data";
             }
@@ -245,6 +249,8 @@ namespace SomewhereDesktop
         private string _PreviewText;
         public string PreviewText { get => _PreviewText; set => SetField(ref _PreviewText, value); }
         private string _PreviewStatus;
+        private string _PreviewMarkdown;
+        public string PreviewMarkdown { get => _PreviewMarkdown; set => SetField(ref _PreviewMarkdown, value); }
         public string PreviewStatus { get => _PreviewStatus; set => SetField(ref _PreviewStatus, value); }
         private string _PreviewImage;
         public string PreviewImage { get => _PreviewImage; set => SetField(ref _PreviewImage, value); }
@@ -333,6 +339,10 @@ namespace SomewhereDesktop
         #region Status View Properties
         private string _StatusText;
         public string StatusText { get => _StatusText; set => SetField(ref _StatusText, value); }
+        private string _ConsoleInput;
+        public string ConsoleInput { get => _ConsoleInput; set => SetField(ref _ConsoleInput, value); }
+        private string _ConsoleResult;
+        public string ConsoleResult { get => _ConsoleResult; set => SetField(ref _ConsoleResult, value); }
         #endregion
 
         #region Setting View Properties
@@ -353,6 +363,9 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void CommandAdd_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Go to inventory panel
+            TabHeader_MouseDown(InventoryTabLabel, null);
+            // Show add dialog
             var dialog = GetHomeDirectoryFileDialog("Select files and folders to add", true, true);
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
@@ -402,8 +415,16 @@ namespace SomewhereDesktop
                 CommitActiveItemChange();
             this.WindowState = WindowState.Minimized;
         }
+        private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = InventoryPanel.Visibility == Visibility.Visible;
+        private void RefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            RefreshAllItems();
+            RefreshItems();
+            InfoText = $"{AllItems.Count()} items discovered.";
+        }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
+            => e.CanExecute = true;
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Add to database
@@ -416,6 +437,9 @@ namespace SomewhereDesktop
             RefreshNotes();
             // Set activeadd
             ActiveNote = item;
+            // Show note panel and focus on editing textbox
+            TabHeader_MouseDown(NotebookTabLabel, null);
+            NotenameTextBox.Focus();
         }
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
@@ -481,7 +505,10 @@ namespace SomewhereDesktop
         private void SwitchSettingsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
             => TabHeader_MouseDown(SettingsTabLabel, null);
         private void SwitchStatusCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => TabHeader_MouseDown(StatusTabLabel, null);
+        {
+            TabHeader_MouseDown(StatusTabLabel, null);
+            ConsoleInputTextBox.Focus();
+        }
         #endregion
 
         #region Window Events
@@ -574,6 +601,27 @@ namespace SomewhereDesktop
                 builder.AppendLine(line);
             StatusText = builder.ToString();
             StatusPanel.Visibility = Visibility.Visible;
+        }
+        private void ConsoleCommandInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
+            {
+                string[] positions = ConsoleInput.BreakCommandLineArgumentPositions();
+                string command = positions.GetCommandName();
+                string[] arguments = positions.GetArguments();
+                // Disabled unsupported commands (i.e. those commands that have console input)
+                if (command == "files" || command == "find")
+                    ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
+                else
+                {
+                    StringBuilder result = new StringBuilder();
+                    foreach (var line in Commands.ExecuteCommand(command, arguments))
+                        result.AppendLine(line);
+                    ConsoleResult = result.ToString();
+                }
+                ConsoleInput = string.Empty;
+                e.Handled = true;
+            }
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
             => this.DragMove();

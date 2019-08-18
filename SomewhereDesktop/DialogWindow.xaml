@@ -30,9 +30,7 @@
                 </DockPanel>
             </Grid>
             <Button Content="OK" Command="Close" DockPanel.Dock="Bottom"/>
-            <md:MarkdownViewer Markdown="{Binding Markdown}">
-                
-            </md:MarkdownViewer>
+            <md:MarkdownViewer Markdown="{Binding Markdown}"/>
         </DockPanel>
     </Grid>
 </Window>

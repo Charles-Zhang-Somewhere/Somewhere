@@ -61,13 +61,28 @@ namespace SomewhereDesktop.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to # Panels
+        ///   Looks up a localized string similar to # Window
+        ///
+        ///* `F11`  Maximize Somewhere Desktop window
+        ///* `F12`  Show Shortcuts
+        ///* `` Ctrl+\` ``: Hide Somewhere Desktop window 
+        ///* `ESC`:  Hide Somewhere Desktop window (same as `` Ctrl+\` ``)
+        ///
+        ///# Panels
         ///
         ///* `Ctrl+1`: Show Inventory Panel
+        ///* `Ctrl+2`: Show Notebook Panel
+        ///* `Ctrl+3`: Show Knowledge Panel
+        ///* `Ctrl+4`: Show Logs Panel
+        ///* `Ctrl+5`: Show NTFSSearch Panel
+        ///* `Ctrl+6`: Show Status Panel
+        ///* `Ctrl+7`: Show Settings Panel
         ///
         ///# Commands
         ///
-        ///.
+        ///* `F1`: Open
+        ///* `F3`: Go to Inventory panel and search
+        ///*  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string ShortcutsDocument {
             get {

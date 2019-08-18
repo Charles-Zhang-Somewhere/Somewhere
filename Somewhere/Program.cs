@@ -41,52 +41,21 @@ namespace Somewhere
                     else
                     {
                         // Handle commands (in lower case)
-                        var commandName = line.Substring(0, line.IndexOf(' ') == -1 ? line.Length : line.IndexOf(' '));
-                        string[] arguments = line.IndexOf(' ') == -1 ? new string[] { } : line.Substring(line.IndexOf(' ')).BreakCommandLineArguments();
-                        HandleCommand(Commands, commandName, arguments);
+                        var positions = line.BreakCommandLineArgumentPositions();
+                        var commandName = positions.GetCommandName();
+                        string[] arguments = positions.GetArguments();
+                        Commands.ProcessCommand(commandName, arguments);
                     }
                 }
             }
             else
             {
                 // Handle commands directly (in lower case)
-                var commandName = args[0].ToLower();
-                var arguments = args.ToList().GetRange(1, args.Length - 1).ToArray();
-                HandleCommand(Commands, commandName, arguments);
+                var commandName = args.GetCommandName();
+                var arguments = args.GetArguments();
+                Commands.ProcessCommand(commandName, arguments);
             }
         }
-        #endregion
-
-        #region Subroutine
-        static void HandleCommand(Commands Commands, string commandName, string[] arguments)
-        {
-            if (Commands.CommandNames.ContainsKey(commandName))
-            {
-                var method = Commands.CommandNames[commandName];
-                var attribute = Commands.CommandAttributes[method];
-                try
-                {
-                    // Execute the command
-                    IEnumerable<string> result = method.Invoke(Commands, new[] { arguments }) as IEnumerable<string>;
-                    StringBuilder builder = new StringBuilder();
-                    if (result != null)
-                    {
-                        foreach (string line in result)
-                        {
-                            Console.WriteLine(line);
-                            builder.AppendLine(line);
-                        }
-                    }
-
-                    // Log the command
-                    if (attribute.Logged)
-                        Commands.AddLog(new LogEvent { Command = commandName, Arguments = arguments, Result = builder.ToString() });
-                }
-                catch (Exception e) { Console.WriteLine($"{e.InnerException.Message}"); }
-            }
-            else
-                Console.WriteLine($"Specified command {commandName} doesn't exist. Try again.");
-        }
-        #endregion
+        #endregion        
     }
 }

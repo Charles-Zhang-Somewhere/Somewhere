@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SomewhereDesktop"
+        xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         mc:Ignorable="d"
         Title="Somewhere Desktop"
         WindowState="Normal" WindowStyle="None" AllowsTransparency="False"
@@ -29,6 +30,7 @@
         <!-- Inventory Commands -->
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
     </Window.CommandBindings>
@@ -50,6 +52,7 @@
         <KeyBinding Key="F1" Command="local:CustomCommands.Open"/>
         <!-- Inventory Commands -->
         <KeyBinding Key="F3" Command="local:CustomCommands.Find"/>
+        <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
     </Window.InputBindings>
@@ -79,13 +82,13 @@
         <DockPanel LastChildFill="True">
             <Grid Background="{StaticResource Base1}" DockPanel.Dock="Top">
                 <StackPanel Orientation="Horizontal">
-                    <Label x:Name="InventoryTabLabel" Content="Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="NotebookTabLabel" Content="Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="KnowledgeTabLabel" Content="Knowledge" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="LogsTabLabel" Content="Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="NTFSSearchTabLabel" Content="NTFSSearch" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="StatusTabLabel" Content="Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="SettingsTabLabel" Content="Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="InventoryTabLabel" Content="1. Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="NotebookTabLabel" Content="2. Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="KnowledgeTabLabel" Content="3. Knowledge" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="LogsTabLabel" Content="4. Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="NTFSSearchTabLabel" Content="5. NTFSSearch" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="StatusTabLabel" Content="6. Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="SettingsTabLabel" Content="7. Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
                     <Button Content="➖" Width="35" Height="35" Command="local:CustomCommands.Hide"/>
@@ -104,7 +107,7 @@
                         <!-- Items Panel -->
                         <DockPanel x:Name="InventoryPanel" Visibility="Visible">
                             <!-- Items List Region -->
-                            <Border Style="{StaticResource Panel}">
+                            <Border Style="{StaticResource Panel}" MaxWidth="800">
                                 <StackPanel>
                                     <DockPanel>
                                         <Label Content="Search Name"/>
@@ -162,7 +165,7 @@
                                 <!-- Actions Region -->
                                 <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
                                     <DockPanel LastChildFill="True">
-                                        <Button Content="Advanced" DockPanel.Dock="Right"/>
+                                        <Button Content="Advanced" DockPanel.Dock="Right" Foreground="{StaticResource Highlight3}"/>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Button Content="Add" Command="local:CustomCommands.Add"/>
@@ -187,6 +190,7 @@
                                             <Label Content="{Binding PreviewText}"/>
                                             <Image Source="{Binding PreviewImage}"/>
                                             <TextBlock Text="{Binding PreviewStatus}"/>
+                                            <md:MarkdownViewer Markdown="{Binding PreviewMarkdown}"/>
                                         </Grid>
                                     </Border>
                                     <GridSplitter Grid.Column="1"/>
@@ -218,7 +222,7 @@
                                     </TextBlock>
                                     <Button Content="Export All" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
                                     <Button Content="Cancel" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
-                                    <TextBox DockPanel.Dock="Left"/>
+                                    <TextBox Text="{Binding SearchNotebookKeyword}" DockPanel.Dock="Left"/>
                                 </DockPanel>
                             </Border>
                             <Border Style="{StaticResource Panel}">
@@ -245,7 +249,7 @@
                                     <LineBreak/>
                                     It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
                                         </TextBlock>
-                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
+                                        <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
                                     </DockPanel>
                                     <DockPanel DockPanel.Dock="Top">
                                         <Label Content="Tags"/>
@@ -319,7 +323,21 @@
                         </DockPanel>
                         <!-- Status Panel -->
                         <DockPanel x:Name="StatusPanel" Visibility="Collapsed" LastChildFill="True">
+                            <!-- Add All Button -->
                             <Button Content="Add All" Click="RepositoryAddAllFiles_Click" DockPanel.Dock="Bottom"/>
+                            <!-- Simple Console Commands -->
+                            <Border DockPanel.Dock="Bottom">
+                                <DockPanel>
+                                    <!-- Command Input Textbox -->
+                                    <DockPanel LastChildFill="True" DockPanel.Dock="Top">
+                                        <Label Content="Command:" Style="{StaticResource Header}"/>
+                                        <TextBox x:Name="ConsoleInputTextBox" Text="{Binding ConsoleInput, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="ConsoleCommandInputTextBox_PreviewKeyDown"/>
+                                    </DockPanel>
+                                    <!-- Result Area (Fixed Height) -->
+                                    <TextBox Text="{Binding ConsoleResult}" Height="300" IsReadOnly="True"/>
+                                </DockPanel>
+                            </Border>
+                            <!-- Status Text Area-->
                             <TextBox IsReadOnly="True" Text="{Binding StatusText}"/>
                         </DockPanel>
                         <!-- Settings Panel -->

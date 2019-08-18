@@ -3,7 +3,7 @@
                     xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf">
     <!-- Document styles -->
     <Style TargetType="{x:Type FlowDocument}" x:Key="{x:Static markdig:Styles.DocumentStyleKey}">
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="Lavender" />
         <Setter Property="FontFamily" Value="Calibri" />
         <Setter Property="TextAlignment" Value="Left" />
     </Style>
@@ -12,31 +12,33 @@
         <Setter Property="Padding" Value="0,0,0,0" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.CodeBlockStyleKey}">
-        <Setter Property="Background" Value="#ffd3d3d3" />
+        <Setter Property="Background" Value="MidnightBlue" />
+        <Setter Property="Foreground" Value="DodgerBlue"/>
         <Setter Property="FontFamily" Value="Consolas, Lucida Sans Typewriter, Courier New" />
     </Style>
     <Style TargetType="{x:Type Run}" x:Key="{x:Static markdig:Styles.CodeStyleKey}">
-        <Setter Property="Background" Value="#ffd3d3d3" />
+        <Setter Property="Background" Value="MidnightBlue" />
+        <Setter Property="Foreground" Value="DodgerBlue"/>
         <Setter Property="FontFamily" Value="Consolas, Lucida Sans Typewriter, Courier New" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.Heading1StyleKey}">
         <Setter Property="FontSize" Value="42" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="Gainsboro" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.Heading2StyleKey}">
         <Setter Property="FontSize" Value="20" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="Gainsboro" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.Heading3StyleKey}">
         <Setter Property="FontSize" Value="18" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="Gainsboro" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.Heading4StyleKey}">
         <Setter Property="FontSize" Value="18" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="AliceBlue" />
         <Setter Property="FontWeight" Value="Light" />
         <Setter Property="TextDecorations" Value="Underline" />
     </Style>
