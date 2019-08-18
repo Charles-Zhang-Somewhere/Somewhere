@@ -86,16 +86,15 @@ namespace SomewhereDesktop.Properties {
         ///* `Ctrl+1`: Show Inventory Panel
         ///* `Ctrl+2`: Show Notebook Panel
         ///* `Ctrl+3`: Show Knowledge Panel
-        ///* `Ctrl+4`: Show Logs Panel
+        ///* `Ctrl+4`: Show Status Panel
         ///* `Ctrl+5`: Show NTFSSearch Panel
-        ///* `Ctrl+6`: Show Status Panel
+        ///* `Ctrl+6`: Show Logs Panel
         ///* `Ctrl+7`: Show Settings Panel
         ///
         ///# Commands
         ///
-        ///* `F1`: Open
-        ///* `F3`: Go to Inventory panel and search
-        ///*  [rest of string was truncated]&quot;;.
+        ///* `F1`: Open Somewhere Home repository
+        ///* `F2`: Go to Note [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string ShortcutsDocument {
             get {

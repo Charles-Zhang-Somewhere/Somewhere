@@ -48,9 +48,9 @@
         <KeyBinding Key="D1" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchInventory"/>
         <KeyBinding Key="D2" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchNotebook"/>
         <KeyBinding Key="D3" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchKnowledge"/>
-        <KeyBinding Key="D4" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchLogs"/>
+        <KeyBinding Key="D4" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchStatus"/>
         <KeyBinding Key="D5" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchNTFSSearch"/>
-        <KeyBinding Key="D6" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchStatus"/>
+        <KeyBinding Key="D6" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchLogs"/>
         <KeyBinding Key="D7" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchSettings"/>
         <!-- Repository Commands -->
         <KeyBinding Key="F1" Command="local:CustomCommands.Open"/>
@@ -93,9 +93,9 @@
                     <Label x:Name="InventoryTabLabel" Content="1. Inventory" Style="{StaticResource Title}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NotebookTabLabel" Content="2. Notebook" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="KnowledgeTabLabel" Content="3. Knowledge" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="LogsTabLabel" Content="4. Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="StatusTabLabel" Content="4. Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="NTFSSearchTabLabel" Content="5. NTFSSearch" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
-                    <Label x:Name="StatusTabLabel" Content="6. Status" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
+                    <Label x:Name="LogsTabLabel" Content="6. Logs" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                     <Label x:Name="SettingsTabLabel" Content="7. Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
