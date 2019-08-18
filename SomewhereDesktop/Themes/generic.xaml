@@ -12,12 +12,12 @@
         <Setter Property="Padding" Value="0,0,0,0" />
     </Style>
     <Style TargetType="{x:Type Paragraph}" x:Key="{x:Static markdig:Styles.CodeBlockStyleKey}">
-        <Setter Property="Background" Value="MidnightBlue" />
+        <Setter Property="Background" Value="#1B2246" />
         <Setter Property="Foreground" Value="DodgerBlue"/>
         <Setter Property="FontFamily" Value="Consolas, Lucida Sans Typewriter, Courier New" />
     </Style>
     <Style TargetType="{x:Type Run}" x:Key="{x:Static markdig:Styles.CodeStyleKey}">
-        <Setter Property="Background" Value="MidnightBlue" />
+        <Setter Property="Background" Value="#1B2246" />
         <Setter Property="Foreground" Value="DodgerBlue"/>
         <Setter Property="FontFamily" Value="Consolas, Lucida Sans Typewriter, Courier New" />
     </Style>
@@ -49,7 +49,7 @@
         <!-- no changes -->
     </Style>
     <Style TargetType="{x:Type Hyperlink}" x:Key="{x:Static markdig:Styles.HyperlinkStyleKey}">
-        <!-- no changes -->
+        <Setter Property="Foreground" Value="DodgerBlue"/>
     </Style>
     <Style TargetType="{x:Type Image}" x:Key="{x:Static markdig:Styles.ImageStyleKey}">
         <Setter Property="MaxHeight" Value="{Binding RelativeSource={RelativeSource Self}, Path=Source.(BitmapSource.PixelHeight)}" />

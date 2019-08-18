@@ -261,6 +261,7 @@ namespace SomewhereDesktop
             set
             {
                 _ActiveItem = value;
+                NotifyPropertyChanged("ActiveItemID");
                 NotifyPropertyChanged("ActiveItemName");
                 NotifyPropertyChanged("ActiveItemTags");
                 NotifyPropertyChanged("ActiveItemMeta");
@@ -273,22 +274,21 @@ namespace SomewhereDesktop
             get => ActiveItem?.Meta;
             set { ActiveItem.Meta = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
+        public int ActiveItemID
+        {
+            get => ActiveItem?.ID ?? 0;
+            set { ActiveItem.ID = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+        }
         public string ActiveItemName
         {
             get => ActiveItem?.Name;
             set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
-
         public string ActiveItemTags
         {
             get => ActiveItem?.Tags;
             set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
-        //public string ActiveItemContent
-        //{
-        //    get => ActiveItem?.Content;
-        //    set { ActiveItem.Content = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
-        //}
         #endregion
 
         #region Notebook View Properties
@@ -305,29 +305,51 @@ namespace SomewhereDesktop
             set
             {
                 _ActiveNote = value;
+                NotifyPropertyChanged("ActiveNoteID");
                 NotifyPropertyChanged("ActiveNoteName");
                 NotifyPropertyChanged("ActiveNoteTags");
                 NotifyPropertyChanged("ActiveNoteContent");
                 NotifyPropertyChanged("IsNoteFieldEditEnabled");
             }
         }
+        private string _SearchNotebookKeyword;
+        public string SearchNotebookKeyword
+        {
+            get => _SearchNotebookKeyword;
+            set
+            {
+                SetField(ref _SearchNotebookKeyword, value);
+                if (string.IsNullOrEmpty(_SearchNotebookKeyword))
+                    RefreshNotes();
+                else
+                    Notes = new ObservableCollection<FileItemObjectModel>(AllItems
+                        .Where(i => (i.Name == null || i.Content != null)
+                        && (i?.Name.Contains(_SearchNotebookKeyword) ?? false)));
+            }
+        }
+        /// <summary>
+        /// Read and notification only, cannot be changed value
+        /// </summary>
+        public int ActiveNoteID
+        {
+            get => ActiveNote?.ID ?? 0;
+        }
         public string ActiveNoteName
         {
             get => ActiveNote?.Name;
             set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
         }
-
         public string ActiveNoteTags
         {
             get => ActiveNote?.Tags;
             set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
         }
-        //public string ActiveNoteContent
-        //{
-        //    get => ActiveNote?.Content;
-        //    set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
-        //}
-        public bool IsNameFieldEditEnabled
+        public string ActiveNoteContent
+        {
+            get => ActiveNote?.Content;
+            set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+        }
+        public bool IsNoteFieldEditEnabled
             => ActiveNote != null;
         #endregion
 
@@ -385,23 +407,33 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // Safety
+            // In case things are not saved, commit change for safety and avoid data loss
             if (ActiveItem != null)
+            {
                 CommitActiveItemChange();
+                CommitActiveNoteChange();
+            }
             this.Close();
         }
-
         private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void ShowShortcutsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => new DialogWindow(this, "Keyboard Shorcuts", SomewhereDesktop.Properties.Resources.ShortcutsDocument).ShowDialog();
+            => new DialogWindow(this, "Keyboard Shorcuts", SomewhereDesktop.Properties.Resources.ShortcutsDocument).Show();
+        private void ShowMarkdownReferenceCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void ShowMarkdownReferenceCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => new DialogWindow(this, "Markdown Reference", SomewhereDesktop.Properties.Resources.MarkdownReference).Show();
         private void MaximizeWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
             if (ActiveItem != null)
+            {
                 CommitActiveItemChange();
+                CommitActiveNoteChange();
+            }
+                
             if (this.WindowState == WindowState.Normal)
                 this.WindowState = WindowState.Maximized;
             else this.WindowState = WindowState.Normal;
@@ -412,7 +444,10 @@ namespace SomewhereDesktop
         {
             // Safety
             if (ActiveItem != null)
+            {
                 CommitActiveItemChange();
+                CommitActiveNoteChange();
+            }
             this.WindowState = WindowState.Minimized;
         }
         private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -428,7 +463,7 @@ namespace SomewhereDesktop
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Add to database
-            int id = Commands.AddFile(null, null);
+            int id = Commands.AddFile(null, string.Empty);  // Give some default empty content so it's not considered a binary file
             // Add to view collection
             var item = new FileItemObjectModel(Commands.GetFileDetail(id));
             // Add to items cache
@@ -477,6 +512,10 @@ namespace SomewhereDesktop
             else if (folder)
                 dialog.IsFolderPicker = true;
             return dialog;
+        }
+        private void OpenHyperlink_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Console.WriteLine("Hello World");
         }
         private void SwitchInventoryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
@@ -690,11 +729,45 @@ namespace SomewhereDesktop
             => GetArgumentValue(arg);
         private void CommitActiveItemChange()
         {
-            // Commit to database
+            // Commit to database for active item
+            if(ActiveItem != null)
+            {
+                try
+                {
+                    // Commit Name and Content change
+                    Commands.ChangeFileName(ActiveItem.ID, ActiveItem.Name);
+                    // Commit Tag change
+                    Commands.ChangeFileTags(ActiveItem.ID, ActiveItem.TagsList);
+                    // Update log and info display
+                    Commands.AddLog("Update Item", $"Item #{ActiveItem.ID} `{ActiveItem.Name}` is updated in SD (Somewhere Desktop).");
+                    InfoText = $"Item `{ActiveItem.Name.Limit(150)}` saved.";
+                }
+                catch (Exception e)
+                {
+                    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
+                }
+            }
         }
         private void CommitActiveNoteChange()
         {
-            // Commit to database
+            // Commit to database for active note item
+            if (ActiveNote != null)
+            {
+                //try
+                //{
+                    // Commit Name and Content change
+                    Commands.ChangeFile(ActiveNote.ID, ActiveNote.Name, ActiveNote.Content);
+                    // Commit Tag change
+                    Commands.ChangeFileTags(ActiveNote.ID, ActiveNote.TagsList);
+                    // Update log and info display
+                    Commands.AddLog("Update Item", $"Item #{ActiveNote.ID} `{ActiveNote.Name}` is updated in SD (Somewhere Desktop).");
+                    InfoText = $"Item `{ActiveNote.Name.Limit(150)}` saved.";
+                //}
+                //catch (Exception e)
+                //{
+                //    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
+                //}
+            }
         }
         #endregion
 

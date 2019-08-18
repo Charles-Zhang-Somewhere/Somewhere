@@ -15,6 +15,7 @@
         <!-- Window Commands -->
         <CommandBinding Command="Close" CanExecute="CloseWindowCommand_CanExecute" Executed="CloseWindowCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.ShowShortcuts" CanExecute="ShowShortcutsCommand_CanExecute" Executed="ShowShortcutsCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.ShowMarkdownReference" CanExecute="ShowMarkdownReferenceCommand_CanExecute" Executed="ShowMarkdownReferenceCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Maximize" CanExecute="MaximizeWindowCommand_CanExecute" Executed="MaximizeWindowCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Hide" CanExecute="HideWindowCommand_CanExecute" Executed="HideWindowCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.SwitchInventory" CanExecute="SwitchInventoryCommand_CanExecute" Executed="SwitchInventoryCommand_Executed"/>
@@ -33,11 +34,14 @@
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
+        <!-- Markdown -->
+        <CommandBinding Command="{x:Static md:Commands.Hyperlink}" Executed="OpenHyperlink_Executed" />
     </Window.CommandBindings>
     <Window.InputBindings>
         <!-- Window Commands -->
         <KeyBinding Key="F11" Command="local:CustomCommands.Maximize"/>
         <KeyBinding Key="F12" Command="local:CustomCommands.ShowShortcuts"/>
+        <KeyBinding Key="F12" Modifiers="Alt" Command="local:CustomCommands.ShowMarkdownReference"/>
         <!-- Back tilt ` is less common key so we enable ESC as well -->
         <KeyBinding Key="Oem3" Modifiers="Ctrl" Command="local:CustomCommands.Hide"/>
         <KeyBinding Key="ESC" Command="local:CustomCommands.Hide"/>
@@ -57,6 +61,10 @@
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
     </Window.InputBindings>
     <Window.Resources>
+        <!-- Value Converters -->
+        <local:NotenameToTipConverter x:Key="NotenameToTipConverter" />
+        
+        <!-- Styles -->
         <Style x:Key="TextBlockBase" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
@@ -197,11 +205,15 @@
                                     <Border Style="{StaticResource Panel}" Grid.Column="2">
                                         <DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="Name" />
+                                                <Label Content="ID" Style="{StaticResource AttributeField}"/>
+                                                <Label Content="{Binding ActiveItemID}"/>
+                                            </DockPanel>
+                                            <DockPanel DockPanel.Dock="Top">
+                                                <Label Content="Name" Style="{StaticResource AttributeField}"/>
                                                 <TextBox Text="{Binding ActiveItemName}"/>
                                             </DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="Tags"/>
+                                                <Label Content="Tags" Style="{StaticResource AttributeField}"/>
                                                 <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
                                                 <TextBox Text="{Binding ActiveItemTags}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                             </DockPanel>
@@ -214,6 +226,7 @@
                         </DockPanel>
                         <!-- Notebook Panel -->
                         <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
+                            <!-- Search Bar -->
                             <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
                                 <DockPanel>
                                     <Label Content="Search" DockPanel.Dock="Left"/>
@@ -222,9 +235,10 @@
                                     </TextBlock>
                                     <Button Content="Export All" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
                                     <Button Content="Cancel" Width="100" DockPanel.Dock="Right" Margin="2, 0, 2, 0"/>
-                                    <TextBox Text="{Binding SearchNotebookKeyword}" DockPanel.Dock="Left"/>
+                                    <TextBox Text="{Binding SearchNotebookKeyword, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Left"/>
                                 </DockPanel>
                             </Border>
+                            <!-- Notes List -->
                             <Border Style="{StaticResource Panel}">
                                 <DockPanel>
                                     <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"/>
@@ -240,6 +254,7 @@
                                     </ListView>
                                 </DockPanel>
                             </Border>
+                            <!-- Notes Details -->
                             <Border Style="{StaticResource Panel}">
                                 <DockPanel>
                                     <DockPanel DockPanel.Dock="Top">
@@ -249,7 +264,11 @@
                                     <LineBreak/>
                                     It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
                                         </TextBlock>
-                                        <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteName}"/>
+                                        <Grid>
+                                            <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                                     Text="{Binding ActiveNoteName, UpdateSourceTrigger=LostFocus}"/>
+                                            <Label Content="{Binding ActiveNoteName, Converter={StaticResource NotenameToTipConverter}}" HorizontalAlignment="Right"/>
+                                        </Grid>
                                     </DockPanel>
                                     <DockPanel DockPanel.Dock="Top">
                                         <Label Content="Tags"/>
@@ -258,9 +277,11 @@
                                     <LineBreak/>
                                     Tags are used to organize notes and help quickly search for note.
                                         </TextBlock>
-                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteTag}"/>
+                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                                 Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                     </DockPanel>
-                                    <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Text="{Binding ActiveNoteContent}" Style="{StaticResource Content}"/>
+                                    <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
+                                             Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}"/>
                                 </DockPanel>
                             </Border>
                         </DockPanel>

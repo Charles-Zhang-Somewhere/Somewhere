@@ -3,8 +3,9 @@
 This list is for myself.
 
 ```
-Popup selection window, tag searching and clicking
 Notebook page tags editing
+Inventory item names etc. editing
+Popup selection window, tag searching and clicking
 Markdown preview for notes in Inventory panel
 
 Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors

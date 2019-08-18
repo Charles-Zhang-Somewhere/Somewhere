@@ -69,6 +69,13 @@ namespace StringHelper
                 arguments.Add(sofar);
             return arguments.ToArray();
         }
+        /// <summary>
+        /// Given a list of tags, properly join then together in comma delimited form and quotes when appropriate
+        /// </summary>
+        public static string JoinTags(this IEnumerable<string> tags)
+            => string.Join(", ", tags.Select(t => 
+                // Technically speaking tags won't contain commas during creation, but it's allowed in DB
+                t.Contains(',') ? $"\"{/*The same applies to quotes */ (t.Contains('"') ? t.Replace("\"", "\"\"") : t)}\"" : t));
 
         /// <summary>
         /// Get lower cased command name from an array of parsed command arguments
@@ -134,7 +141,12 @@ namespace StringHelper
         /// Split a comma delimited string of tags into array, lower cased and removed empty
         /// </summary>
         public static IEnumerable<string> SplitTags(this string v)
-            => v?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim().ToLower().Replace('\"', '_')) // Save as lower case; Replace double quote (it can still be entered because command line allows it) with underscore
+            => v?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(a =>
+                // Save as lower case
+                a.Trim().ToLower()
+                // Replace double quote (it can still be entered because command line allows it) with underscore
+                .Replace('\"', '_'))
             .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
             ?? new string[] { };    // Return empty for null string
     }

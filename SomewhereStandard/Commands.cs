@@ -205,35 +205,43 @@ namespace Somewhere
             // Add single item
             if(args[0] != "*")
             {
-                string itemname = GetRelative(args[0]);
-                // Handle non-existing path and foreign (i.e. outside home) paths
-                if (!FileExistsAtHomeFolder(itemname) && !(itemname.Contains(HomeDirectory) && DirectoryExistsAtHomeFolder(itemname)))
+                string itemname = null;
+                // Handle foreign (absolute) path (i.e. outside home)
+                string path = args[0];
+                if (Path.IsPathRooted(path) && !path.Contains(HomeDirectory))
                 {
-                    // Forbidden a relative path at this step to avoid confusion (otherwise a non-existing relative file can exist in a working directory
-                    // and cause unexpected behavior
-                    if(!itemname.Contains(Path.DirectorySeparatorChar))
-                        throw new ArgumentException($"Specified item by relative path {itemname} doesn't exist in Home folder `{HomeDirectory}`, but it does exist in current working directory `{Directory.GetCurrentDirectory()}`. Use an absolute path instead to avoid potential confusion.");
-                    // Non-existing path
-                    bool existAsFile = File.Exists(itemname), existAsDirectory = Directory.Exists(itemname);
+                    // Path existence check
+                    bool existAsFile = File.Exists(path), existAsDirectory = Directory.Exists(path);
                     if (!existAsFile && !existAsDirectory)
-                        throw new ArgumentException($"Specified item {itemname} doesn't exist on disk.");
+                        throw new ArgumentException($"Specified item `{path}` doesn't exist on disk.");
                     // For foreign file, make a copy
-                    else if(File.Exists(itemname))
+                    else if (existAsFile)
                     {
-                        string name = Path.GetFileName(itemname);
-                        File.Copy(itemname, GetPathInHomeHolder(name));
+                        string name = Path.GetFileName(path);
+                        File.Copy(path, GetPathInHomeHolder(name));
                         itemname = name;
                     }
                     // For foreign directories, cut it
                     else
                     {
-                        string name = Path.GetFileName(itemname);   // This function actually returns folder name because Path.GetDirectoryName() returns parent folder
-                        Directory.Move(itemname, GetPathInHomeHolder(name));
-                        itemname = name;
+                        string name = Path.GetFileName(path);   // This function actually returns folder name because Path.GetDirectoryName() returns parent folder
+                        Directory.Move(path, GetPathInHomeHolder(name));
+                        itemname = name + Path.DirectorySeparatorChar;
                     }
                 }
-                if (DirectoryExistsAtHomeFolder(itemname))
-                    itemname += Path.DirectorySeparatorChar;
+                // Handle absoluate and relative path
+                else
+                {
+                    itemname = GetRelative(args[0]);    // Convert absoluate path to relative
+                    // Handle non-existing path
+                    bool existAsFile = FileExistsAtHomeFolder(itemname), existAsFolder = DirectoryExistsAtHomeFolder(itemname);
+                    if (!existAsFile && !existAsFolder)
+                        throw new ArgumentException($"Specified item `{path}` doesn't exist in Home folder ({HomeDirectory}); Notice current working directory is `{Directory.GetCurrentDirectory()}`. " +
+                            $"Use an absolute path instead to avoid potential confusion.");
+                    else if (existAsFolder)
+                        itemname += Path.DirectorySeparatorChar;
+                }
+                // Handle actually adding file and tags
                 if (IsFileInDatabase(itemname))
                     return new string[] { $"Item `{itemname}` already added in database." };
                 else
@@ -288,7 +296,7 @@ namespace Somewhere
             // Get tags
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
-            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
+            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
         /// <remarks>Due to it's particular function of pagination, this command function behaves slightly different from usual ones;
         /// Instead of returning lines of output for the caller to output, it manages output and keyboard input itself</remarks>
@@ -513,7 +521,7 @@ namespace Somewhere
                 DeleteFileTags(realTags.Select(t => t.ID), false);
                 // Delete from Tag table
                 DeleteTags(realTags.Select(t=>t.ID));
-                return new string[] { $"Tags `{string.Join(", ", realTags.Select(t => t .Name))}` " +
+                return new string[] { $"Tags `{realTags.Select(t => t .Name).JoinTags()}` " +
                     $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
             }            
         }
@@ -561,7 +569,7 @@ namespace Somewhere
             // Add tags
             string[] tags = args[1].SplitTags().ToArray();
             string[] allTags = AddTagsToFile(filename, tags);
-            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Show all tags currently exist.",
             "The displayed result will be a plain alphanumerically ordered list of tag names, " +
@@ -610,7 +618,23 @@ namespace Somewhere
             // Remove tags
             string[] tags = args[1].SplitTags().ToArray();   // Get as lower case
             string[] allTags = RemoveTags(filename, tags);
-            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{string.Join(", ", allTags)}`." };
+            return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
+        }
+        [Command("Update or replace tags for a file completely.")]
+        [CommandArgument("filename", "name of file")]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed")]
+        public IEnumerable<string> Update(params string[] args)
+        {
+            ValidateArgs(args);
+            string filename = args[0];
+            int? fileID = GetFileID(filename);
+            if (fileID == null)
+                throw new InvalidOperationException($"Specified file `{filename}` is not managed in database.");
+            // Add new tags
+            string[] tags = args[1].SplitTags().Distinct().ToArray();   // Get as lower case
+            // Replace
+            ChangeFileTags(fileID.Value, tags);
+            return new string[] { $"Item `{filename}` has been updated with {tags.Length} {(tags.Length > 1 ? "tags" : "tag")}: `{tags.JoinTags()}`." };
         }
         #endregion
 
@@ -681,6 +705,15 @@ namespace Somewhere
             Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", parameterSets);
         }
         /// <summary>
+        /// Delete all tags that doesn't have any files tagged by them
+        /// </summary>
+        private void CleanDanglingTags()
+        {
+            IEnumerable<int> danglingTags = GetDanglingTags();
+            if(danglingTags != null)
+                DeleteTags(danglingTags);
+        }
+        /// <summary>
         /// Remove from file given set of tags if present, return updated tags for file
         /// </summary>
         public string[] RemoveTags(string filename, IEnumerable<string> tags)
@@ -689,6 +722,35 @@ namespace Somewhere
             DeleteFileTags(GetFileID(filename) ?? 0, tagIDs);   // Notice this if effective only for tags that are applicable to the file 
             // (i.e. even if tagIDs contain tags that don't apply to file, those tags do not present in FileTag table so no effect
             return GetFileTags(filename);
+        }
+        /// <summary>
+        /// Remove all tags for a given file, and cleans dangling tags after the operation
+        /// </summary>
+        public void RemoveAllTags(int fileID)
+        {
+            // Delete FileTag table records
+            DeleteFileTagsByFileID(fileID);
+            // Clean dangling tags
+            CleanDanglingTags();
+        }
+        /// <summary>
+        /// Remove all tags for a given file, and cleans dangling tags after the operation
+        /// </summary>
+        public void RemoveAllTags(string filename)
+        {
+            int? id = GetFileID(filename);
+            if (id == null) throw new ArgumentException($"Specified file `{filename}` is not managed.");
+            RemoveAllTags(id.Value);
+        }
+        /// <summary>
+        /// Change tags by removing all old ones and replace with new ones by file ID
+        /// </summary>
+        public void ChangeFileTags(int fileID, IEnumerable<string> newTags)
+        {
+            // Remove old tags
+            RemoveAllTags(fileID);
+            // Add new tags
+            AddTagsToFile(fileID, newTags);
         }
         /// <summary>
         /// Try add tag and return tag ID, if tag already exist then return existing ID
@@ -789,16 +851,43 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         public void RenameTag(string tagname, string newTagname)
             => Connection.ExecuteQuery("update Tag set Name=@newTagname where Name=@tagname", new { tagname, newTagname});
         /// <summary>
+        /// Change the name of a file by file ID
+        /// </summary>
+        public void ChangeFileName(int fileID, string newFilename)
+            => Connection.ExecuteSQLNonQuery("update File set Name=@newFilename where ID=@fileID", new { fileID, newFilename });
+        /// <summary>
+        /// Change the name of a file
+        /// </summary>
+        public void ChangeFileName(string filename, string newFilename)
+            => Connection.ExecuteSQLNonQuery("update File set Name=@newFilename where Name=@filename", new { filename, newFilename });
+        /// <summary>
+        /// Change the text content of a file by file ID
+        /// </summary>
+        public void ChangeFileContent(int fileID, string content)
+            => Connection.ExecuteSQLNonQuery("update File set Content=@content where ID=@fileID", new { fileID, content });
+        /// <summary>
         /// Change the text content of a file
         /// </summary>
         public void ChangeFileContent(string filename, string content)
             => Connection.ExecuteSQLNonQuery("update File set Content=@content where Name=@filename", new { filename, content });
         /// <summary>
+        /// Change both the name and content of a file by file id
+        /// </summary>
+        public void ChangeFile(int fileID, string filename, string content)
+            => Connection.ExecuteSQLNonQuery(@"update File 
+                set Name=@filename, Content=@content 
+                where ID=@fileID", new { fileID, filename, content });
+        /// <summary>
         /// Add a log entry to database in yaml
         /// </summary>
-        public void AddLog(object content)
+        public void AddLog(LogEvent content)
             => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
                 new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
+        /// <summary>
+        /// Add simple text log to database
+        /// </summary>
+        public void AddLog(string actionID, string content)
+            => AddLog(new LogEvent() { Command = actionID, Result = content });
         /// <summary>
         /// Get ID of file (item) in database, this can sometimes be useful, though practical application shouldn't depend on it
         /// and should treat it as transient
@@ -817,6 +906,14 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// </summary>
         public int? GetTagID(string tag)
             => Connection.ExecuteQuery("select ID from Tag where Name=@tag", new { tag }).Single<int?>();
+        /// <summary>
+        /// Get IDs of tags that don't have any FileTag row
+        /// </summary>
+        private IEnumerable<int> GetDanglingTags()
+            => Connection.ExecuteQuery(@"select Tag.ID
+                from Tag left join FileTag
+                on Tag.ID = FileTag.TagID
+                where FileTag.FileID is null").List<int>();
         /// <summary>
         /// Get IDs of tags in database; Notice input tags may or may not be present
         /// </summary>
@@ -851,12 +948,12 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         public void DeleteTag(string tagName)
             => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", new { name = tagName});
         /// <summary>
-        /// Delete from Tag table
+        /// Delete all tags by name from Tag table
         /// </summary>
         public void DeleteTags(IEnumerable<string> tagNames)
             => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", tagNames.Select(name => new { name }) );
         /// <summary>
-        /// Delete from Tag table
+        /// Delete all tags by id from Tag table
         /// </summary>
         public void DeleteTags(IEnumerable<int> tagIDs)
             => Connection.ExecuteSQLNonQuery("delete from Tag where ID = @id", tagIDs.Select(id => new { id }));
@@ -876,7 +973,7 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
 @"select FileTagDetails.*,
 	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
 from 
-	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
+	(select File.ID, File.EntryDate, File.Name, File.Content, group_concat(FileTags.Name, ', ') as Tags, File.Meta
 	from File left join
 		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
 		from Tag, FileTag
@@ -947,7 +1044,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public void DeleteFileTags(int fileID, IEnumerable<int> tagIDs)
             => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", tagIDs.Select(tagID => new { fileID, tagID }));
         /// <summary>
-        /// Delete file tags record
+        /// Delete file tags record completely for a file or for a tag
         /// </summary>
         public void DeleteFileTags(int id, bool isFileID)
         {
@@ -956,6 +1053,16 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             else
                 Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@id", new { id });
         }
+        /// <summary>
+        /// Delete file tags record completely for a file
+        /// </summary>
+        public void DeleteFileTagsByFileID(int fileID)
+            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id = fileID });
+        /// <summary>
+        /// Delete file tags record completely for a tag
+        /// </summary>
+        public void DeleteFileTagsByTagID(int tagID)
+            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id = tagID });
         /// <summary>
         /// Delete file tags record
         /// </summary>

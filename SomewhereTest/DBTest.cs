@@ -49,7 +49,7 @@ namespace SomewhereTest
             Assert.Throws<ArgumentException>(()=> Commands.Add(nonExistingFilePath, "Tag1, Tag2"));
         }
         [Fact]
-        public void AddFileShouldTCutForeignFolder()
+        public void AddFileShouldCutForeignFolder()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
@@ -134,11 +134,11 @@ namespace SomewhereTest
             Commands Commands = Helper.CreateNewCommands();
             Commands.New(); // Create a new db
             Assert.Empty(Commands.AllTags);
-            Directory.SetCurrentDirectory("AllTagShouldReturnNumberOfTags");
-            Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc.txt"); });   // File doesn't exit in home
-            Commands.Doc(); // Create test file
+            // Use long filename to avoid file already exist in parent folder which is a different exception
+            Assert.Throws<ArgumentException>(()=> { Commands.Add("SomewhereDoc-AllTagShouldReturnNumberOfTags.txt"); });   // File doesn't exit in home
+            Commands.Doc("SomewhereDoc-AllTagShouldReturnNumberOfTags.txt"); // Create test file
             Assert.Empty(Commands.AllTags);
-            Commands.Add("SomewhereDoc.txt", "MyTag");
+            Commands.Add("SomewhereDoc-AllTagShouldReturnNumberOfTags.txt", "MyTag");
             Assert.Single(Commands.AllTags);
         }
         [Fact]
@@ -149,6 +149,16 @@ namespace SomewhereTest
             Commands.New(); // Create a new db
             Commands.Create("", "My knowledge", "Some subject");
             Assert.Equal(1, Commands.KnowledgeCount);
+        }
+        [Fact]
+        public void GetFileDetailsReturnNoteItemContent()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New(); // Create a new db
+            Commands.Create("My Note", "My Content", "My Tab");
+            Assert.Equal(1, Commands.NoteCount);
+            Assert.Equal("My Content", Commands.GetFileDetail(1).Content);
         }
         [Fact]
         public void CreateVirtualFileShouldNotAffectDiskFile()
@@ -256,7 +266,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Help();    // Help doesn't count as log entry
             Commands.Add("SomewhereDoc.txt");
             // Above commands don't automatically log
-            Commands.AddLog("This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
+            Commands.AddLog("Test", "This is a log."); // Log doesn't happen on the command level, it should be called by caller of commands
             Assert.Equal(1, Commands.LogCount);
         }
         [Fact]
@@ -523,6 +533,22 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Tag("File1.txt", "Tag1");
             Commands.Tag("File2.txt", "Tag1, Tag2");
             Assert.Empty(new string[] { "tag1", "tag2" }.Except(Commands.GetFileTags("File2.txt")));
+        }
+
+        [Fact]
+        public void UpdateTagsShouldRemoveOldOnesAndAddNewOnes()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt"); // Create file for test
+            Commands.Add("File.txt");
+            Commands.Tag("File.txt", "Tag1");
+            Commands.Tag("File.txt", "Tag1, Tag2");
+            Assert.Equal(2, Commands.TagCount);
+            Commands.Update("File.txt", "Tag3, Tag4");
+            Assert.Equal(2, Commands.TagCount);
+            Assert.Empty(new string[] { "tag3", "tag4" }.Except(Commands.GetFileTags("File.txt")));
         }
         #endregion
     }

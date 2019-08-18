@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SomewhereDesktop"
+             DispatcherUnhandledException="Application_DispatcherUnhandledException"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
@@ -122,11 +123,14 @@
         <Style x:Key="LabelBase" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource Base2}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="MinWidth" Value="85"/>
         </Style>
         <!-- Default Label Style -->
         <Style TargetType="Label" BasedOn="{StaticResource LabelBase}">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="MinWidth" Value="85"/>
+        </Style>
+        <Style x:Key="AttributeField" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="Title" TargetType="Label" BasedOn="{StaticResource LabelBase}">
             <Setter Property="Foreground" Value="{StaticResource Base3}"/>

@@ -22,6 +22,7 @@ namespace SomewhereDesktop
             this.ID = file.ID;
             this.EntryDate = file.EntryDate;
             this.Name = file.Name;
+            this.Content = file.Content;
             this.Tags = file.Tags;
             this.Meta = file.Meta;
             this.RevisionTime = file.RevisionTime;

@@ -61,6 +61,19 @@ namespace SomewhereDesktop.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This Markdown Cheatsheet is Authored by Adam Pritchard on [Github](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet).
+        ///
+        ///This is intended as a quick reference and showcase. For more complete info, see [John Gruber&apos;s original spec](http://daringfireball.net/projects/markdown/) and the [Github-flavored Markdown info page](http://github.github.com/github-flavored-markdown/).
+        ///
+        ///Note that there is also a [Cheatsheet specific to Markdown Here](./Markdown-Here-Cheatsheet) if that&apos;s what you&apos;re loo [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string MarkdownReference {
+            get {
+                return ResourceManager.GetString("MarkdownReference", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to # Window
         ///
         ///* `F11`  Maximize Somewhere Desktop window
