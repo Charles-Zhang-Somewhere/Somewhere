@@ -82,7 +82,7 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
-        <Style x:Key="TagFilter" TargetType="TextBlock" BasedOn="{StaticResource TextBlockBase}">
+        <Style x:Key="TagFilter" TargetType="TextBlock" BasedOn="{StaticResource Tag}">
             <Setter Property="Foreground" Value="AntiqueWhite"/>
         </Style>
     </Window.Resources>
