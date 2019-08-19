@@ -534,7 +534,11 @@ Referencing a bug by #bugID in your git commit links it to the slip. For example
 License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)</value>
   </data>
   <data name="ShortcutsDocument" xml:space="preserve">
-    <value># Window
+    <value># Mouse Operations
+
+1. `Double Click` on **Invetory panel** list view item can open it using default system program.
+
+# Window
 
 * `F11`  Maximize Somewhere Desktop window
 * `F12`  Show Shortcuts

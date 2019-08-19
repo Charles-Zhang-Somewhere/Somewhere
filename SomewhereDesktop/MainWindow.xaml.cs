@@ -55,7 +55,11 @@ namespace SomewhereDesktop
             // Validate home existence, if not, give options to open another one or create a new one
             if (!Commands.IsHomePresent)
             {
-                var options = new string[] { "Create Home Repository Here", "Create Home Repository at A Different Place", "Open a Different Home Folder", "Close and Exit" };
+                var options = new string[] {
+                    "1. Create Home Repository Here",
+                    "2. Create Home Repository at A Different Place",
+                    "3. Open a Different Home Folder",
+                    "4. Close and Exit" };
                 var dialog = new DialogWindow(null/*This window may not have been initialized yet*/, "Home Action", $"Home repository doesn't exist at path `{homeFolderpath}`, what would you like to do?", options);
                 dialog.ShowDialog();
                 // Create home at current path
@@ -127,8 +131,34 @@ namespace SomewhereDesktop
                     return extension;
             }
         }
-        private void RefreshItems()
-            => Items = new ObservableCollection<FileItemObjectModel>(AllItems);
+        private void RefreshItems(bool reversedOrder = false)
+        {
+            if(reversedOrder)
+            {
+                // By name
+                if (SelectedItemSorting == ItemsSortingOptions[0])
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems.OrderByDescending(i => i.DisplayName));
+                // By entry date
+                else if (SelectedItemSorting == ItemsSortingOptions[1])
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems.OrderByDescending(i => i.EntryDate));
+                // Default
+                else
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems);
+            }
+            // Default order
+            else
+            {
+                // By name
+                if (SelectedItemSorting == ItemsSortingOptions[0])
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems.OrderBy(i => i.DisplayName));
+                // By entry date
+                else if (SelectedItemSorting == ItemsSortingOptions[1])
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems.OrderBy(i => i.EntryDate));
+                // Default
+                else
+                    Items = new ObservableCollection<FileItemObjectModel>(AllItems);
+            }
+        }
         private void RefreshNotes()
             => Notes = new ObservableCollection<FileItemObjectModel>(AllItems
                 .Where(i => i.Name == null || i.Content != null));
@@ -227,6 +257,10 @@ namespace SomewhereDesktop
         }
         private ObservableCollection<string> _TypeFilters;
         public ObservableCollection<string> TypeFilters { get => _TypeFilters; set => SetField(ref _TypeFilters, value); }
+        private string[] _ItemsSortingOptions = new string[] { "Sort by Name", "Sort by Entry Date" };
+        public string[] ItemsSortingOptions { get => _ItemsSortingOptions; set => SetField(ref _ItemsSortingOptions, value); }
+        private string _SelectedItemSorting = "Sort by Name";
+        public string SelectedItemSorting { get => _SelectedItemSorting; set { SetField(ref _SelectedItemSorting, value); RefreshItems(); } }
         private ObservableCollection<string> _TagFilters;
         public ObservableCollection<string> TagFilters
         {
@@ -281,6 +315,7 @@ namespace SomewhereDesktop
             {
                 _ActiveItem = value;
                 NotifyPropertyChanged("ActiveItemID");
+                NotifyPropertyChanged("ActiveItemEntryDate");
                 NotifyPropertyChanged("ActiveItemName");
                 NotifyPropertyChanged("ActiveItemTags");
                 NotifyPropertyChanged("ActiveItemMeta");
@@ -293,10 +328,13 @@ namespace SomewhereDesktop
             get => ActiveItem?.Meta;
             set { ActiveItem.Meta = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
+        public string ActiveItemEntryDate
+        {
+            get => ActiveItem?.EntryDate.ToString("yyyy-MM-dd");
+        }
         public int ActiveItemID
         {
             get => ActiveItem?.ID ?? 0;
-            set { ActiveItem.ID = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
         public string ActiveItemName
         {
@@ -572,6 +610,9 @@ namespace SomewhereDesktop
         #endregion
 
         #region Window Events
+        private bool SortReverOrder = false;
+        private void ItemSortingReverseButton_Click(object sender, RoutedEventArgs e)
+            => RefreshItems(SortReverOrder = !SortReverOrder);
         private void RemoveTagFilter_MouseDown(object sender, MouseButtonEventArgs e)
         {
             // Update tag display lists
@@ -685,6 +726,11 @@ namespace SomewhereDesktop
         }
         private void SaveItemChangesButton_Click(object sender, RoutedEventArgs e)
             => CommitActiveItemChange();
+        private void ItemsList_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ActiveItem != null)
+                System.Diagnostics.Process.Start(Commands.GetPhysicalPath(ActiveItem.Name));
+        }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
             => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)

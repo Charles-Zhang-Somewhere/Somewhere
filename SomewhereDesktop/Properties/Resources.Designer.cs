@@ -74,7 +74,11 @@ namespace SomewhereDesktop.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to # Window
+        ///   Looks up a localized string similar to # Mouse Operations
+        ///
+        ///1. `Double Click` on **Invetory panel** list view item can open it using default system program.
+        ///
+        ///# Window
         ///
         ///* `F11`  Maximize Somewhere Desktop window
         ///* `F12`  Show Shortcuts
@@ -88,13 +92,7 @@ namespace SomewhereDesktop.Properties {
         ///* `Ctrl+3`: Show Knowledge Panel
         ///* `Ctrl+4`: Show Status Panel
         ///* `Ctrl+5`: Show NTFSSearch Panel
-        ///* `Ctrl+6`: Show Logs Panel
-        ///* `Ctrl+7`: Show Settings Panel
-        ///
-        ///# Commands
-        ///
-        ///* `F1`: Open Somewhere Home repository
-        ///* `F2`: Go to Note [rest of string was truncated]&quot;;.
+        ///* `Ctrl+6`: Sh [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string ShortcutsDocument {
             get {

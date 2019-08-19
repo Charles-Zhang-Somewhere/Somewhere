@@ -33,7 +33,8 @@
             <Border x:Name="OptionsPanel" Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
                 <StackPanel>
                     <Label Content="Options:" Style="{StaticResource Header}"/>
-                    <ListView ItemsSource="{Binding Options}" SelectedItem="{Binding Selection}" MouseDoubleClick="ListView_MouseDoubleClick">
+                    <ListView ItemsSource="{Binding Options}" SelectedItem="{Binding Selection}" 
+                              MouseDoubleClick="ListView_MouseDoubleClick" MaxHeight="350">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Label Content="{Binding}"/>
