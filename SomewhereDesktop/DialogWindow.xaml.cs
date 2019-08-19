@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,16 +24,43 @@ namespace SomewhereDesktop
     {
         #region Constructor
         /// <param name="content">Markdown-enabled</param>
-        public DialogWindow(Window owner, string title = "Dialog", string content = "")
+        public DialogWindow(Window owner, string title = "Dialog", string content = "", IEnumerable<string> options = null)
         {
             Owner = owner;
             InitializeComponent();
             Title = title;
             Markdown = content;
+            if (options != null)
+            {
+                Options = new ObservableCollection<string>(options);
+            }
+            else
+            {
+                OptionsPanel.Visibility = Visibility.Collapsed;
+                Options = null;
+            }
         }
         #endregion
 
         #region View Properties
+        /// <summary>
+        /// Available options
+        /// </summary>
+        private ObservableCollection<string> _Options;
+        public ObservableCollection<string> Options
+        {
+            get => _Options;
+            set => SetField(ref _Options, value);
+        }
+        /// <summary>
+        /// Current selected item
+        /// </summary>
+        private string _Selection;
+        public string Selection
+        {
+            get => _Selection;
+            set => SetField(ref _Selection, value);
+        }
         private string _Markdown;
         /// <summary>
         /// Currently selected option

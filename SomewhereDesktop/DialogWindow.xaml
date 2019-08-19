@@ -30,6 +30,18 @@
                 </DockPanel>
             </Grid>
             <Button Content="OK" Command="Close" DockPanel.Dock="Bottom"/>
+            <Border x:Name="OptionsPanel" Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
+                <StackPanel>
+                    <Label Content="Options:" Style="{StaticResource Header}"/>
+                    <ListView ItemsSource="{Binding Options}" SelectedItem="{Binding Selection}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding}"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
             <md:MarkdownViewer Markdown="{Binding Markdown}"/>
         </DockPanel>
     </Grid>

@@ -50,8 +50,27 @@ namespace SomewhereDesktop
             if (Commands != null)
                 Commands.Dispose();
 
-            // Open a new one
+            // Instantiate a Commands object
             Commands = new Commands(homeFolderpath);
+            // Validate home existence, if not, give options to open another one or create a new one
+            if (!Commands.IsHomePresent)
+            {
+                var options = new string[] { "Create Home Repository Here", "Create Home Repository at A Different Place", "Open A Different Home Folder", "Close and Exit" };
+                var dialog = new DialogWindow(null/*This window may not have been initialized yet*/, "Home Action", $"Home repository doesn't exist at path `{homeFolderpath}`, what would you like to do?", options);
+                dialog.ShowDialog();
+                // Create home at current path
+                if (dialog.Selection == options[0])
+                    CreateAndOpenNewHome(homeFolderpath);
+                // Show new home dialog
+                else if (dialog.Selection == options[1])
+                    NewHomeCommand_Executed(null, null);
+                // Show open home dialog
+                else if (dialog.Selection == options[2])
+                    OpenHomeCommand_Executed(null, null);
+                else
+                    this.Close();
+                return;
+            }
             // Initialize items
             RefreshAllItems();
             RefreshItems();
@@ -490,16 +509,18 @@ namespace SomewhereDesktop
         {
             var dialog = GetHomeDirectoryFileDialog("Select home directory", false, true);
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+                CreateAndOpenNewHome(dialog.FileName);
+        }
+        private void CreateAndOpenNewHome(string folderPath)
+        {
+            try
             {
-                try
-                {
-                    Commands.New(dialog.FileName);
-                    OpenRepository(dialog.FileName);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    new DialogWindow(this, "Failed to create Home", ex.Message).ShowDialog();
-                }   
+                Commands.New(folderPath);
+                OpenRepository(folderPath);
+            }
+            catch (InvalidOperationException ex)
+            {
+                new DialogWindow(this, "Failed to create Home", ex.Message).ShowDialog();
             }
         }
         private CommonOpenFileDialog GetHomeDirectoryFileDialog(string title, bool file, bool folder)
@@ -782,7 +803,6 @@ namespace SomewhereDesktop
             NotifyPropertyChanged(propertyName);
             return true;
         }
-
         #endregion
     }
 }
