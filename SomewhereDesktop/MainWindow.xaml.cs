@@ -55,7 +55,7 @@ namespace SomewhereDesktop
             // Validate home existence, if not, give options to open another one or create a new one
             if (!Commands.IsHomePresent)
             {
-                var options = new string[] { "Create Home Repository Here", "Create Home Repository at A Different Place", "Open A Different Home Folder", "Close and Exit" };
+                var options = new string[] { "Create Home Repository Here", "Create Home Repository at A Different Place", "Open a Different Home Folder", "Close and Exit" };
                 var dialog = new DialogWindow(null/*This window may not have been initialized yet*/, "Home Action", $"Home repository doesn't exist at path `{homeFolderpath}`, what would you like to do?", options);
                 dialog.ShowDialog();
                 // Create home at current path
