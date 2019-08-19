@@ -156,7 +156,8 @@
             <Setter Property="Margin" Value="2"/>
         </Style>
         <Style x:Key="Info" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource Highlight2}"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Margin" Value="2"/>
         </Style>
