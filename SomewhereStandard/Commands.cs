@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Permissions;
 using System.Text;
 using YamlDotNet.Serialization;
 
@@ -15,13 +16,73 @@ namespace Somewhere
     public class Commands: IDisposable
     {
         #region Constructor and Disposing
+        [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
         public Commands(string initialWorkingDirectory)
-            => HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar; 
+        {
+            // Initialize home directory
+            HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar;
+            // Create and register file system watcher
+            _FSWatcher = CreateWatcher(HomeDirectory);
+        }
+        private FileSystemWatcher CreateWatcher(string fullFolderPath)
+        {
+            FileSystemWatcher watcher = new FileSystemWatcher()
+            {
+                // Set to home dir
+                Path = fullFolderPath,
+                // Watch for changes in LastAccess and LastWrite times, and
+                // the renaming of files or directories.
+                NotifyFilter = NotifyFilters.LastAccess
+                                 | NotifyFilters.LastWrite
+                                 | NotifyFilters.FileName
+                                 | NotifyFilters.DirectoryName
+                                 | NotifyFilters.Size,
+                // Watch everything
+                Filter = "" // Empty represents everything
+            };
+
+            // Add event handlers
+            watcher.Changed += OnFSChanged;
+            watcher.Created += OnFSCreated;
+            watcher.Deleted += OnFSDeleted;
+            watcher.Renamed += OnFSRenamed;
+
+            // Begin watching and return
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
         public void Dispose()
         {
+            // Dispose DB connection
             if (_Connection != null)
                 _Connection.Dispose();
+            // Dispose FS watcher
+            if (_FSWatcher != null)
+                _FSWatcher.Dispose();
         }
+        #endregion
+
+        #region Console Behavior Configurations
+        /// <summary>
+        /// Whether Commands class and its command actions should write to console;
+        /// If not, then functions here should not write to console;
+        /// This may or may not be respected by all commands that have already been implemented.
+        /// </summary>
+        /// <remarks>
+        /// Used for interoperation between other library clients e.g. desktop application
+        /// in which case we may want to disable reading/writing from console
+        /// </remarks>
+        public bool WriteToConsoleEnabled { get; set; } = true;
+        /// <summary>
+        /// Whether Commands class and its command actions should read from console;
+        /// If not, then functions here should not read from console;
+        /// This may or may not be respected by all commands that have already been implemented.
+        /// </summary>
+        /// <remarks>
+        /// Used for interoperation between other library clients e.g. desktop application
+        /// in which case we may want to disable reading/writing from console
+        /// </remarks>
+        public bool ReadFromConsoleEnabled { get; set; } = true;
         #endregion
 
         #region Public Properties
@@ -302,6 +363,11 @@ namespace Somewhere
             string[] allTags = AddTagsToFile(id, tags);
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
+        [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.")]
+        public IEnumerable<string> Export(params string[] args)
+        {
+            throw new NotImplementedException();
+        }
         /// <remarks>Due to it's particular function of pagination, this command function behaves slightly different from usual ones;
         /// Instead of returning lines of output for the caller to output, it manages output and keyboard input itself</remarks>
         [Command("Show a list of all files.",
@@ -396,6 +462,19 @@ namespace Somewhere
                 return GetCommandHelp(command);
             }
         }
+        [Command("Import items, files, folders and notes.")]
+        [CommandArgument("by", "literals")]
+        [CommandArgument("byparameter", "format specific parameters; for text sources (csv, txt and md), this can be `line` or `header`")]
+        [CommandArgument("under", "literals")]
+        [CommandArgument("underparameter", "format specific target parameters; empty for the most source formats; for `md` sources, this can be `header` or `title`")]
+        [CommandArgument("from", "literals")]
+        [CommandArgument("sourcepath", "path for the import source; either a file or a folder; suffix indicates source, common ones include: folder, csv, txt, tw (TiddlyWiki Json) and md")]
+        [CommandArgument("into", "literals")]
+        [CommandArgument("target", "target for the import; can be either `file`, `archive`, `note`, or `knowledge`; must be supported by the format")]
+        public IEnumerable<string> Im(params string[] args)
+        {
+            throw new NotImplementedException();
+        }
         [Command("Rename file.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
         [CommandArgument("filename", "name of file")]
@@ -409,7 +488,7 @@ namespace Somewhere
             if (id == null)
                 throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
             if (FileExistsAtHomeFolder(newFilename) || IsFileInDatabase(newFilename))
-                throw new ArgumentException($"Itemname `{itemname}` is already used.");
+                throw new ArgumentException($"Itemname `{newFilename}` is already used.");
             // Move in filesystem (if it's a physical file rather than a virtual file)
             string[] result = null;
             if (FileExistsAtHomeFolder(itemname))
@@ -848,7 +927,7 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// Rename a file entry in database
         /// </summary>
         public void RenameFile(string filename, string newFilename)
-            => Connection.ExecuteQuery("update File set Name=@newFilename where Name=@filename", new { filename, newFilename });
+            => ChangeFileName(filename, newFilename);
         /// <summary>
         /// Rename a tag in database
         /// </summary>
@@ -1183,6 +1262,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         private Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
         private Dictionary<string, MethodInfo> _CommandNames = null;
         private SQLiteConnection _Connection = null;
+        private FileSystemWatcher _FSWatcher = null;
         #endregion
 
         #region Private Subroutines
@@ -1285,12 +1365,15 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     $"{args.Length} is given. Use `help {commandName}`.");
         }
         /// <summary>
-        /// Given a path, get relative to Home directory if it contains that portion of path
+        /// Given a path, get relative to Home directory if it contains that portion of path;
+        /// If it's actually a relative path then just return it otherwise if it's rooted return null;
         /// </summary>
         private string GetRelative(string path)
         {
             if (path.Contains(HomeDirectory))
                 return path.Substring(HomeDirectory.Length);
+            else if (Path.IsPathRooted(path))
+                return null;
             return path;
         }
         /// <summary>
@@ -1349,6 +1432,59 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             // Show total only if we are at last page page
             if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)    // (Get ceiling)
                 Console.WriteLine($"Total: {fileRows.Count()}");
+        }
+        #endregion
+
+        #region FS Events
+        private void OnFSRenamed(object sender, RenamedEventArgs e)
+        {
+            // Specify what is done when a file is renamed.
+            if(WriteToConsoleEnabled)
+            {
+                if (Console.CursorLeft != 0)
+                    Console.WriteLine();    // Simple trick to avoid looking to ugly and interrupt current user input
+                Console.WriteLine($"File: {e.OldFullPath} renamed to {e.FullPath}");
+            }
+            // Check if the file used to be managed by DB, update it
+            string oldRelative = GetRelative(e.OldFullPath);
+            string newRelative = GetRelative(e.FullPath);   // Notice this path has two propertise: 1. It cannot already exist on disk; 2. It cannot already managed by DB
+            // Append folder suffix
+            if(Directory.Exists(e.FullPath))
+            {
+                oldRelative += Path.DirectorySeparatorChar;
+                newRelative += Path.DirectorySeparatorChar;
+            }
+            if (oldRelative != null)
+            {
+                int? id = GetFileID(oldRelative);
+                if(id != null)
+                {
+                    // Update in DB
+                    ChangeFileName(id.Value, newRelative);
+                    if (Console.CursorLeft != 0)
+                        Console.WriteLine();    // Simple trick to avoid looking to ugly and interrupt current user input
+                    Console.WriteLine($"Item `{oldRelative}` has been renamed to `{newRelative}`.");
+                }
+            }
+        }
+        private void OnFSDeleted(object sender, FileSystemEventArgs e)
+        {
+            return; // Currently not used
+            // Specify what is done when a file is changed, created, or deleted.
+            Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
+        }
+        private void OnFSCreated(object sender, FileSystemEventArgs e)
+        {
+            return; // Currently not used
+            // Specify what is done when a file is changed, created, or deleted.
+            Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
+        }
+        private void OnFSChanged(object sender, FileSystemEventArgs e)
+        {
+            // Notice per doc (https://docs.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher?redirectedfrom=MSDN&view=netframework-4.8#Mtps_DropDownFilterText): "Moving a file is a complex operation that consists of multiple simple operations, therefore raising multiple events. Likewise, some applications (for example, antivirus software) might cause additional file system events that are detected by FileSystemWatcher."
+            return; // Currently not used
+            // Specify what is done when a file is changed, created, or deleted.
+            Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
         }
         #endregion
     }

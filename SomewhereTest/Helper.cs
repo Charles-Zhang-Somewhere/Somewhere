@@ -43,6 +43,8 @@ namespace SomewhereTest
         /// </summary>
         public static string GetFilePath(string fileName, [CallerMemberName] string unitTestFolderName = null)
             => Path.Combine(unitTestFolderName, fileName);
+        public static string GetFolderPath(string folderName, [CallerMemberName] string unitTestFolderName = null)
+            => GetFilePath(folderName, unitTestFolderName);
         public static void CreateEmptyFile(string fileName, [CallerMemberName] string unitTestFolderName = null)
             => File.Create(Path.Combine(unitTestFolderName, fileName)).Dispose();
         public static void CreateEmptyFolder(string folderName, [CallerMemberName] string unitTestFolderName = null)
