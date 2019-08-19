@@ -99,9 +99,11 @@
                     <Label x:Name="SettingsTabLabel" Content="7. Settings" Style="{StaticResource TitleDim}" PreviewMouseDown="TabHeader_MouseDown"/>
                 </StackPanel>
                 <DockPanel HorizontalAlignment="Right">
-                    <Button Content="➖" Width="35" Height="35" Command="local:CustomCommands.Hide"/>
-                    <Button Content="▣" Width="35" Height="35" Command="local:CustomCommands.Maximize"/>
-                    <Button Content="✖" Width="35" Height="35" Command="Close"/>
+                    <Button Content="➖" Width="35" Height="35" Command="local:CustomCommands.Hide"
+                            DataContext="{x:Static local:CustomCommands.Hide}" ToolTip="{Binding Text}"/>
+                    <Button Content="▣" Width="35" Height="35" Command="local:CustomCommands.Maximize"
+                            DataContext="{x:Static local:CustomCommands.Maximize}" ToolTip="{Binding Text}"/>
+                    <Button Content="✖" Width="35" Height="35" Command="Close" ToolTip="Close Somewhere Desktop"/>
                 </DockPanel>
             </Grid>
             <Grid>
@@ -176,11 +178,14 @@
                                         <Button Content="Advanced" DockPanel.Dock="Right" Foreground="{StaticResource Highlight3}"/>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="Add" Command="local:CustomCommands.Add"/>
+                                                <Button Content="Add" Command="local:CustomCommands.Add" 
+                                                        DataContext="{x:Static local:CustomCommands.Add}" ToolTip="{Binding Text}"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="Open" Command="local:CustomCommands.Open"/>
-                                                <Button Content="New" Command="local:CustomCommands.New"/>
+                                                <Button Content="Open" Command="local:CustomCommands.Open"
+                                                        DataContext="{x:Static local:CustomCommands.Open}" ToolTip="{Binding Text}"/>
+                                                <Button Content="New" Command="local:CustomCommands.New"
+                                                        DataContext="{x:Static local:CustomCommands.New}" ToolTip="{Binding Text}"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </DockPanel>
@@ -210,15 +215,16 @@
                                             </DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Name" Style="{StaticResource AttributeField}"/>
-                                                <TextBox Text="{Binding ActiveItemName}"/>
+                                                <TextBox Text="{Binding ActiveItemName, UpdateSourceTrigger=LostFocus}"/>
                                             </DockPanel>
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Tags" Style="{StaticResource AttributeField}"/>
                                                 <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
-                                                <TextBox Text="{Binding ActiveItemTags}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                                                <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                             </DockPanel>
-                                            <Button Content="Save Changes" DockPanel.Dock="Bottom"/>
-                                            <TextBox Text="{Binding ActiveItemMeta}" Style="{StaticResource Content}"/>
+                                            <Button Content="Save Changes" DockPanel.Dock="Bottom" Click="SaveItemChangesButton_Click" 
+                                                    ToolTip="Explicitly save changes; Usually changes are saved automatically only when text box lose focus."/>
+                                            <TextBox Text="{Binding ActiveItemMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
                                         </DockPanel>
                                     </Border>
                                 </Grid>
@@ -241,7 +247,8 @@
                             <!-- Notes List -->
                             <Border Style="{StaticResource Panel}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"/>
+                                    <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"
+                                            DataContext="{x:Static local:CustomCommands.Create}" ToolTip="{Binding Text}"/>
                                     <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
                                               SelectedItem="{Binding ActiveNote}">
                                         <ListView.ItemTemplate>

@@ -683,6 +683,8 @@ namespace SomewhereDesktop
                 e.Handled = true;
             }
         }
+        private void SaveItemChangesButton_Click(object sender, RoutedEventArgs e)
+            => CommitActiveItemChange();
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
             => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)
