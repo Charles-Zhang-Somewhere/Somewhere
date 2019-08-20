@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -502,7 +503,12 @@ namespace SomewhereDesktop
         private void OpenCommandPromptCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void OpenCommandPromptCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => System.Diagnostics.Process.Start("cmd");
+            => Process.Start(new ProcessStartInfo()
+            {
+                FileName = "cmd",
+                WorkingDirectory = Commands.HomeDirectory,
+                UseShellExecute = true
+            });
         private void MaximizeWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -754,19 +760,29 @@ namespace SomewhereDesktop
         {
             if(e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
             {
-                string[] positions = ConsoleInput.BreakCommandLineArgumentPositions();
-                string command = positions.GetCommandName();
-                string[] arguments = positions.GetArguments();
-                // Disabled unsupported commands (i.e. those commands that have console input)
-                if (command == "files" || command == "find")
-                    ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
-                else
+                // Break a chord into notes, each key represent a seperate command
+                string[] chord = ConsoleInput.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
+                StringBuilder result = new StringBuilder();
+                foreach (string chordNote in chord)
                 {
-                    StringBuilder result = new StringBuilder();
-                    foreach (var line in Commands.ExecuteCommand(command, arguments))
-                        result.AppendLine(line);
-                    ConsoleResult = result.ToString();
+                    string[] positions = chordNote.BreakCommandLineArgumentPositions();
+                    string command = positions.GetCommandName();
+                    string[] arguments = positions.GetArguments();
+                    if (chord.Length > 1)
+                        result.AppendLine($"{command}:");
+                    // Disabled unsupported commands (i.e. those commands that have console input)
+                    if (command == "files" || command == "find")
+                    {
+                        ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
+                        break;
+                    }
+                    else
+                    {
+                        foreach (var line in Commands.ExecuteCommand(command, arguments))
+                            result.AppendLine(line);
+                    }
                 }
+                ConsoleResult = result.ToString();
                 ConsoleInput = string.Empty;
                 e.Handled = true;
             }

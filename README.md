@@ -11,6 +11,7 @@ Welcome to **Somewhere**, a simple program that enables you to tag your files in
 4. (Repository Design) Heavily documented including methodology;
 6. (Market Design) Cutting Edge technology, C#.Net Core/Standard based, last for another 100 years, will migrate to .Net Core 3.0 when it comes out;
 7. (UI Design) Dark mode, B/W color scheme, custom color scheme configuration (will be available in the future);
+8. Comments are files!
 2. (Concept Design) **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
 	* Absolutely self contained;
 	* Long and expressive item names as you like - even something like this (notice each line is **real**):
@@ -140,6 +141,11 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 Cautious:
 
 1. Filename must be either unique or null (for safe add and remove operations, and for compatibility with file system), though length limit is removed (for meaningful description for notes). And as such meaningful filename is encouraged (if not required). For practical (and safe) reasons, files are never actually physically deleted - they are instead marked with suffix `_deleted` at the very end of filename (and disable the extension).
+
+## Tricks
+
+1. You can add custom attributes to any file/item by using `mt` (meta) command;
+2. You can enter **chords** in Status Tab command line by appending "\n" to each command
 
 ## Best Practices
 
@@ -373,13 +379,13 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 
 # Panels
 
-* `Ctrl+1`: Show Inventory Panel
-* `Ctrl+2`: Show Notebook Panel
-* `Ctrl+3`: Show Knowledge Panel
-* `Ctrl+4`: Show Status Panel
-* `Ctrl+5`: Show NTFSSearch Panel
-* `Ctrl+6`: Show Logs Panel
-* `Ctrl+7`: Show Settings Panel
+* `Ctrl+1`: Show Inventory Tab
+* `Ctrl+2`: Show Notebook Tab
+* `Ctrl+3`: Show Status Tab
+* `Ctrl+4`: Show Knowledge Tab
+* `Ctrl+5`: Show NTFSSearch Tab
+* `Ctrl+6`: Show Logs Tab
+* `Ctrl+7`: Show Settings Tab
 
 # Commands
 
