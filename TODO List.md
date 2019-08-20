@@ -3,25 +3,26 @@
 This list is for myself.
 
 ```
-Notebook page tags editing
-Inventory item names etc. editing
-Popup selection window, tag searching and clicking
-Markdown preview for notes in Inventory panel
+[Practical Tests and Usage]
 
-Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors
-PopupSelectionWindow
-FileSystemWaster for COmmands
-Finish draft GUI
-Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command
-Files command rename to items
-Add command during add if directory append trailing slash to differentiate it from regular files
-Open: switch home directory
-Archive: zip the home directory (and put the archive inside it)
-Find action: copy (file to clipboard), copynames, copypaths
+1. university folder test; Finish organizing using Somewhere for one actual folder to see how well it works.
+2. Finish draft GUI
 
-Add file watcher
-`create` for knowledge when file without title (instead of creating a seperate **knowledge** table, it would be nice if we have all existing commands)
-`add` wiht cut from foreign
+[Planned Essentials]
+
+1. Finish implementing PopupSelectionWindow, implement using it for tag searching and clicking
+2. CLI Tab Positional Autoconplete: ConsoleX.ReadLine takes a function<int, string[], string[]> which gives current argument position, list of all arguments, and returns a set of autocomplete options, and an event function, which takes Func<int,  string[], string, string> for current position, current arguments, and selected match item (numbered 0-9, tab default select 0th), and returns the modified last(I.e. current) argument. It's a little bit complicated because our arguments are positional and not variable length and tags are comma delimited, likely under quotes 
+3. (New Command) Read (file): by ID / filename, priority filename, automatically interpret integers as IDs (thus after a find or files command one can further inspect tags etc using read command
+4. (New Command) `Files` command rename to `items` for generity?
+5. (New Command) Archive: zip the home directory (and put the archive inside it)
+6. (New Command) Find action: copy (file to clipboard), copynames, copypaths
+
+[Marketing]
+
+1. Make some meaningful and informative screenshots and update to README and website
+
+[Misc]
+
 Search ("find") + type + keywords (quoted): allow date entry, allow tag, allow file name, allow revision count
 Delete tag (and all files): require confirmation  (show how many are affected). Show report list after action.
 File (Read) - Name: Shows all detail about a particular file (including virtual file)
@@ -32,22 +33,59 @@ untag: When we do untag, remove empty tags
 For all operations that involve physical files, add filename translation (clipping), clip to a length of (including path)...  Keep `_delete` and file extension
 For Add *: check and add only if the file is not home database and is not already added.
 
-Allow customized color definitions per repository in `ColorSettings` property
-
+Item remark (in inventory panel)
 
 allow tagging external locations, like directly, using absolute path (this can be useful see in enterprise environment)
 (Advanced Feature; Usability; Non-crucial) Find action: allow 'zip' directly all found items into an archive (what about virtual notes?) and automatically add and tag the final archive, all items within the archive is still tagged individually (with a path referencing into the archive file).
 
 Currently GetPhysicalName cannot get names for those conflicted files  consider always use embedded IDStirng 
 
-Finish organizing using Somewhere for one actual folder to see how well it works.
+[Documentation]
 
-CLI Tab Positional Autoconplete: ConsoleX.ReadLine takes a function<int, string[], string[]> which gives current argument position, list of all arguments, and returns a set of autocomplete options, and an event function, which takes Func<int,  string[], string, string> for current position, current arguments, and selected match item (numbered 0-9, tab default select 0th), and returns the modified last(I.e. current) argument. It's a little bit complicated because our arguments are positional and not variable length and tags are comma delimited, likely under quotes 
+1. Move Conceptual treatments to portfolio blog instead, and leave repository purely technical and code related; Leave usage notes there.
+2. Add license;
 
-Files: show a "total" at the end, like `tags`
-(Implemented much later, put to road map) Advanced action on folder: flatten 
-Zip Archive support for true homogeneous container.
+[Features and Functionality - Versatility]
 
-Move Conceptual treatments to portfolio blog instead, and leave repository purely technical and code related; Leave usage notes there.
-Add liscence;
+1. Further implementation of FileSystemWaster for Commands library; Add file watcher to SD
+2. Basic integration of NtfsReader and NTFS search;
+3. In-depth integration of NtfsReader and actions for NTFS search results;
+4. Notice FileSystemWatcher might break dependency and cause incompatible for Linux, pending verification; Maybe .Net Core has better support for FileSystemWatcher. Focus on Windows for now.
+
+[(Urgent) Issues and Bugs - Affects Usability]
+
+1. Add exception handling for `sw ui` when current directory is not a valid home folder
+2. Same as above, currently if we just call `SomewhereDesktop` without going to a valid Home folder first, it will just crash
+3. Notice list views used labels for underscore in file names are not displayed correctly, change to text blocks
+4. Links in dialog window currently cannot be clicked, might be related to how the window is displayed.
+5. Move shared styles into App xaml - currently there is issue with buttons and layouts and behaviors
+6. Bug: add command cannot add files under a folder in current dir
+7. Create note should not allow ending slashes to avoid confusion
+8. Unit test: add case when name collision actually happens during add/create
+
+[Potential Design Flaws]
+
+1. Currently GetPhysicalName cannot get names for those conflicted files  consider always use embedded IDStirng 
+
+[Usability and UI Improvement - Non Essential]
+
+1. Allow customized color definitions per repository in `ColorSettings` property
+
+[Pending Documentation: Future Roadmap Features]
+
+1. Advanced action on folder: `flatten` and `import flatten`
+	* Allow **import flatten** with auto tagging of copied files and report of total file count (generate summary), the most basic way is to implement this by calling add command as underlying
+
+[Big Plans]
+
+1. Zip Archive support for true homogeneous container.
+	* Zip Archive support for true homogeneous container.
+	* It's clearly important, so I say it twice....
+2. allow tagging external locations, like directly, using absolute path (this can be useful see in enterprise environment)
+3. (Advanced Feature; Usability; Non-crucial) Find action: allow 'zip' directly all found items into an archive (what about virtual notes?) and automatically add and tag the final archive, all items within the archive is still tagged individually (with a path referencing into the archive file).
+
+[Sample Project Setup/Idea]
+
+1. Wholeshare Era - An Explorable Novel
+	* (Sounds, notes, visuals, items, notes...)....
 ```

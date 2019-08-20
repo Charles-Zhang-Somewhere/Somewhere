@@ -29,4 +29,8 @@ A functional version of CLI interface, with support for following commands. GUI 
 
 # V0.0.5
 
+## Summary
+
 * \[Windows\] Basic Somewhere Desktop implementation.
+
+## Detailed Change List

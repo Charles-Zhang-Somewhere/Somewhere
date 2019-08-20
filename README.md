@@ -6,14 +6,14 @@ Welcome to **Somewhere**, a simple program that enables you to tag your files in
 
 **Features**
 
-1. Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader*, *Markdig.WPF* and *WindowsAPICodePack*);
-2. **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
-3. Non-intrusive, File system friendly (existing FS based meta-layer), designed for custom files and decent interoperability with existing hierarchical structure;
-4. Heavily documented including methodology;
-5. Absolutely self contained;
-6. Cutting Edge technology, C#.Net Core/Standard based, last for another 100 years, will migrate to .Net Core 3.0 when it comes out;
-7. Dark mode, B/W color scheme, custom color scheme configuration (will be available in the future);
-8. Long and expressive item names as you like - even something like this (notice each line is **real**):
+1. (Code Design) Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader*, *Markdig.WPF* and *WindowsAPICodePack*);
+3. (Implementation Design) Non-intrusive, File system friendly (existing FS based meta-layer), designed for custom files and decent interoperability with existing hierarchical structure;
+4. (Repository Design) Heavily documented including methodology;
+6. (Market Design) Cutting Edge technology, C#.Net Core/Standard based, last for another 100 years, will migrate to .Net Core 3.0 when it comes out;
+7. (UI Design) Dark mode, B/W color scheme, custom color scheme configuration (will be available in the future);
+2. (Concept Design) **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
+	* Absolutely self contained;
+	* Long and expressive item names as you like - even something like this (notice each line is **real**):
 
 ```
 This is /my file/ in Somewhere so I should be able to do <anything> I want with it \including "!!!!????**********"
@@ -52,24 +52,36 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 3. Run `somewhere` or `sw` to see help;
 4. Have fun tagging!
 
+Optional Download: It's recommended for CLI to be used with [Cmder](https://cmder.net) (better for Unicode display, nicer colors and better overall experience); Notice Cmder is available on Windows only.
+
 # Treatments
 
-> An effective software is not just a **tool**, it's also a **method**. A good software enables people to **think differently**.
+> An effective software is not just a **tool**, it's also a **method**. A good software should enable people to **think differently**.
+
+(This section will be moved to *Somewhere - A Concept Design* article on my portfolio)
 
 ## Definitions
 
-1. (Not used) **Item**: Anything that contains information or data, this corresponds to a "File" entry in the File table, however in practice, and as in most operating system, "Files" can also denote "Folders", so "item" is used to avoid confusion.
-2. Physical Folder: a folder is a file.... and item...
-3. (Virtual) Note:
+0. (Field Attribute) **Name**: an identifying string for a particular item.
+1. (Object) **Item**: Anything that contains information or data, this corresponds to a **"File"** entry in the `File` table, however in practice, and as in most operating system, "Files" can also denote "Folders", so "item" is used to avoid confusion.
+	* Folders are names (path) with trailing seperator;
+	* Files are just files;
+	* Knowledge doesn't have a name;
+	* Notes have Contents
+2. (Object) Physical Folder: a folder is a file.... and item...
+3. (Object) Virtual Note:
 4. (File Meta) Remark: 
 
 ## Terminology
 
-1. TBFS: Tab based file system
+1. **TBFS**: Tab based file system
+2. **SD**: Stands for "Somewhere Desktop", it's a GUI interface Windows desktop window application, WPF based. 
+3. **SW**: Stands for "Somewhere", Specifically refers to Someowhere's CLI interface application.
+4. **SA**: Stands for "Somewhere App" in general, mostly refers to the concept of Somewhere - I.e. tag based file management. 
 
 ## Concepts
 
-1. Strictly item based - not for managing tags (just like bookmark ninja). Operations are focused around specific items.
+1. Strictly item based - not for managing tags (just like bookmark ninja). Operations are focused around specific items. All commands in generally universally apply to all those items.
 2. Tag with efficiency: tagging is only so useful when we spend less time organizing stuff and more easily receive stuff, when it's much faster to assign (as mentioned above) multiple tags than deciding which single folder to put something - a proper command line interface is one step, but it's subject to typos - an efficient GUI (like Bookmark Ninja) is thus especially important .
 3. Let me put it this way: there are at least N (N>3) ways to tag a file while there is only one way to put it under a folder - you can see the limit of traditional hierarchical based systems. This applies both in terms of organization and retrieval.
 4. Virtual file/note/resource: in the command only notes are supported. Files that exist directly (and only) in database are called "virtual files", in terms of the contents it contains - if it contains text file, it's "virtual note", otherwise for binary it's terms "virtual resource". Filenames are required to be unique among all managed files, no matter whether it's virtual or not. (idea) "Virtual file as resource".. bookmark ninja as notes, OneNote....Evernote...... (virtual note are those that content is not null, including resources and temperaty editing results in UI)
@@ -91,9 +103,10 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 15. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
 16. Simple + focused....
 17. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
-18. （Experimental; Feature） Flat notes/tags and knowledge sub-system: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
+18. （Experimental; Feature） Flat notes/tags and knowledge subsystem: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
 	* Operators: up, down, filter (scope and scroll details), import (multi line list, assign tags)
 	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
+	* Knowledge operation command names: `ki` (import), `Ku`, `kd`, `kc` (knowledge **condense** into a copy a text file, under one name, can work for multiple tags in which case no best heading can be deduced directly)
 19. Reflection on Hierarchical Structure: some might mistakenly think hierarchical structures are thus not useful or even bad - however hierarchical structures are indeed very powerful structures for organizing knowledge for trees are very efficient for searching purpose. However the biggest issue as we shall identify here, is trees are good only for relatively static data, e.g. English dictionary with thumb index - the reorganization cost is high - but that's exactly the case for personal data. Also it might occur that trees are better to model topological features (e.g. shapes of words or animals) rather than semantically features (which doesn't have solid forms).
 20. Everything: unambiguous, folder and file names can be utilized, not intended for organizing, very specific; XYPlorer: not pure, temporary for work sessions is good, limited capacity due to mechanism (click and drag) - again, only suitable for sessional work not permanent organization.
 21. Repository/Home: each Somewhere home is a repository, managed by SQLite database
@@ -102,6 +115,12 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 3. (Reflection note) Key motivation: we find it perfectly fine for the purpose of managing personal data using a SQLite database as a back store for all tagging information or even with actual data contents, but manually editing data tables are not very efficient (even with the help of SQLite DB Browser it can still be less than optimal), and manually dealing with tabular cells is not that keyboard efficient as well. Instead of devising a completely new scheme, nowadays I value more data operability and wish to create a tool that augments existings infrastructure instead of creating new things, thus a very well-defined customized SQLite database with pre-defined table formats are used to manage those files.
     * Later during the development, and partly inspired by some discussion with Author of Bookmark ninja, I realized this tool can also accomodating note taking purpose, with better integration with file linking (compared with and inspired by limitation of TiddlyWiki) - all we need is MD, and this can promote better data interopreability. In this case Tiddly Wiki becomes more of a plain indexed note tool. I do recognize this change of usage is mostly due to the limit of my phone's operating power, otherwise Tiddly wiki is very good for self-contained plain text notes.
 4. Homogenous Container: as proposed in MULTITUDE (theory treatment pending summary on detailed proposed knowledge management framework differentiating between tags and folders and how to properly use them).
+0. Repository/Home: each Somewhere home is a repository, managed by SQLite database
+1. (Observation) Non original、non personal item s are usually not worth and not need for very specialized organization, for instance Steam games installation folder - you don't really care how large it is and how many files are there because you don't interact with it directly anyway. Another example might be Audible book local audio files - simple folders suffice for the purpose of organizing those. However soon enough when we are dealing with **custom information**, originality comes into play, this includes custom categorization system which is in effect a Knowledge system even if we are dealing with items whose raw contents are not directly issued by us, for instance organizing news digest - even though we don't wrote news ourselves the organized structure represents our knskle. In this case a tag based system can help. I know this discussion is a bit abstract 
+1. Physical (File) Name: File must exist and must be managed by Somewhere. This name for max efficiency depends on its database presence. We require only a max of'#DDDDDDDD' (database item ID) size of characters (when it's not unique). Notice a file's ID is guaranteed to be unique throughout **Somewhere repository lifetime**.
+2. Knowledge Link: knowledge item is linked by a either: item name (case sensitive), item ID (starting with # sign), tags list (start with t:), or a more general **search filter** (everything-lile, pending reference definition) (find: filter strings separated by space and quotes)
+3. (Reflection note) Key motivation: we find it perfectly fine for the purpose of managing personal data using a SQLite database as a back store for all tagging information or even with actual data contents, but manually editing data tables are not very efficient (even with the help of SQLite DB Browser it can still be less than optimal), and manually dealing with tabular cells is not that keyboard efficient as well. Instead of devising a completely new scheme, nowadays I value more data operability and wish to create a tool that augments existings infrastructure instead of creating new things, thus a very well-defined customized SQLite database with pre-defined table formats are used to manage those files.
+    * Later during the development, and partly inspired by some discussion with Author of Bookmark ninja, I realized this tool can also accomodating note taking purpose, with better integration with file linking (compared with and inspired by limitation of TiddlyWiki) - all we need is MD, and this can promote better data interopreability. In this case Tiddly Wiki becomes more of a plain indexed note tool. I do recognize this change of usage is mostly due to the limit of my phone's operating power, otherwise Tiddly wiki is very good for self-contained plain text notes.
 
 ## References
 
@@ -117,23 +136,62 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 9. RoboOS: Flattened FS inspiration
 10. (Anti)tagxfs: good [reading](http://tagxfs.sourceforge.net), some excerts of points..., too long a name, the scheme is not flexible, the underlying architecture/structure is not obvious, no **GUI support is not good** (even for efficient typers, GUI when utilized properly can provide much more information at a glance, so a proper GUI should be provided as a complement)
 11. Everything (voidtools): inspired the name for Somewhere.
+12. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+13. [Additional Markdown features](https://github.com/Kryptos-FR/markdig.wpf)
 
-# Design Principal
+# Usage Guide
 
-Minimal UI, Functional, Data Driven, Text based.
+Cautious:
+
+1. Filename must be either unique or null (for safe add and remove operations, and for compatibility with file system), though length limit is removed (for meaningful description for notes). And as such meaningful filename is encouraged (if not required). For practical (and safe) reasons, files are never actually physically deleted - they are instead marked with suffix `_deleted` at the very end of filename (and disable the extension).
+
+## Best Practices
+
+1. Tag name convention: per convention of other existing tag based systems, I found this a good starting point: 1) comma or space seperated thus no comma or space in name, 2) lower case, case insensitive 3)
+	* Do note by design any characters are allowed in tags in the underlying databse, but command line and gui interface enforce no comma and no space policy
+2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
+3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
+4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
+5. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
+1. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
+
+## Case Studies
+
+1. (General Tagging) Think about how you would like to (be able to) access it: "ECE, Formula" vs "ECE_Formula"
+2. (Knowledge Tag System) Think about how you would like to ask questions - technically speaking, a proper **filename is also byitself a tag** (e.g. "a handbook of practical structures" -> "practical structures"), knowledge points should be **infitestimal small** and **self-contained** and at the same time contain **all other relevant knowledge**. So a proper knowledge point should have only: (plaintext) content, (plaintext) tags - wihtout any indirection. All other heavilifting should be done by the system, e.g. the system shall keep a "tag table" (a tag by itself) which contains all current tags, and this system should detect rather than interfere with normal file tag system (i.e. the main Somewhere application itself). And of course, *tags as either words or phrases, should be tagged on as well*. If everything can be treated as a tag, then tags can have two levels, according to its abstraction level - either up or down, and sentences, being the most specific ones, are on the bottomest level.
+
+## Questions
+
+1. Should I still use folders? Certainly. E.g. Musics put together in one folder (i.e. by **subject**), by **type** and **project**, or as mentioned above: use folders as **homogenous containers** - but flatted under parent/home folder.
+2. I have *30+* Miku png images under *MyPicture/Anime/Miku*, what should I do? Eat it. Not, tag **the whole folder** directly, and **don't** tag individual files (unless some specific ones have special importance) - just let them go wild in there and keep the content growing. Or **zip it** and **tag the compressed file**.
+3. I have 30+ software icon assets in *MyPictures/Graphical Assets/Icons*, what should I do? This case is slightly different because it may have need for **future reference**. You have two options: 1) As above; 2) There is something *seriously worong* with how you organize those images - *"Icons"*? Seriously? Does it mean anything? A *file/note/item* should never be categorized udner a **type description alone**: the categorization should always conform to its **content and meaning** instead. The same applies to specific **application domains** - and those simply cannot be appropriately addressed by hierarchical file systems. Use at least **two tags** (one is "icon", the other indicates its actual content - but in the case of simple application icons, you can probably avoid a secondary tag and instead use a **proper icon file name** (don't use "Icon 1.png", "Icon 2.png" etc.) instead. However **two-tag scheme** can work for things more sophisticated e.g. a digital painting) for **each of the files** in this folder, and throw that folder away. *Semantics matter*.
+4. Why not as a VS code extension? JS?
+5. Proper workflow: give a folder a beaituful name; never look at it.
+6. What will happen if I put an emoji in my filename?
+7. How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
+
+# Developement Notes
+
+## Design Principal
+
+Keywords: Minimal UI, Functional, Data Driven, Text based.
 
 1. Tags field are plain text box, for autocompletion pupup is used. No small tag button with even smaller cancel button is provided. So it's simple and less error prone, and plain enough to ensure data operability with CLI and GUI.
 2. No fancy features, strictly necessary. Arguments are positional.
 3. CLI driven, GUI is just a client.  
+4. Don't change data contract, i.e. data table definitions, for the next 10 years. This helps confine scope and reliability.
+5. Late optimization: simple and needed functions first with absolutely necessary ingredients, take the most straightforward and framework specific ways of doing things to reduce code, prefer code clarity over complex local optimization (for room for future usable features)
+    * This is due to need for functional usage rather than specialized optimal operations due to time limit and limited maintainence time.
+    * Things that can be optimized: 1) Instead of ObservableCollection for Items list, we can use plain string and repopulate only file name when update Items view 
+6. GUI (I.e. Somewhere Desktop) is a front end, a client of Somewhere (library), no matter how fancy and how many content related features it supports. This requires us to focus on CLI.
+7. Target **Item count** *5000-10000*: for any reasonable treatment of a given **subject**, 5000 items worth of content is the least expected. One *shouldn't feel slowed down* by the software when dealing with such size. I would target 10000 files per repository, because that's when during my experience with Bookmark Ninja (I.e. organize website bookmarks with tags), things start to become less efficient - around *1000-3000* tags per repository seems reasonable enough, more than that one can become less familiar or existing tags and it's better to *start a new repository for remotely related subjects*.
+Minimal UI, Functional, Data Driven, Text based.
 
-# Developement Notes and Roadmap
-
-1. When focusing on NTFS and Windows, we can enable direct tracking of file movement of underlying FS, just like XYplorer did and keep track of things seamlessly everytime we hit `sync` or `update`; For linux I am not aware of a journal based FS so this will not work
-
-## Next Steps
+## Roadmap and Next Steps
 
 A functional and effective application may not just end here, I have several simple ammendities to make this software a bit more useful:
 
+1. When focusing on NTFS and Windows, we can enable direct tracking of file movement of underlying FS, just like XYplorer did and keep track of things seamlessly everytime we hit `sync` or `update`; For linux I am not aware of a journal based FS so this will not work
 1. Auto-Discovery (Theory backed): 
 	* Intelligent tag text files (enforced) by vocabulary list in **auto tag list (pink)** (seperated from user tag)
 	* Inteligent tag image files (pink auto tags)
@@ -151,6 +209,13 @@ A functional and effective application may not just end here, I have several sim
 8. Test support for linux and mac for CLI.
 9. Enable embedding as an option (disabled, "Content" dedicated to text notes)
 10. Add support for compression and archiving
+
+**Stretch Goals**
+
+MULTITUDE might never get a chance to continue development, so some of its goals may be carried to Somewhere. However if such shall be implemented I will guarantee seperate executable packages, allowing opting out.
+
+1. (Use case) music and video library, random play.
+2. (Pending conception) Photo organization, random slide show (I.e. original MULTITUDE's inspiration mode)
 
 ## Software Components
 
@@ -173,6 +238,7 @@ A functional and effective application may not just end here, I have several sim
 				* Basic: (Row 1) Import (Files, add as copy), Import as Folder (add folder, cut whole folder), Export, (Save), (Edit/Clear) | (Row 2) Physical (make virtual notes a physical file), Create, Open, New (Home)
 				* Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
 		- Bottom Row: Stat & Help row
+	* A simple non-interactive shell is available in Status panel for commands input and result display for commands we don't plan to support in GUI (e.g. config and add folder) in the short term or never
 3. (Deprecated) GUI Desktop Application (WPF)
 	* I think I can make it more efficient just with command line, maybe a website though (End remark: I would do it in CLI, especially since we are going to do auto-complete tag and tweak with some ReadKey() level code - but CLI's support for UNICODE display is arcane and code won't be clean if we do that, so WPF/ASP.Net is better option)
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
@@ -186,68 +252,6 @@ Notice to compile and link SomewhereStandard and SQLite we need to uncheck **Pre
 2. NTFS reader: supports and replaces Everything - thank you free software
 3. ConsoleX: tab completion with advanced customization (position and lambdas); Useful CLI information (later development after GUI is drafted)
 4. (Windows only) Shell (Windows Explorer) integration for editing Item information (tags and notes)
-
-## Underlying SQLite Table Schemes
-
-Database schemas: the idea of adding tags to physics file resources is quite simple. In fact cefore creating this application I am already doing it at work manually for documents, reading materials, test data, and misc resource files - that's much slower,  but the advantage of having a database for this purpose is very superior, by avoiding the limits of underlying OS FS, I gain the ability to annotate files (notably name length limit, hierarchical structure, and no meta data available) like never before and this enables much easier later retrieval.
-
-In summary, those tables:
-
-1. **Tag**: ID (Always incremental, unique), Name (Tags are first-class objects)
-2. **File (item)**: ID (Always incremental, unique), Name (Name and or path; Nott-nullable), Content (Blob), Meta (YAML: Size, MD5, Remark), EntryDate - for physical file, physical folder, virtual file (note and resource)
-3. **FileTag**: FileID, TagID
-4. **Log**: DateTime, Event (include relevant IDs and all details) - server mosltly reference purpose
-3. **Configuration**: key, value
-4. (Future) Rule (A,B,C)
-5. (Future) Hierarchy (A/B/C)
-6. (Future) Revision: FileID, RevisionID, Content, RevisionTime
-
-# Usage
-
-Download: Package with Cmder (for Unicode, colors and better overall experience)
-
-Tricks: 
-
-1. Win32 on filename and new button for file and folder win33 context menu
-
-Cautious:
-
-1. Filename must be either unique or null (for safe add and remove operations, and for compatibility with file system), though length limit is removed (for meaningful description for notes). And as such meaningful filename is encouraged (if not required). For practical (and safe) reasons, files are never actually physically deleted - they are instead marked with suffix `_deleted` at the very end of filename (and disable the extension).
-
-## Shortcuts (Desktop Version)
-
-1. F1: Help Popup
-2. F2: OPen (Home)
-3. F3: Reserved
-4. F4: Advanced Actions (Divide, Merge (in), Diff (status popup), Sync, Branch)
-5. F5: Tag Editor Popup (Addition + Rename + Remove) - Search select from list and enter in textbox
-6. Double Click on file:
-7. Right click on file:
-8. Right click on home: 
-
-## Best Practices
-
-1. Tag name convention: per convention of other existing tag based systems, I found this a good starting point: 1) comma or space seperated thus no comma or space in name, 2) lower case, case insensitive 3)
-	* Do note by design any characters are allowed in tags in the underlying databse, but command line and gui interface enforce no comma and no space policy
-2. No folder unless and homogenous container (not enforced): .... folders can still be directly added as an "item"
-3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
-4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
-5. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
-
-## Case Studies
-
-1. (General Tagging) Think about how you would like to (be able to) access it: "ECE, Formula" vs "ECE_Formula"
-2. (Knowledge Tag System) Think about how you would like to ask questions - technically speaking, a proper **filename is also byitself a tag** (e.g. "a handbook of practical structures" -> "practical structures"), knowledge points should be **infitestimal small** and **self-contained** and at the same time contain **all other relevant knowledge**. So a proper knowledge point should have only: (plaintext) content, (plaintext) tags - wihtout any indirection. All other heavilifting should be done by the system, e.g. the system shall keep a "tag table" (a tag by itself) which contains all current tags, and this system should detect rather than interfere with normal file tag system (i.e. the main Somewhere application itself). And of course, *tags as either words or phrases, should be tagged on as well*. If everything can be treated as a tag, then tags can have two levels, according to its abstraction level - either up or down, and sentences, being the most specific ones, are on the bottomest level.
-
-## Questions
-
-1. Should I still use folders? Certainly. E.g. Musics put together in one folder (i.e. by **subject**), by **type** and **project**, or as mentioned above: use folders as **homogenous containers** - but flatted under parent/home folder.
-2. I have *30+* Miku png images under *MyPicture/Anime/Miku*, what should I do? Eat it. Not, tag **the whole folder** directly, and **don't** tag individual files (unless some specific ones have special importance) - just let them go wild in there and keep the content growing. Or **zip it** and **tag the compressed file**.
-3. I have 30+ software icon assets in *MyPictures/Graphical Assets/Icons*, what should I do? This case is slightly different because it may have need for **future reference**. You have two options: 1) As above; 2) There is something *seriously worong* with how you organize those images - *"Icons"*? Seriously? Does it mean anything? A *file/note/item* should never be categorized udner a **type description alone**: the categorization should always conform to its **content and meaning** instead. The same applies to specific **application domains** - and those simply cannot be appropriately addressed by hierarchical file systems. Use at least **two tags** (one is "icon", the other indicates its actual content - but in the case of simple application icons, you can probably avoid a secondary tag and instead use a **proper icon file name** (don't use "Icon 1.png", "Icon 2.png" etc.) instead. However **two-tag scheme** can work for things more sophisticated e.g. a digital painting) for **each of the files** in this folder, and throw that folder away. *Semantics matter*.
-4. Why not as a VS code extension? JS?
-5. Proper workflow: give a folder a beaituful name; never look at it.
-6. What will happen if I put an emoji in my filename?
-7. How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
 
 # Comprehensive Commands Reference
 
@@ -338,14 +342,69 @@ untag - Untag a file.
 
 The list of shortcuts are also available using `F12` button inside Somewhere Desktop app.
 
-...
+```
+# Mouse Operations
 
-# Developer Doc
+1. `Double Click` on **Invetory panel** list view item can open it using default system program.
+2. Double Click on file:
+3. Right click on file:
+4. Right click on home: 
+5. (Planned) Win32 on filename and new button for file and folder win33 context menu
 
-(Add detailed examples on interoperability)
+# Window
+
+* `F11`  Maximize Somewhere Desktop window
+* `F12`  Show Shortcuts
+* `` Ctrl+\` ``: Hide Somewhere Desktop window 
+* `ESC`:  Hide Somewhere Desktop window (same as `` Ctrl+\` ``)
+
+# Panels
+
+* `Ctrl+1`: Show Inventory Panel
+* `Ctrl+2`: Show Notebook Panel
+* `Ctrl+3`: Show Knowledge Panel
+* `Ctrl+4`: Show Status Panel
+* `Ctrl+5`: Show NTFSSearch Panel
+* `Ctrl+6`: Show Logs Panel
+* `Ctrl+7`: Show Settings Panel
+
+# Commands
+
+* `F1`: Open Somewhere Home repository
+* `F2`: Go to Notebook panel and create new note
+* `F3`: Go to Inventory panel and search
+* `F4`: Advanced Actions (Divide, Merge (in), Diff (status popup), Sync, Branch)
+* `F5`: Refresh Inventory
+* `F6`: Tag Editor Popup (Addition + Rename + Remove) - Search select from list and enter in textbox
+```
+
+# Developer Doc (In Progress)
+
+(Pending: Add detailed examples on interoperability)
 
 To extend and define custom functions, open solution in VS, and create a new project by .....Add reference....
 
 Example (see Examples solution folder for real and simplified examples):
 
 1. An ASP.Net core website (see ASPNETCoreExample)
+
+## Underlying SQLite Table Schemes
+
+Database schemas: the idea of adding tags to physics file resources is quite simple. In fact cefore creating this application I am already doing it at work manually for documents, reading materials, test data, and misc resource files - that's much slower,  but the advantage of having a database for this purpose is very superior, by avoiding the limits of underlying OS FS, I gain the ability to annotate files (notably name length limit, hierarchical structure, and no meta data available) like never before and this enables much easier later retrieval.
+
+In summary, those tables:
+
+1. **Tag**: ID (Always incremental, unique), Name (Tags are first-class objects)
+2. **File (item)**: ID (Always incremental, unique), Name (Name and or path; Nott-nullable), Content (Blob), Meta (YAML: Size, MD5, Remark), EntryDate - for physical file, physical folder, virtual file (note and resource)
+3. **FileTag**: FileID, TagID
+4. **Log**: DateTime, Event (include relevant IDs and all details) - server mosltly reference purpose
+3. **Configuration**: key, value
+4. (Future) Rule (A,B,C)
+5. (Future) Hierarchy (A/B/C)
+6. (Future) Revision: FileID, RevisionID, Content, RevisionTime
+
+# (Temporary) License
+
+Before Somewhere reach a stable release, i.e. release version V0.5.0 or 250 commits - whichever comes first, you are ONLY allowed to download, compile and read the code. Released binary files are always free to be used in anyway you see fit - except no redistribution of source and binary files are allowed until further notice.
+
+When the concept and documentation for Somewhere is mature I will relax the license terms and provide a truly free license.
