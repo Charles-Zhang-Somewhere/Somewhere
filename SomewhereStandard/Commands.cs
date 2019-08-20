@@ -904,23 +904,26 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// Add a file entry to database
         /// </summary>
         public int AddFile(string filename)
-            => Connection.ExecuteSQLInsert("insert into File (Name, EntryDate) values (@name, @date)", new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd") });
+            => Connection.ExecuteSQLInsert("insert into File (Name, EntryDate) values (@name, @date)", 
+                new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") });
         /// <summary>
         /// Add a file entry to database with initial content
         /// </summary>
         public int AddFile(string filename, string content)
-            => Connection.ExecuteSQLInsert("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd") });
+            => Connection.ExecuteSQLInsert("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", 
+                new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") });
         /// <summary>
         /// Add files in batch
         /// </summary>
         public void AddFiles(IEnumerable<string> filenames)
-            => Connection.ExecuteSQLNonQuery("insert into File (Name, EntryDate) values (@name, @date)", filenames.Select(fn => new { name = fn, date = DateTime.Now.ToString("yyyy-MM-dd") }));
+            => Connection.ExecuteSQLNonQuery("insert into File (Name, EntryDate) values (@name, @date)", 
+                filenames.Select(fn => new { name = fn, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") }));
         /// <summary>
         /// Add files in batch with initial contents (for virtual notes)
         /// </summary>
         public void AddFiles(IEnumerable<Tuple<string, string>> filenamesAndContents)
             => Connection.ExecuteSQLNonQuery("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", 
-                filenamesAndContents.Select( fn=> new { name = fn.Item1, content = fn.Item2, date = DateTime.Now.ToString("yyyy-MM-dd") }));
+                filenamesAndContents.Select( fn=> new { name = fn.Item1, content = fn.Item2, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") }));
         /// <summary>
         /// Remove a file entry from database
         /// </summary>
@@ -1399,14 +1402,14 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         private void InteractiveFileRows(IEnumerable<QueryRows.FileDetail> fileRows, int pageItemCount = 20)
         {
-            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-12}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
+            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-18}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
             Console.WriteLine(headerLine);
             Console.WriteLine(new string('-', headerLine.Length));
             int itemCount = 0, pageCount = 1;
             foreach (QueryRows.FileDetail item in fileRows.OrderBy(t => t.Name))
             {
                 Console.WriteLine($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
-                    $"{item.RevisionTime?.ToString("yyyy-MM-dd") ?? "",-12}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
+                    $"{item.RevisionTime?.ToString("yyyy-MM-dd HH:mm") ?? "",-18}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
                 if (!string.IsNullOrEmpty(item.Tags))
                     Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
                 if (!string.IsNullOrEmpty(item.Meta))

@@ -138,6 +138,9 @@ namespace SomewhereDesktop
                     return extension;
             }
         }
+        /// <summary>
+        /// Refresh Inventory Tab items listview per current AllItems
+        /// </summary>
         private void RefreshItems(bool reversedOrder = false)
         {
             if(reversedOrder)
@@ -330,7 +333,7 @@ namespace SomewhereDesktop
             get => _ActiveItem;
             set
             {
-                _ActiveItem = value;
+                SetField(ref _ActiveItem, value);
                 NotifyPropertyChanged("ActiveItemID");
                 NotifyPropertyChanged("ActiveItemEntryDate");
                 NotifyPropertyChanged("ActiveItemName");
@@ -346,7 +349,7 @@ namespace SomewhereDesktop
         }
         public string ActiveItemEntryDate
         {
-            get => ActiveItem?.EntryDate.ToString("yyyy-MM-dd");
+            get => ActiveItem?.EntryDate.ToString("yyyy-MM-dd HH:mm:ss");
         }
         public int ActiveItemID
         {
@@ -377,7 +380,7 @@ namespace SomewhereDesktop
             get => _ActiveNote;
             set
             {
-                _ActiveNote = value;
+                SetField(ref _ActiveNote, value);
                 NotifyPropertyChanged("ActiveNoteID");
                 NotifyPropertyChanged("ActiveNoteName");
                 NotifyPropertyChanged("ActiveNoteTags");
@@ -458,7 +461,7 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void CommandAdd_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // Go to inventory panel
+            // Go to inventory tab
             TabHeader_MouseDown(InventoryTabLabel, null);
             // Show add dialog
             var dialog = GetHomeDirectoryFileDialog("Select files and folders to add", true, true);
@@ -496,6 +499,10 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void ShowMarkdownReferenceCommand_Executed(object sender, ExecutedRoutedEventArgs e)
             => new DialogWindow(this, "Markdown Reference", SomewhereDesktop.Properties.Resources.MarkdownReference).Show();
+        private void OpenCommandPromptCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void OpenCommandPromptCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => System.Diagnostics.Process.Start("cmd");
         private void MaximizeWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -542,6 +549,7 @@ namespace SomewhereDesktop
             var item = new FileItemObjectModel(Commands.GetFileDetail(id));
             // Add to items cache
             AllItems.Add(item);
+            RefreshItems();
             // Update note collection
             RefreshNotes();
             // Set activeadd
@@ -848,7 +856,7 @@ namespace SomewhereDesktop
                     Commands.ChangeFileTags(ActiveItem.ID, ActiveItem.TagsList);
                     // Update log and info display
                     Commands.AddLog("Update Item", $"Item #{ActiveItem.ID} `{ActiveItem.Name}` is updated in SD (Somewhere Desktop).");
-                    InfoText = $"Item `{ActiveItem.Name.Limit(150)}` saved.";
+                    InfoText = $"Item `{ActiveItem.DisplayName.Limit(150)}` (#{ActiveItem.ID}) saved.";
                 }
                 catch (Exception e)
                 {

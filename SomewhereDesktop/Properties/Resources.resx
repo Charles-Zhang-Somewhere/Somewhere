@@ -537,6 +537,10 @@ License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)</value>
     <value># Mouse Operations
 
 1. `Double Click` on **Invetory panel** list view item can open it using default system program.
+2. Double Click on file:
+3. Right click on file:
+4. Right click on home: 
+5. (Planned) Win32 on filename and new button for file and folder win33 context menu
 
 # Window
 
@@ -560,6 +564,8 @@ License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)</value>
 * `F1`: Open Somewhere Home repository
 * `F2`: Go to Notebook panel and create new note
 * `F3`: Go to Inventory panel and search
-* `F5`: Refresh Inventory</value>
+* `F4`: Advanced Actions (Divide, Merge (in), Diff (status popup), Sync, Branch)
+* `F5`: Refresh Inventory
+* `F6`: Tag Editor Popup (Addition + Rename + Remove) - Search select from list and enter in textbox</value>
   </data>
 </root>

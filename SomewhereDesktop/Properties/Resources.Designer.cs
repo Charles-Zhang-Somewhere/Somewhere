@@ -77,6 +77,10 @@ namespace SomewhereDesktop.Properties {
         ///   Looks up a localized string similar to # Mouse Operations
         ///
         ///1. `Double Click` on **Invetory panel** list view item can open it using default system program.
+        ///2. Double Click on file:
+        ///3. Right click on file:
+        ///4. Right click on home: 
+        ///5. (Planned) Win32 on filename and new button for file and folder win33 context menu
         ///
         ///# Window
         ///
@@ -87,12 +91,7 @@ namespace SomewhereDesktop.Properties {
         ///
         ///# Panels
         ///
-        ///* `Ctrl+1`: Show Inventory Panel
-        ///* `Ctrl+2`: Show Notebook Panel
-        ///* `Ctrl+3`: Show Knowledge Panel
-        ///* `Ctrl+4`: Show Status Panel
-        ///* `Ctrl+5`: Show NTFSSearch Panel
-        ///* `Ctrl+6`: Sh [rest of string was truncated]&quot;;.
+        ///* `Ctrl+1`: Show I [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string ShortcutsDocument {
             get {

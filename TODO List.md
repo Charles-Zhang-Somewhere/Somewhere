@@ -7,6 +7,7 @@ This list is for myself.
 
 1. university folder test; Finish organizing using Somewhere for one actual folder to see how well it works.
 2. Finish draft GUI
+3. Enable deleting files/notes from GUI
 
 [Planned Essentials]
 
@@ -16,6 +17,7 @@ This list is for myself.
 4. (New Command) `Files` command rename to `items` for generity?
 5. (New Command) Archive: zip the home directory (and put the archive inside it)
 6. (New Command) Find action: copy (file to clipboard), copynames, copypaths
+7. Conceptual and theoratical (attemptive) development to guide further implementation priority decisions - UI, CLI, commands, import/export, knowledge system?
 
 [Marketing]
 

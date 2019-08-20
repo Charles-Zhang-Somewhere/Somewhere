@@ -71,6 +71,7 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 2. (Object) Physical Folder: a folder is a file.... and item...
 3. (Object) Virtual Note:
 4. (File Meta) Remark: 
+5. (Object) Repository/Home: each Somewhere home is a repository, managed by SQLite database, contains all tagging information.
 
 ## Terminology
 
@@ -89,38 +90,33 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 6. **Flat Physical FS**: I used to have layers of layers of folder structures, making sure **each layer is semantically meaningful**, but then that introduces a lot of management burder, then I discovered that by flattening this structure, and sacrifce "meaning" at root folder, (screenshot of current home disk root folder for D drive), with folder at second level, it actually makes things much easier... with tags, it's even better...
 7. (Best practice)**Best possible match filename**: semantics without limit of underlying FS file length
 8. Central managed filename: inside database, a mapping...
-9. Expect 10k-100k files: for personal data (as defined in [MULTITUDE](#)), for theoratical limit of NTFS FS system for single folder....efficiency...
-6. Tracking/Managed files: By adding files to DB, just like adding files to repository like when using git, we *conscisouly manage each file* and decide which files participate in the system.
-7. Intention: Wrapper around sqlite with dedicated interface for specialized oprations; I used to do this for my personal portfolio and while during work at OTPP, partly manually, and found that quite effective, though with proper tools the **scale** can grow.
-8. Non-intrusive meta layer: easier maintainence, works well with other editors...
-8. Personal data (see def in [MULTITUDE](#)), original data.... scheme should suffice.... Personal FS, not for network and collboration purpose... Data driven definitions...tool driven management...
-9. Workflow design: .... download/archive, name, tag, retrieve...
-10. Git friendly....Embeeded simple revision control....
-11. Support for lightweight developer-oriented parts for easier Web and desktop GUI and direct C# API access of files.... (inspired by Fossil version control.....)
-12. SQLite: Fast and efficient, see [proper use](https://www.sqlite.org/whentouse.html)
-13. Multi-solution: dedicated single folder for each subject matter, e.g. how I used tiddly wiki... (screenshot?)
-14. (deprecated)Master-slave copy: ...
-15. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
-16. Simple + focused....
-17. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
-18. （Experimental; Feature） Flat notes/tags and knowledge subsystem: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
+9.  Expect 10k-100k files: for personal data (as defined in [MULTITUDE](#)), for theoratical limit of NTFS FS system for single folder....efficiency...
+10. Tracking/Managed files: By adding files to DB, just like adding files to repository like when using git, we *conscisouly manage each file* and decide which files participate in the system.
+11. Intention: Wrapper around sqlite with dedicated interface for specialized oprations; I used to do this for my personal portfolio and while during work at OTPP, partly manually, and found that quite effective, though with proper tools the **scale** can grow.
+12. Non-intrusive meta layer: easier maintainence, works well with other editors...
+13. Personal data (see def in [MULTITUDE](#)), original data.... scheme should suffice.... Personal FS, not for network and collboration purpose... Data driven definitions...tool driven management...
+14. Workflow design: .... download/archive, name, tag, retrieve...
+15. Git friendly....Embeeded simple revision control....
+16. Support for lightweight developer-oriented parts for easier Web and desktop GUI and direct C# API access of files.... (inspired by Fossil version control.....)
+17. SQLite: Fast and efficient, see [proper use](https://www.sqlite.org/whentouse.html)
+18. Multi-solution: dedicated single folder for each subject matter, e.g. how I used tiddly wiki... (screenshot?)
+19. (deprecated)Master-slave copy: ...
+20. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
+21. Simple + focused....
+22. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
+23. （Experimental; Feature） Flat notes/tags and knowledge subsystem: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
 	* Operators: up, down, filter (scope and scroll details), import (multi line list, assign tags)
 	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
 	* Knowledge operation command names: `ki` (import), `Ku`, `kd`, `kc` (knowledge **condense** into a copy a text file, under one name, can work for multiple tags in which case no best heading can be deduced directly)
+	* Knowledge Link: knowledge item is linked by a either: item name (case sensitive), item ID (starting with # sign), tags list (start with t:), or a more general **search filter** (everything-lile, pending reference definition) (find: filter strings separated by space and quotes)
 19. Reflection on Hierarchical Structure: some might mistakenly think hierarchical structures are thus not useful or even bad - however hierarchical structures are indeed very powerful structures for organizing knowledge for trees are very efficient for searching purpose. However the biggest issue as we shall identify here, is trees are good only for relatively static data, e.g. English dictionary with thumb index - the reorganization cost is high - but that's exactly the case for personal data. Also it might occur that trees are better to model topological features (e.g. shapes of words or animals) rather than semantically features (which doesn't have solid forms).
 20. Everything: unambiguous, folder and file names can be utilized, not intended for organizing, very specific; XYPlorer: not pure, temporary for work sessions is good, limited capacity due to mechanism (click and drag) - again, only suitable for sessional work not permanent organization.
-21. Repository/Home: each Somewhere home is a repository, managed by SQLite database
 1. Physical (File) Name: File must exist and must be managed by Somewhere. This name for max efficiency depends on its database presence. We require only a max of'#DDDDDDDD' (database item ID) size of characters (when it's not unique). Notice a file's ID is guaranteed to be unique throughout **Somewhere repository lifetime**.
-2. Knowledge Link: knowledge item is linked by a either: item name (case sensitive), item ID (starting with # sign), tags list (start with t:), or a more general **search filter** (everything-lile, pending reference definition) (find: filter strings separated by space and quotes)
 3. (Reflection note) Key motivation: we find it perfectly fine for the purpose of managing personal data using a SQLite database as a back store for all tagging information or even with actual data contents, but manually editing data tables are not very efficient (even with the help of SQLite DB Browser it can still be less than optimal), and manually dealing with tabular cells is not that keyboard efficient as well. Instead of devising a completely new scheme, nowadays I value more data operability and wish to create a tool that augments existings infrastructure instead of creating new things, thus a very well-defined customized SQLite database with pre-defined table formats are used to manage those files.
     * Later during the development, and partly inspired by some discussion with Author of Bookmark ninja, I realized this tool can also accomodating note taking purpose, with better integration with file linking (compared with and inspired by limitation of TiddlyWiki) - all we need is MD, and this can promote better data interopreability. In this case Tiddly Wiki becomes more of a plain indexed note tool. I do recognize this change of usage is mostly due to the limit of my phone's operating power, otherwise Tiddly wiki is very good for self-contained plain text notes.
 4. Homogenous Container: as proposed in MULTITUDE (theory treatment pending summary on detailed proposed knowledge management framework differentiating between tags and folders and how to properly use them).
 0. Repository/Home: each Somewhere home is a repository, managed by SQLite database
 1. (Observation) Non original、non personal item s are usually not worth and not need for very specialized organization, for instance Steam games installation folder - you don't really care how large it is and how many files are there because you don't interact with it directly anyway. Another example might be Audible book local audio files - simple folders suffice for the purpose of organizing those. However soon enough when we are dealing with **custom information**, originality comes into play, this includes custom categorization system which is in effect a Knowledge system even if we are dealing with items whose raw contents are not directly issued by us, for instance organizing news digest - even though we don't wrote news ourselves the organized structure represents our knskle. In this case a tag based system can help. I know this discussion is a bit abstract 
-1. Physical (File) Name: File must exist and must be managed by Somewhere. This name for max efficiency depends on its database presence. We require only a max of'#DDDDDDDD' (database item ID) size of characters (when it's not unique). Notice a file's ID is guaranteed to be unique throughout **Somewhere repository lifetime**.
-2. Knowledge Link: knowledge item is linked by a either: item name (case sensitive), item ID (starting with # sign), tags list (start with t:), or a more general **search filter** (everything-lile, pending reference definition) (find: filter strings separated by space and quotes)
-3. (Reflection note) Key motivation: we find it perfectly fine for the purpose of managing personal data using a SQLite database as a back store for all tagging information or even with actual data contents, but manually editing data tables are not very efficient (even with the help of SQLite DB Browser it can still be less than optimal), and manually dealing with tabular cells is not that keyboard efficient as well. Instead of devising a completely new scheme, nowadays I value more data operability and wish to create a tool that augments existings infrastructure instead of creating new things, thus a very well-defined customized SQLite database with pre-defined table formats are used to manage those files.
-    * Later during the development, and partly inspired by some discussion with Author of Bookmark ninja, I realized this tool can also accomodating note taking purpose, with better integration with file linking (compared with and inspired by limitation of TiddlyWiki) - all we need is MD, and this can promote better data interopreability. In this case Tiddly Wiki becomes more of a plain indexed note tool. I do recognize this change of usage is mostly due to the limit of my phone's operating power, otherwise Tiddly wiki is very good for self-contained plain text notes.
 
 ## References
 
@@ -153,12 +149,12 @@ Cautious:
 3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
 4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
 5. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
-1. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
 
 ## Case Studies
 
 1. (General Tagging) Think about how you would like to (be able to) access it: "ECE, Formula" vs "ECE_Formula"
-2. (Knowledge Tag System) Think about how you would like to ask questions - technically speaking, a proper **filename is also byitself a tag** (e.g. "a handbook of practical structures" -> "practical structures"), knowledge points should be **infitestimal small** and **self-contained** and at the same time contain **all other relevant knowledge**. So a proper knowledge point should have only: (plaintext) content, (plaintext) tags - wihtout any indirection. All other heavilifting should be done by the system, e.g. the system shall keep a "tag table" (a tag by itself) which contains all current tags, and this system should detect rather than interfere with normal file tag system (i.e. the main Somewhere application itself). And of course, *tags as either words or phrases, should be tagged on as well*. If everything can be treated as a tag, then tags can have two levels, according to its abstraction level - either up or down, and sentences, being the most specific ones, are on the bottomest level.
+2. (Knowledge Tag System) Think about how you would like to ask questions - technically speaking, a proper **filename is also by itself a tag** (e.g. "a handbook of practical structures" -> "practical structures"), knowledge points should be **infitestimal small** and **self-contained** and at the same time contain **all other relevant knowledge**. So a proper knowledge point should have only: (plaintext) content, (plaintext) tags - wihtout any indirection. All other heavilifting should be done by the system, e.g. the system shall keep a "tag table" (a tag by itself) which contains all current tags, and this system should detect rather than interfere with normal file tag system (i.e. the main Somewhere application itself). And of course, *tags as either words or phrases, should be tagged on as well*. If everything can be treated as a tag, then tags can have two levels, according to its abstraction level - either up or down, and sentences, being the most specific ones, are on the bottomest level.
+	* For a particular piece of isolated idea, e.g. "University project - ground-based locationing system implementation", which we didn't have a record before for "university" related "project ideas": it seems it can be categorized either under a knowledge, or as a collective note (which is probably what I will do when only plain files are available without knowledge system). A better and newer approach is to put it somewhere is University SQLite database and tag it - i.e. just like Virutal Notes. However when given any thoughts, the idea on this project can quickly expand (into a complete piece of note in itself) (see attachment) and thus not worth putting under knowledge under first place - or better, it was a knowledge, then it becomes an idea/concept, later maybe it can grow into a whole subject by itself.
 
 ## Questions
 
@@ -172,7 +168,7 @@ Cautious:
 
 ## Somewhere Desktop (Windows) Introduction
 
-For non-keyboard users, and for usual dedicated workspace, a GUI (Graphical User Interface) is provided - well one cannot deny GUI can be sometimes more efficient in some things than CLI (Command-line Interface). In below discussion, we will call Somewhere Desktop "SD". Also I use the word **Tab** to refer to a whole page of UI interface, while **Panel** for some area inside a particular page. In actual code, I sometimes use "Panel" to refer to tabs directly - well tabs are just some larger panels.
+For non-keyboard users, and for usual dedicated workspace, a GUI (Graphical User Interface) is provided - well one cannot deny GUI can be sometimes more efficient in some things than CLI (Command-line Interface). In below discussion, we will call Somewhere Desktop "SD". Also I use the word **Tab** to refer to a whole page of UI interface, while **Panel** for some area inside a particular page. In actual code, I sometimes use "Panel" to refer to tabs directly - well tabs are just some larger panels - but I will correct all those for consistency.
 
 The interface of SD is divided into following panels, serving both GUI oriented and some CLI-like purpose:
 
@@ -393,6 +389,7 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 * `F4`: Advanced Actions (Divide, Merge (in), Diff (status popup), Sync, Branch)
 * `F5`: Refresh Inventory
 * `F6`: Tag Editor Popup (Addition + Rename + Remove) - Search select from list and enter in textbox
+* `F9`: Open command prompt window
 ```
 
 # Developer Doc (In Progress)

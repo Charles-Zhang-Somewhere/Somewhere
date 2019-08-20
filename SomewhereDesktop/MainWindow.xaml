@@ -32,6 +32,8 @@
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
+        <!-- Status Commands -->
+        <CommandBinding Command="local:CustomCommands.OpenCommandPrompt" CanExecute="OpenCommandPromptCommand_CanExecute" Executed="OpenCommandPromptCommand_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
         <!-- Markdown -->
@@ -54,6 +56,8 @@
         <KeyBinding Key="D7" Modifiers="Ctrl"  Command="local:CustomCommands.SwitchSettings"/>
         <!-- Repository Commands -->
         <KeyBinding Key="F1" Command="local:CustomCommands.Open"/>
+        <!-- Status Commands -->
+        <KeyBinding Key="F9" Command="local:CustomCommands.OpenCommandPrompt"/>
         <!-- Inventory Commands -->
         <KeyBinding Key="F3" Command="local:CustomCommands.Find"/>
         <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
@@ -114,7 +118,7 @@
                     </DockPanel>
                     <!-- Tabs -->
                     <Grid>
-                        <!-- Items Panel -->
+                        <!-- Items Tab -->
                         <DockPanel x:Name="InventoryPanel" Visibility="Visible">
                             <!-- Items List Region -->
                             <Border Style="{StaticResource Panel}" MaxWidth="800">
@@ -241,7 +245,7 @@
                                 </Grid>
                             </DockPanel>
                         </DockPanel>
-                        <!-- Notebook Panel -->
+                        <!-- Notebook Tab -->
                         <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
                             <!-- Search Bar -->
                             <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
@@ -303,7 +307,7 @@
                                 </DockPanel>
                             </Border>
                         </DockPanel>
-                        <!-- Knowledge Panel -->
+                        <!-- Knowledge Tab -->
                         <DockPanel x:Name="KnowledgePanel" Visibility="Collapsed">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -349,18 +353,18 @@
                                 </Border>
                             </Grid>
                         </DockPanel>
-                        <!-- Logs Panel -->
+                        <!-- Logs Tab -->
                         <DockPanel x:Name="LogsPanel" Visibility="Collapsed">
                             <DockPanel LastChildFill="True">
                                 <TextBox IsReadOnly="True" Text="{Binding LogsText}"/>
                             </DockPanel>
                         </DockPanel>
-                        <!-- NTFS Search Panel -->
+                        <!-- NTFS Search Tab -->
                         <DockPanel x:Name="NTFSSearchPanel" Visibility="Collapsed">
                             <DockPanel LastChildFill="True">
                             </DockPanel>
                         </DockPanel>
-                        <!-- Status Panel -->
+                        <!-- Status Tab -->
                         <DockPanel x:Name="StatusPanel" Visibility="Collapsed" LastChildFill="True">
                             <!-- Add All Button -->
                             <Button Content="Add All" Click="RepositoryAddAllFiles_Click" DockPanel.Dock="Bottom"/>
@@ -370,6 +374,9 @@
                                     <!-- Command Input Textbox -->
                                     <DockPanel LastChildFill="True" DockPanel.Dock="Top">
                                         <Label Content="Command:" Style="{StaticResource Header}"/>
+                                        <Button Content="CMD.EXE" Command="local:CustomCommands.OpenCommandPrompt" DockPanel.Dock="Right"
+                                                Style="{StaticResource CommandButton}"
+                                                DataContext="{x:Static local:CustomCommands.OpenCommandPrompt}" ToolTip="{Binding Text}"/>
                                         <TextBox x:Name="ConsoleInputTextBox" Text="{Binding ConsoleInput, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="ConsoleCommandInputTextBox_PreviewKeyDown"/>
                                     </DockPanel>
                                     <!-- Result Area (Fixed Height) -->
@@ -379,7 +386,7 @@
                             <!-- Status Text Area-->
                             <TextBox IsReadOnly="True" Text="{Binding StatusText}"/>
                         </DockPanel>
-                        <!-- Settings Panel -->
+                        <!-- Settings Tab -->
                         <DockPanel x:Name="SettingsPanel" Visibility="Collapsed">
                             <DockPanel LastChildFill="True">
                                 <TextBlock DockPanel.Dock="Top">

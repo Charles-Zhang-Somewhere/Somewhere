@@ -8,7 +8,7 @@ using System.Windows.Data;
 namespace SomewhereDesktop
 {
     /// <summary>
-    /// A converter that convers notename to tip texts for Notebook panel
+    /// A converter that convers notename to tip texts for Notebook tab
     /// </summary>
     public class NotenameToTipConverter : IValueConverter
     {

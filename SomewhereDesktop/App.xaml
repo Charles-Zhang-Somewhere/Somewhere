@@ -53,7 +53,7 @@
         <SolidColorBrush x:Key="DefaultTagColor" Color="#EECC66"/>
 
         <!-- Window Control Elements -->
-        <Style TargetType="Button">
+        <Style x:Key="ButtonBase" TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="Margin" Value="8"/>
@@ -86,6 +86,12 @@
                     <Setter Property="Background" Value="{StaticResource Accent1}"/>
                 </Trigger>
             </Style.Triggers>
+        </Style>
+        <Style TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        </Style>
+        <Style x:Key="CommandButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="0"/>
         </Style>
         <Style x:Key="Panel" TargetType="Border">
             <Setter Property="Margin" Value="2"/>
