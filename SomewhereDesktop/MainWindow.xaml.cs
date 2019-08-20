@@ -112,6 +112,11 @@ namespace SomewhereDesktop
             // Update items list
             AllItems = Commands.GetFileDetails().Select(f => new FileItemObjectModel(f)).ToList();
             // Update type filters
+            RefreshTypeFilters();
+        }
+        private void RefreshTypeFilters()
+        {
+            // Get available types from current items
             TypeFilters = new ObservableCollection<string>(AllItems
                 .Select(i => GetItemExtensionType(i.Name)).Distinct().OrderBy(f => f));
             TypeFilters.Insert(0, "");    // Empty filter cleans filtering
@@ -167,15 +172,24 @@ namespace SomewhereDesktop
         /// <summary>
         /// Refresh search all tags cache, search tags and tag filters so it is constrainted by currently displayed items
         /// </summary>
-        private void RefreshTags()
+        /// <param name="searchTagsOnlyExcludeTagFilters">Update only SearchTags icons with current available list items, and keep TagFilters active</param>
+        private void RefreshTags(bool searchTagsOnlyExcludeTagFilters = false)
         {
             // Update all tags
             AllTags = Items.SelectMany(t => t.TagsList).Distinct().ToList();
             // Update search tags
-            SearchTags = new ObservableCollection<string>(AllTags);
+            SearchTags = searchTagsOnlyExcludeTagFilters
+                ? new ObservableCollection<string>(AllTags.Except(TagFilters))
+                : new ObservableCollection<string>(AllTags);
             // Update filters
-            TagFilters = new ObservableCollection<string>();
+            if(!searchTagsOnlyExcludeTagFilters)
+                TagFilters = new ObservableCollection<string>();
         }
+        /// <summary>
+        /// Filter items display by various constraints; This will also update tags accordingly when filtering is done.
+        /// Notice this function can be called AFTER an existing RefreshTags() call for reseting tag constraing, 
+        /// and it can also be called BEFORE another RefreshTags() to constraint tags.
+        /// </summary>
         private void FilterItems()
         {
             // Refresh
@@ -254,7 +268,7 @@ namespace SomewhereDesktop
             {
                 SetField(ref _SelectedTypeFilter, value);
                 FilterItems();
-                RefreshTags();
+                RefreshTags(true);
             }
         }
         private ObservableCollection<string> _TypeFilters;
@@ -299,6 +313,7 @@ namespace SomewhereDesktop
             {
                 SetField(ref _SearchNameKeyword, value);
                 FilterItems();
+                RefreshTags(true);
             }
         }
         private string _PreviewText;
@@ -340,7 +355,7 @@ namespace SomewhereDesktop
         public string ActiveItemName
         {
             get => ActiveItem?.Name;
-            set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
+            set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
         }
         public string ActiveItemTags
         {
@@ -395,7 +410,7 @@ namespace SomewhereDesktop
         public string ActiveNoteName
         {
             get => ActiveNote?.Name;
-            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
+            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
         }
         public string ActiveNoteTags
         {
@@ -643,6 +658,7 @@ namespace SomewhereDesktop
             SearchTags.Add(tag);
             // Perform filtering
             FilterItems();
+            RefreshTags(true);
         }
         private void AddTagFilter_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -652,6 +668,7 @@ namespace SomewhereDesktop
             SearchTags.Remove(tag);
             // Perform filtering
             FilterItems();
+            RefreshTags(true);
         }
         private void RepositoryAddAllFiles_Click(object sender, RoutedEventArgs e)
         {
