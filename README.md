@@ -170,6 +170,36 @@ Cautious:
 6. What will happen if I put an emoji in my filename?
 7. How to handle name collision: really should give a descriptive name, much like you would to webpage bookmarks (show a screenshot), SW will automatically clamp file name size to 64 characters (with extension, handled transparently) and keep full name only in database. For updating tags one can also use ID directly (physical file with name with same numerical value first, then we check ID, for tag and untag command)
 
+## Somewhere Desktop (Windows) Introduction
+
+For non-keyboard users, and for usual dedicated workspace, a GUI (Graphical User Interface) is provided - well one cannot deny GUI can be sometimes more efficient in some things than CLI (Command-line Interface). In below discussion, we will call Somewhere Desktop "SD". Also I use the word **Tab** to refer to a whole page of UI interface, while **Panel** for some area inside a particular page. In actual code, I sometimes use "Panel" to refer to tabs directly - well tabs are just some larger panels.
+
+The interface of SD is divided into following panels, serving both GUI oriented and some CLI-like purpose:
+
+1. **Inventory Tab**: Holds list view and provides searching and filtering and preview of all managed items.
+2. **Notebook Tab**: Specialized area for note editing, available only for note items.
+3. **Knowledge Tab**: Specialized area for knowledge navigation; still under development.
+4. **Status Tab**: Equivalent to `status` command in CLI.
+	* A simple non-interactive shell is available in Status panel for commands input and result display for commands we don't plan to support in GUI (e.g. config and add folder) in the short term or never.
+5. **NTFSSearch Tab**
+6. **Logs Tab**: Equivalent to `logs` command in CLI - which is not provided in CLI 😉, this is to keep CLI commands list cleaner.
+7. **Settings Tab**: View for current settings.
+
+For Inventory Panel (A screenshot with layout annotation shall be provided when it's settled): 
+
+* Left Pane (DockPanel):
+	- Top: Name search, type (suffix) dropdown filter
+	- Main Area: List of (managed) files - just name + type suffix (round button icon)
+* Right Pane:
+	- Top: Filter tag flow list; tag search area, autosave check box (if checked all text preview editing will be saved when selected file is changed - consider deprecating this function, always use external editor, otherwise a copy will be saved for the text file in "content" field, which also makes it a "virtual note"), "Edit Tag" tag manager pop up button; All tags scroll panel flow list
+	- Middle: File preview and inforpanel
+		+ Left: Dedicated Preview area (for texts it also support editing), in the future this is also for embedded web browser
+		+ Right: Info and meta area: name, tag, meta edit; For name edit it will automatically rename underlying file using FS filename comliant format, this is done transparently)
+	- Bottom: Actions Buttons Panel
+		+ Basic: (Row 1) Import (Files, add as copy), Import as Folder (add folder, cut whole folder), Export, (Save), (Edit/Clear) | (Row 2) Physical (make virtual notes a physical file), Create, Open, New (Home)
+		+ Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
+* Bottom Row: Stat & Help row
+
 # Developement Notes
 
 ## Design Principal
@@ -225,20 +255,7 @@ MULTITUDE might never get a chance to continue development, so some of its goals
 		- ✓: add, rm, mv (intelligent; if existing then physically move), mvt, rmt, delete (tag based, files), purge (clean up marked `_delete`), new (home), sync (discover physically renamed and update managed file names; if managed file is deleted, then issue warning); 
 		- ☆: create, tag, untag
 		- ⓘ: status, files, tags, read, log, find ("search", shorter), help
-	* UI Interface: 
-		- Left Pane (DockPanel: 
-			+ Top: Name search, type (suffix) dropdown filter
-			+ Main Area: List of (managed) files - just name + type suffix (round button icon)
-		- Right Pane:
-			+ Top: Filter tag flow list; tag search area, autosave check box (if checked all text preview editing will be saved when selected file is changed - consider deprecating this function, always use external editor, otherwise a copy will be saved for the text file in "content" field, which also makes it a "virtual note"), "Edit Tag" tag manager pop up button; All tags scroll panel flow list
-			+ Middle: File preview and inforpanel
-				* Left: Dedicated Preview area (for texts it also support editing), in the future this is also for embedded web browser
-				* Right: Info and meta area: name, tag, meta edit; For name edit it will automatically rename underlying file using FS filename comliant format, this is done transparently)
-			+ Bottom: Actions Buttons Panel
-				* Basic: (Row 1) Import (Files, add as copy), Import as Folder (add folder, cut whole folder), Export, (Save), (Edit/Clear) | (Row 2) Physical (make virtual notes a physical file), Create, Open, New (Home)
-				* Advanced Mode: Divide, Merge (in), "Status" Pop up (shows difference between mangaed and unmanaged physical files), Sync, Branch
-		- Bottom Row: Stat & Help row
-	* A simple non-interactive shell is available in Status panel for commands input and result display for commands we don't plan to support in GUI (e.g. config and add folder) in the short term or never
+	* UI Interface: see *"Somewhere Desktop (Windows) Introduction"* section above
 3. (Deprecated) GUI Desktop Application (WPF)
 	* I think I can make it more efficient just with command line, maybe a website though (End remark: I would do it in CLI, especially since we are going to do auto-complete tag and tweak with some ReadKey() level code - but CLI's support for UNICODE display is arcane and code won't be clean if we do that, so WPF/ASP.Net is better option)
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
