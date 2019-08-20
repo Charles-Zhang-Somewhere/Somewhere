@@ -321,7 +321,6 @@ namespace SomewhereDesktop
                 NotifyPropertyChanged("ActiveItemName");
                 NotifyPropertyChanged("ActiveItemTags");
                 NotifyPropertyChanged("ActiveItemMeta");
-                NotifyPropertyChanged("ActiveItemContent");
                 UpdateItemPreview();
             }
         }
@@ -341,12 +340,12 @@ namespace SomewhereDesktop
         public string ActiveItemName
         {
             get => ActiveItem?.Name;
-            set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+            set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
         }
         public string ActiveItemTags
         {
             get => ActiveItem?.Tags;
-            set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+            set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
         }
         #endregion
 
@@ -396,17 +395,17 @@ namespace SomewhereDesktop
         public string ActiveNoteName
         {
             get => ActiveNote?.Name;
-            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
         }
         public string ActiveNoteTags
         {
             get => ActiveNote?.Tags;
-            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
         }
         public string ActiveNoteContent
         {
             get => ActiveNote?.Content;
-            set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); }
+            set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview(); }
         }
         public bool IsNoteFieldEditEnabled
             => ActiveNote != null;
@@ -515,6 +514,7 @@ namespace SomewhereDesktop
         {
             RefreshAllItems();
             RefreshItems();
+            RefreshTags();
             InfoText = $"{AllItems.Count()} items discovered.";
         }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -566,7 +566,7 @@ namespace SomewhereDesktop
                     return;
                 else
                 {
-                    message = "Home already exists at selected folder, select a home directory";
+                    message = "Home already exists at selected folder, select a different home directory";
                     continue;
                 }
             }
