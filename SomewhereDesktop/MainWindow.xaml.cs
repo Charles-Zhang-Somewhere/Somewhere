@@ -44,6 +44,8 @@ namespace SomewhereDesktop
                 OpenRepository(Arguments["dir"]);
             else
                 OpenRepository(Directory.GetCurrentDirectory());
+            if (Commands == null || !Commands.IsHomePresent)
+                Close();
         }
         private void OpenRepository(string homeFolderpath)
         {
@@ -545,15 +547,35 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void NewHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            var dialog = GetHomeDirectoryFileDialog("Select home directory", false, true);
-            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
-                CreateAndOpenNewHome(dialog.FileName);
+            var message = "Select home directory";
+            while (true)
+            {
+                var dialog = GetHomeDirectoryFileDialog(message, false, true);
+                var result = dialog.ShowDialog();
+                // Proceed only if that folder doesn't already contains a home
+                Commands temp;
+                if (result == CommonFileDialogResult.Ok
+                    && !(temp = new Commands(dialog.FileName, false)).IsHomePresent)    // Make sure there is no home at that directory
+                {
+                    temp.Dispose(); // Notice temp will only be initialized if `result == CommonFileDialogResult.Ok` is passed
+                    CreateAndOpenNewHome(dialog.FileName);
+                    return;
+                }
+                else if (result == CommonFileDialogResult.Cancel
+                    || result == CommonFileDialogResult.None)
+                    return;
+                else
+                {
+                    message = "Home already exists at selected folder, select a home directory";
+                    continue;
+                }
+            }
         }
         private void CreateAndOpenNewHome(string folderPath)
         {
             try
             {
-                Commands.New(folderPath);
+                Commands.GenerateDBFileAt(folderPath);
                 OpenRepository(folderPath);
             }
             catch (InvalidOperationException ex)
@@ -736,8 +758,8 @@ namespace SomewhereDesktop
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // Dispose resources
-            Commands.Dispose();
-            Popup.Close();
+            Commands?.Dispose();
+            Popup?.Close();
             LastWorker?.Dispose();
         }
         #endregion

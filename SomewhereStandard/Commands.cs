@@ -17,7 +17,7 @@ namespace Somewhere
     {
         #region Constructor and Disposing
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
-        public Commands(string initialWorkingDirectory)
+        public Commands(string initialWorkingDirectory, bool initializeFSWatcher = true)
         {
             // Initialize home directory
             HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar;
@@ -541,7 +541,10 @@ namespace Somewhere
         {
             try
             {
-                string path = GenerateDBFile();
+                // Check not existing
+                if (IsHomePresent)
+                    throw new InvalidOperationException($"A Somewhere database already exist in {HomeDirectory} directory");
+                string path = GenerateDBFileAt(HomeDirectory);
                 return new string[] { $"Database generated at ${path}" };
             }
             catch (InvalidOperationException) { throw; }
@@ -1255,42 +1258,14 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         public bool IsTagInDatabase(string tag)
             => Connection.ExecuteQuery("select count(*) from Tag where Name = @name", new { name = tag }).Single<int>() == 1;
-        #endregion
-
-        #region Primary Properties
-        private Dictionary<MethodInfo, CommandAttribute> _CommandMethods = null;
-        private Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
-        private Dictionary<string, MethodInfo> _CommandNames = null;
-        private SQLiteConnection _Connection = null;
-        private FileSystemWatcher _FSWatcher = null;
-        #endregion
-
-        #region Private Subroutines
-        private SQLiteConnection Connection
-        {
-            get
-            {
-                if (_Connection == null && IsHomePresent)
-                {
-                    _Connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Version=3;");
-                    _Connection.Open();
-                    return _Connection;
-                }
-                else if (_Connection != null && IsHomePresent)
-                    return _Connection;
-                else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory.");
-            }
-        }
         /// <summary>
         /// Generate database for Home
         /// </summary>
         /// <returns>Fullpath of generated file</returns>
-        private string GenerateDBFile()
+        public static string GenerateDBFileAt(string folderPath)
         {
-            // Check not existing
-            if (IsHomePresent) throw new InvalidOperationException($"A Somewhere database already exist in {HomeDirectory} directory");
             // Generate file
-            using (SQLiteConnection connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Verions=3;"))
+            using (SQLiteConnection connection = new SQLiteConnection($"DataSource={Path.Combine(folderPath, DBName)};Verions=3;"))
             {
                 connection.Open();
                 List<string> commands = new List<string>
@@ -1341,7 +1316,33 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
-            return Path.Combine(HomeDirectory, DBName);
+            return Path.Combine(folderPath, DBName);
+        }
+        #endregion
+
+        #region Primary Properties
+        private Dictionary<MethodInfo, CommandAttribute> _CommandMethods = null;
+        private Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
+        private Dictionary<string, MethodInfo> _CommandNames = null;
+        private SQLiteConnection _Connection = null;
+        private FileSystemWatcher _FSWatcher = null;
+        #endregion
+
+        #region Private Subroutines
+        private SQLiteConnection Connection
+        {
+            get
+            {
+                if (_Connection == null && IsHomePresent)
+                {
+                    _Connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Version=3;");
+                    _Connection.Open();
+                    return _Connection;
+                }
+                else if (_Connection != null && IsHomePresent)
+                    return _Connection;
+                else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory.");
+            }
         }
         /// <summary>
         /// Validate argument (count) for a given command; 
