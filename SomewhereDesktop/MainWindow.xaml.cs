@@ -345,7 +345,7 @@ namespace SomewhereDesktop
         public string ActiveItemTags
         {
             get => ActiveItem?.Tags;
-            set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
+            set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
         }
         #endregion
 
@@ -400,7 +400,7 @@ namespace SomewhereDesktop
         public string ActiveNoteTags
         {
             get => ActiveNote?.Tags;
-            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
+            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
         }
         public string ActiveNoteContent
         {
