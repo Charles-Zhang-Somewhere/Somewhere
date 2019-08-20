@@ -161,6 +161,40 @@ namespace SomewhereTest
             Assert.Equal("My Content", Commands.GetFileDetail(1).Content);
         }
         [Fact]
+        public void ConfigurationTestGetValue()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Assert.NotNull(Commands.GetConfiguration("Version"));
+        }
+        [Fact]
+        public void ConfigurationTestGetNonExistingValue()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Assert.Null(Commands.GetConfiguration("VersionNOTEXISTING"));
+        }
+        [Fact]
+        public void ConfigurationTestUpdateValue()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.SetConfiguration("Version", "15");
+            Assert.Equal("15", Commands.GetConfiguration("Version"));
+        }
+        [Fact]
+        public void ConfigurationTestCreateValue()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.SetConfiguration("VersionNew", "15");
+            Assert.Equal("15", Commands.GetConfiguration("VersionNew"));
+        }
+        [Fact]
         public void CreateVirtualFileShouldNotAffectDiskFile()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();

@@ -17,12 +17,13 @@ namespace Somewhere
     {
         #region Constructor and Disposing
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
-        public Commands(string initialWorkingDirectory, bool initializeFSWatcher = true)
+        public Commands(string initialWorkingDirectory, bool initializeFSWatcher = false)
         {
             // Initialize home directory
             HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar;
             // Create and register file system watcher
-            _FSWatcher = CreateWatcher(HomeDirectory);
+            if(initializeFSWatcher)
+                _FSWatcher = CreateWatcher(HomeDirectory);
         }
         private FileSystemWatcher CreateWatcher(string fullFolderPath)
         {
@@ -54,11 +55,9 @@ namespace Somewhere
         public void Dispose()
         {
             // Dispose DB connection
-            if (_Connection != null)
-                _Connection.Dispose();
+            _Connection?.Dispose();
             // Dispose FS watcher
-            if (_FSWatcher != null)
-                _FSWatcher.Dispose();
+            _FSWatcher?.Dispose();
         }
         #endregion
 
@@ -338,6 +337,40 @@ namespace Somewhere
                 result.Add($"Total: {FileCount} {(FileCount > 1 ? "files": "file")}.");
                 return result;
             }
+        }
+        [Command("Get or set configurations.")]
+        [CommandArgument("key", "name of the configuration; if not given then return all keys currently exist", optional: true)]
+        [CommandArgument("value", "value of the configuration; if given then update key; if not given then return the value for the specified key", optional: true)]
+        public IEnumerable<string> Cf(params string[] args)
+        {
+            ValidateArgs(args);
+            // Return all configuration keys
+            List<string> rows = new List<string>();
+            if (args.Length == 0)
+            {
+                rows.Add("Configurations");
+                rows.Add(new string('-', rows[0].Length));
+                var configurations = GetAllConfigurations();
+                foreach (var item in configurations)
+                    rows.Add($"{item.Key} ({item.Type}){(string.IsNullOrEmpty(item.Comment) ? string.Empty : $" - {item.Comment}")}");
+                rows.Add($"Total: {configurations.Count} {(configurations.Count > 1 ? "configurations" : "configuration")}.");
+            }
+            // Return value for one configuration
+            else if(args.Length == 1)
+            {
+                string key = args[0];
+                rows.Add($"{key}:");
+                rows.Add(GetConfiguration(key));
+            }
+            // Set value for configuration
+            else if(args.Length == 2)
+            {
+                string key = args[0];
+                string value = args[1];
+                SetConfiguration(key, value);
+                rows.Add($"{key} is set to `{value}`.");
+            }
+            return rows;
         }
         [Command("Create a virtual file (virtual text note).", 
             "Virtual text notes may or may not have a name. " +
@@ -1240,6 +1273,27 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         public List<ConfigurationRow> GetAllConfigurations()
             => Connection.ExecuteQuery(@"select * from Configuration").Unwrap<ConfigurationRow>();
+        /// <summary>
+        /// Try to get a configuration, if it exists, otherwise return null
+        /// </summary>
+        public string GetConfiguration(string key)
+            => Connection.ExecuteQuery(@"select Value from Configuration where Key=@key", new { key }).Single<string>();
+        /// <summary>
+        /// Try to get a configuration of specified type
+        /// </summary>
+        public type GetConfiguration<type>(string key)
+            => Connection.ExecuteQuery(@"select Value from Configuration where Key=@key", new { key }).Single<type>();
+        /// <summary>
+        /// Set new or overwrite a configuration
+        /// </summary>
+        public void SetConfiguration(string key, string value)
+            => Connection.ExecuteSQLNonQuery(
+                @"INSERT OR REPLACE INTO Configuration (Key, Value, Type, Comment) 
+                    VALUES (@key, 
+                        @value,
+                        COALESCE((SELECT Type FROM Configuration WHERE Key = @key), 'string'),
+                        COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'A custom configuration')
+                        )", new { key, value });
         /// <summary>
         /// Get raw list of all logs
         /// </summary>

@@ -145,7 +145,8 @@ Cautious:
 ## Tricks
 
 1. You can add custom attributes to any file/item by using `mt` (meta) command;
-2. You can enter **chords** in Status Tab command line by appending "\n" to each command
+2. You can enter **chords** in Status Tab command line by appending "\n" to each command;
+3. Configuration keys prefixed with `<Anything you like>` + `.` (actually everything that has a any *special symbol* including space excluding colons in it will never be used as SW configuration keys) is reserved for personal use. You can exploit this to set arbitary custom repository level properties by using `cf` (configuration) command and create your own (configuration) properties: e.g. `cf My.Birthday 1995/03/05`, this will be saved in your repository and will not be touched by SW. There is no limit what you can save.
 
 ## Best Practices
 
