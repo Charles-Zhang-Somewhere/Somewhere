@@ -589,6 +589,15 @@ namespace SomewhereDesktop
             RefreshTags();
             InfoText = $"{AllItems.Count()} items discovered.";
         }
+        private void GotoActiveItemEditContentCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = (ActiveItem != null && (ActiveItem.Name == null || ActiveItem.Content != null));
+        private void GotoActiveItemEditContentCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            TabHeader_MouseDown(NotebookTabLabel, null);
+            ActiveNote = ActiveItem;
+            NoteContentTextBox.Focus();
+            NoteContentTextBox.SelectAll();
+        }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -607,6 +616,7 @@ namespace SomewhereDesktop
             // Show note panel and focus on editing textbox
             TabHeader_MouseDown(NotebookTabLabel, null);
             NotenameTextBox.Focus();
+            NotenameTextBox.SelectAll();
         }
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
@@ -959,5 +969,7 @@ namespace SomewhereDesktop
             return true;
         }
         #endregion
+
+
     }
 }

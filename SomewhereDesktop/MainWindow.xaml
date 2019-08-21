@@ -32,6 +32,8 @@
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.GotoActiveItemEditContent" 
+                        CanExecute="GotoActiveItemEditContentCommand_CanExecute" Executed="GotoActiveItemEditContentCommand_Executed"/>
         <!-- Status Commands -->
         <CommandBinding Command="local:CustomCommands.OpenCommandPrompt" CanExecute="OpenCommandPromptCommand_CanExecute" Executed="OpenCommandPromptCommand_Executed"/>
         <!-- Notebook Commands -->
@@ -239,8 +241,12 @@
                                                 <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
                                                 <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                             </DockPanel>
-                                            <Button Content="Save Changes" DockPanel.Dock="Bottom" Click="SaveItemChangesButton_Click" 
+                                            <StackPanel DockPanel.Dock="Bottom">
+                                                <Button Content="Save Changes" Click="SaveItemChangesButton_Click" 
                                                     ToolTip="Explicitly save changes; Usually changes are saved automatically only when text box lose focus."/>
+                                                <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
+                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
+                                            </StackPanel>
                                             <TextBox Text="{Binding ActiveItemMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
                                         </DockPanel>
                                     </Border>
@@ -304,7 +310,7 @@
                                         <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                     </DockPanel>
-                                    <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
+                                    <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
                                              Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}"/>
                                 </DockPanel>
                             </Border>
