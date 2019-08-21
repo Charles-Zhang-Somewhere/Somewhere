@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ using System.Windows.Shapes;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Somewhere;
 using StringHelper;
+using Vlc.DotNet.Forms;
 
 namespace SomewhereDesktop
 {
@@ -47,6 +49,9 @@ namespace SomewhereDesktop
                 OpenRepository(Directory.GetCurrentDirectory());
             if (Commands == null || !Commands.IsHomePresent)
                 Close();
+
+            // Initialize Video Preview Control
+            InitializeVLCControl();
         }
         private void OpenRepository(string homeFolderpath)
         {
@@ -86,6 +91,19 @@ namespace SomewhereDesktop
             // Update info
             InfoText = $"Home Directory: {Commands.HomeDirectory}; {Items.Count} items.";
         }
+        private void InitializeVLCControl()
+        {
+            VLCControl = new VlcControl();
+            this.PreviewWindowsFormsHost.Child = VLCControl;
+            var currentAssembly = Assembly.GetEntryAssembly();
+            var currentDirectory = new FileInfo(currentAssembly.Location).DirectoryName;
+            // Default installation path of VideoLAN.LibVLC.Windows
+            var libDirectory = new DirectoryInfo(System.IO.Path.Combine(currentDirectory, "libvlc", IntPtr.Size == 4 ? "win-x86" : "win-x64"));
+            VLCControl.BeginInit();
+            VLCControl.VlcLibDirectory = libDirectory;
+            VLCControl.EndInit();
+        }
+        private VlcControl VLCControl { get; set; }
         #endregion
 
         #region Private Properties
@@ -217,12 +235,17 @@ namespace SomewhereDesktop
         {
             // Clear previous
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
+            VLCControl.Stop();
+            PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
+                = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility 
+                = Visibility.Collapsed;
             // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
             // Preview knowledge and note (default as markdown)
             if (ActiveItem.Content != null || ActiveItem.Name == null)
             {
+                PreviewMarkdownViewer.Visibility = Visibility.Visible;
                 PreviewMarkdown = ActiveItem.Content;
             }
             // Preview folder
@@ -231,6 +254,7 @@ namespace SomewhereDesktop
                 StringBuilder builder = new StringBuilder("Folder Contents: " + Environment.NewLine);
                 foreach (string fileEntry in Directory.EnumerateFileSystemEntries(System.IO.Path.Combine(Commands.HomeDirectory, ActiveItem.Name)))
                     builder.AppendLine($"{fileEntry}");
+                PreviewTextBox.Visibility = Visibility.Visible;
                 PreviewText = builder.ToString();
             }
             // Preview files
@@ -239,12 +263,32 @@ namespace SomewhereDesktop
                 // Preview image
                 string extension = System.IO.Path.GetExtension(ActiveItem.Name).ToLower();
                 if (extension == ".png" || extension == ".img" || extension == ".jpg")
+                {
+                    PreviewImageSource.Visibility = Visibility.Visible;
                     PreviewImage = Commands.GetPhysicalPath(ActiveItem.Name);
+                }
                 // Preview markdown
                 else if (extension == ".md")
+                {
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
                     PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
+                }
+                else if (extension == ".txt")
+                {
+                    PreviewTextBox.Visibility = Visibility.Visible;
+                    PreviewText = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
+                }
+                // Preview videos
+                else if (extension == ".avi")
+                {
+                    PreviewWindowsFormsHost.Visibility = Visibility.Visible;
+                    VLCControl.Play(new Uri(Commands.GetPhysicalPath(ActiveItem.Name)));
+                }
                 else
+                {
+                    PreviewTextBlock.Visibility = Visibility.Visible;
                     PreviewStatus = "No Preview Available for Binary Data";
+                }
             }
         }
         #endregion

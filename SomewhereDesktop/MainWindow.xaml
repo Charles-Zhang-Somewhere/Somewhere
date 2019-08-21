@@ -211,10 +211,12 @@
                                     <Border Style="{StaticResource Panel}" Grid.Column="0">
                                         <!-- Preview Area -->
                                         <Grid>
-                                            <Label Content="{Binding PreviewText}"/>
-                                            <Image Source="{Binding PreviewImage}"/>
-                                            <TextBlock Text="{Binding PreviewStatus}"/>
-                                            <md:MarkdownViewer Markdown="{Binding PreviewMarkdown}"/>
+                                            <TextBox x:Name="PreviewTextBox" Text="{Binding PreviewText}" Visibility="Collapsed"
+                                                     IsReadOnlyCaretVisible="True" TextWrapping="WrapWithOverflow"/>
+                                            <Image x:Name="PreviewImageSource" Source="{Binding PreviewImage}" Visibility="Collapsed"/>
+                                            <TextBlock x:Name="PreviewTextBlock" Text="{Binding PreviewStatus}" Visibility="Collapsed"/>
+                                            <md:MarkdownViewer x:Name="PreviewMarkdownViewer" Markdown="{Binding PreviewMarkdown}" Visibility="Collapsed"/>
+                                            <WindowsFormsHost x:Name="PreviewWindowsFormsHost" Visibility="Collapsed"/>
                                         </Grid>
                                     </Border>
                                     <GridSplitter Grid.Column="1"/>
