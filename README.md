@@ -144,7 +144,8 @@ Cautious:
 
 ## Tricks
 
-1. You can add custom attributes to any file/item by using `mt` (meta) command;
+1. You can add custom attributes to any file/item by using `mt` (meta) command; Some meta names are used by the system already, including: ... - however if you know what those means and where those are used you are **encouraged** to make modifications to them directly; No extra keyword is reserved but more may be used by the system in the future, if you want to be absolutely sure your custom meta attributes are not used by the system, just don't start it with an upper case letter - e.g. all system meta attributes start with Upper case letters.
+	* Rule: once defined, you cannot "unset" a meta attribute - if you no longer need it then just set its value to empty; The system may or may not in the future clean up such empty meta attributes.
 2. You can enter **chords** in Status Tab command line by appending "\n" to each command;
 3. Configuration keys prefixed with `<Anything you like>` + `.` (actually everything that has a any *special symbol* including space excluding colons in it will never be used as SW configuration keys) is reserved for personal use. You can exploit this to set arbitary custom repository level properties by using `cf` (configuration) command and create your own (configuration) properties: e.g. `cf My.Birthday 1995/03/05`, this will be saved in your repository and will not be touched by SW. There is no limit what you can save.
 
@@ -156,6 +157,10 @@ Cautious:
 3. Try to be specific and consistent with naming, give meaningful and simple to remember tag names, avoid plurals
 4. Virtual Notes supports full-text (potentially indexed) content search. For regular files this is not supported (to avoid development need and overlapping with external existing tools e.g. grep etc.)
 5. Advanced importing will be provided ,however it's recommended you do not use that if you want a cleaner repository - importing existing hierarchies will only mess up efficient knowledge organization and the better way is to keep the hierarchy, then gradually migrate new contents to Somewheres framework. When the time comes, you can just perform the `flatten` operation on selected folders to eliminate hierarchical structures.
+6. File names: I promised you should have all the freedom to name your files (items) whatever you like, but there are some rules
+	* An item name shouldn't start like a root path, i.e. `C:` on windows, and `/` on linux, this applies no matter what OS you are using, e.g. `/My Note on Designing a New Cloth/` is not a good item name for notes; If you shall name your item like that, it will behave like a file in some part of the system, specifically....
+	* An item name shouldn't end like a folder path, i.e. `\` on windows, and `/` on linux, this applies no matter what OS you are using, e.g. `My Note on Environment Governing\` is not a good item name for notes; If you shall name your item like that, it will behave like a folder in some part of the system, specifically....
+	* An item CAN contain folder seperators however, e.g. `On the relation between man and nature/how bread is made out of wheet` is a good name for an article/note, and I will guarantee that even though it looks very suspicious to an actual file (e.g. `Writings/On the relation between man and nature/how bread is made out of wheet.pdf`), it is actually identified as a note
 
 ## Case Studies
 

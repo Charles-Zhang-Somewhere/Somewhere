@@ -5,9 +5,9 @@ using System.Text;
 namespace Somewhere
 {
     /// <summary>
-    /// Represents meta info for a file
+    /// Represents pre-defined meta info for an item
     /// </summary>
-    public class FileMeta
+    public class SystemMeta
     {
         public long Size { get; set; }
         public string MD5 { get; set; }

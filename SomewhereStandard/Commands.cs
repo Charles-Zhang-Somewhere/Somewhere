@@ -496,14 +496,16 @@ namespace Somewhere
             }
         }
         [Command("Import items, files, folders and notes.")]
-        [CommandArgument("by", "literals")]
-        [CommandArgument("byparameter", "format specific parameters; for text sources (csv, txt and md), this can be `line` or `header`")]
-        [CommandArgument("under", "literals")]
-        [CommandArgument("underparameter", "format specific target parameters; empty for the most source formats; for `md` sources, this can be `header` or `title`")]
-        [CommandArgument("from", "literals")]
-        [CommandArgument("sourcepath", "path for the import source; either a file or a folder; suffix indicates source, common ones include: folder, csv, txt, tw (TiddlyWiki Json) and md")]
-        [CommandArgument("into", "literals")]
-        [CommandArgument("target", "target for the import; can be either `file`, `archive`, `note`, or `knowledge`; must be supported by the format")]
+        [CommandArgument("sourcepath", "path for the import source; " +
+            "either a file or a folder; suffix indicates source, common ones include: folder, csv, txt, tw (TiddlyWiki Json) and md; " +
+            "can be internal or external, can be already managed if it's internal; " +
+            "can be * to mean anything (that is both managed and not managed) inside current Home")]
+        [CommandArgument("howparameter", "specifies how to import; this is format specific; " +
+            "for text sources (csv, txt and md), this can be `line` or `header`")]
+        [CommandArgument("optionparameter", "defines options for import; source format specific; " +
+            "empty for the most source formats; for `md` sources, this can be `header` or `title`")]
+        [CommandArgument("target", "target for the import; can be either `file`, `archive`, `note`, or `knowledge`; " +
+            "must be supported by the format")]
         public IEnumerable<string> Im(params string[] args)
         {
             throw new NotImplementedException();
@@ -534,6 +536,58 @@ namespace Somewhere
             // Update in DB
             RenameFile(itemname, newFilename);
             return result;
+        }
+        [Command("Read or set meta attribtues.")]
+        [CommandArgument("itemname", "name of the item to read or set meta attribute")]
+        [CommandArgument("metaname", "name of the meta parameter; " +
+            "if not given then return all meta currently exist", optional: true)]
+        [CommandArgument("value", "value of the meta parameter; " +
+            "if given then update meta; " +
+            "if not given then return the value for the specified meta attribute", optional: true)]
+        public IEnumerable<string> Mt(params string[] args)
+        {
+            ValidateArgs(args);
+            List<string> rows = new List<string>();
+            // Validate item existence
+            string itemname = args[0];
+            int? id = GetFileID(itemname);
+            if (id == null)
+            {
+                if(FileExistsAtHomeFolder(itemname))
+                    throw new ArgumentException($"Specified item `{itemname}` does not exist, i.e. it is not managed.");
+                else
+                    throw new ArgumentException($"Specified item `{itemname}` is not managed and it doesn't exist in Home folder.");
+            }
+            // Show all meta
+            if(args.Length == 1)
+            {
+                rows.Add(itemname);
+                rows.Add(new string('-', Math.Min(itemname.Length, Console.WindowWidth)));
+                var metas = GetMetas(id.Value);
+                foreach (KeyValuePair<string, string> item in metas)
+                    rows.Add($"{item.Key.Limit(20), -20}: {item.Value.Limit(60), -60}");
+                rows.Add($"Total: {metas.Count}");
+            }
+            // Show specific meta value
+            else if(args.Length == 2)
+            {
+                string meta = args[1];
+                string value = GetMeta(id.Value, meta);
+                if (meta == null)
+                    throw new ArgumentException($"Specified meta `{meta}` doesn't exist on item `{itemname}`.");
+                rows.Add($"{meta}: ");
+                rows.Add(value);
+            }
+            // Set meta value
+            else if(args.Length == 3)
+            {
+                string meta = args[1];
+                string value = args[2];
+                SetMeta(id.Value, meta, value);
+                rows.Add($"Meta attribute `{meta}` for item `{itemname}` is set to `{value}`.");
+            }
+            // Return results
+            return rows;
         }
         [Command("Move Tags, renames specified tag.",
             "If source tag doesn't exist in database then will issue a warning instead of doing anything. " +
@@ -880,6 +934,28 @@ namespace Somewhere
             if (id == null)
                 return AddTag(tag);
             return id.Value;
+        }
+        /// <summary>
+        /// Set value for a specific meta attribute for an item
+        /// </summary>
+        public void SetItemMeta(string itemname, string name, string value)
+        {
+            int? id = GetFileID(itemname);
+            if (id == null)
+                throw new ArgumentException($"Item `{itemname}` doesn't exist.");
+            else
+                SetMeta(id.Value, name, value);
+        }
+        /// <summary>
+        /// Get value for a specific meta attribute for an item
+        /// </summary>
+        public string GetItemMeta(string itemname, string name)
+        {
+            int? id = GetFileID(itemname);
+            if (id == null)
+                throw new ArgumentException($"Item `{itemname}` doesn't exist.");
+            else
+                return GetMeta(id.Value, name);
         }
         /// <summary>
         /// Get all files that contain specified tags
@@ -1295,6 +1371,50 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                         COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'A custom configuration')
                         )", new { key, value });
         /// <summary>
+        /// Get meta for a given item
+        /// </summary>
+        public string GetMeta(int id, string name)
+        {
+            string meta = Connection.ExecuteQuery(@"select Meta from File where ID=@id", new { id }).Single<string>();
+            if (meta == null)
+                return null;
+            else
+                return new YamlQuery(meta).Get<string>(name, false);
+        }
+        /// <summary>
+        /// Set value for a specific meta attribute
+        /// </summary>
+        public void SetMeta(int id, string name, string value)
+        {
+            string meta = Connection.ExecuteQuery(@"select Meta from File where ID=@id", new { id }).Single<string>();
+            if (meta == null)
+                SetMeta(id, new Serializer().Serialize(new Dictionary<string, string> { { name, value } }));
+            else
+            {
+                var dict = new YamlQuery(meta).ToDictionary();
+                dict[name] = value;
+                SetMeta(id, new Serializer().Serialize(dict));
+            }
+        }
+        public void SetMeta(int id, string meta)
+            => Connection.ExecuteSQLNonQuery(@"update File set Meta=@meta where ID=@id", new { id, meta });
+        /// <summary>
+        /// Get all metas for a given item in KeyValuePair
+        /// </summary>
+        public Dictionary<string, string> GetMetas(int id)
+        {
+            string meta = Connection.ExecuteQuery(@"select Meta from File where ID=@id", new { id }).Single<string>();
+            if (meta == null)
+                return null;
+            else
+                return new YamlQuery(meta).ToDictionary();
+        }
+        /// <summary>
+        /// Get system meta for item
+        /// </summary>
+        public SystemMeta GetSystemMeta(int id)
+            => new Deserializer().Deserialize<SystemMeta>(Connection.ExecuteQuery("select Meta from File where ID=@id").Single<string>());
+        /// <summary>
         /// Get raw list of all logs
         /// </summary>
         public List<LogRow> GetAllLogs()
@@ -1468,7 +1588,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
                 if (!string.IsNullOrEmpty(item.Meta))
                 {
-                    FileMeta meta = new Deserializer().Deserialize<FileMeta>(item.Meta);
+                    SystemMeta meta = new Deserializer().Deserialize<SystemMeta>(item.Meta);
                     if (!string.IsNullOrEmpty(meta.Remark))
                         Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
                 }

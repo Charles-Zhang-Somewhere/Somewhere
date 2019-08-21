@@ -346,7 +346,28 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.New();
             Assert.True(Helper.TestFileExists(Commands.DBName));
         }
-
+        [Fact]
+        public void SetMetaShoudWork()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Commands.Add("File.txt", "documentation");
+            Commands.SetItemMeta("File.txt", "Remark", "My file is coolest.");
+            Assert.Equal("My file is coolest.", Commands.GetItemMeta("File.txt", "Remark"));
+        }
+        [Fact]
+        public void SetMetaCommandShoudWork()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("File.txt");
+            Commands.Add("File.txt", "documentation");
+            Commands.Mt("File.txt", "Remark", "My file is coolest.");
+            Assert.Equal("My file is coolest.", Commands.GetItemMeta("File.txt", "Remark"));
+        }
         [Fact]
         public void ShouldBeAbleToAddTagToVirtualFile()
         {
