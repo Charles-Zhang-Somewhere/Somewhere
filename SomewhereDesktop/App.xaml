@@ -335,6 +335,7 @@
             <Setter Property="CaretBrush" Value="{StaticResource Accent2}"/>
             <Setter Property="AcceptsReturn" Value="True"/>
             <Setter Property="AcceptsTab" Value="True"/>
+            <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
         </Style>
 
         <!-- Lengthy Combobox Styling ... -->

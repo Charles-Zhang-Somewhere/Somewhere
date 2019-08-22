@@ -239,6 +239,9 @@ A functional and effective application may not just end here, I have several sim
 4. Meta-based dedicated note (called "remark") section
 5. Feature Requests (Usability): Simple embedded revision control (full file based, like google drive)
 	* Add whole file version revision, either simply natively, or using git. Per file based, require message.
+	* \[Design Decision\] Consider deprecating, for simple and effective revision, we just play well with Home folder `.git` repository by automatically ignore it
+	* The most we can do, and we shall limit to only, full size revision (without diff whatsoever) and the user shall use it only fully aware what she's doing - and use this not for VERSION control, but for revision purpose - i.e. keeping active copies of both items - and for this purpose, we shall define a **swapping operation** and use this instead of version control, but variation control.???! What's the use case of that?
+	* Notice some sort of revision control is absolutely necessary - because for non-file based items e.g. notes we cann't ust git for version control, and that will be a large part of SW.
 6. ASP.Net Core Server Web client for viewr and navigation purpose (or Single page app, allowing static hosting, JS based)
 	* Front Page: search, (edit, import, export)
 	* View Page (dedicated for items and item types)
@@ -382,6 +385,10 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 * `F12`  Show Shortcuts
 * `` Ctrl+\` ``: Hide Somewhere Desktop window 
 * `ESC`:  Hide Somewhere Desktop window (same as `` Ctrl+\` ``)
+
+# Notes
+
+* `Ctrl+S`: Save note (Note contens will also be automatically saved when closing window and minimizing window)
 
 # Panels
 

@@ -38,6 +38,7 @@
         <CommandBinding Command="local:CustomCommands.OpenCommandPrompt" CanExecute="OpenCommandPromptCommand_CanExecute" Executed="OpenCommandPromptCommand_Executed"/>
         <!-- Notebook Commands -->
         <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Save" CanExecute="SaveCommand_CanExecute" Executed="SaveCommand_Executed"/>
         <!-- Markdown -->
         <CommandBinding Command="{x:Static md:Commands.Hyperlink}" Executed="OpenHyperlink_Executed" />
     </Window.CommandBindings>
@@ -65,6 +66,7 @@
         <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="local:CustomCommands.Save"/>
     </Window.InputBindings>
     <Window.Resources>
         <!-- Value Converters -->

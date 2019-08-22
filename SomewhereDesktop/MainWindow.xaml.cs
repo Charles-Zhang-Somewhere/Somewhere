@@ -529,11 +529,8 @@ namespace SomewhereDesktop
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // In case things are not saved, commit change for safety and avoid data loss
-            if (ActiveItem != null)
-            {
-                CommitActiveItemChange();
-                CommitActiveNoteChange();
-            }
+            CommitActiveItemChange();
+            CommitActiveNoteChange();
             this.Close();
         }
         private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -558,12 +555,9 @@ namespace SomewhereDesktop
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
-            if (ActiveItem != null)
-            {
-                CommitActiveItemChange();
-                CommitActiveNoteChange();
-            }
-                
+            CommitActiveItemChange();
+            CommitActiveNoteChange();
+
             if (this.WindowState == WindowState.Normal)
                 this.WindowState = WindowState.Maximized;
             else this.WindowState = WindowState.Normal;
@@ -573,11 +567,8 @@ namespace SomewhereDesktop
         private void HideWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
-            if (ActiveItem != null)
-            {
-                CommitActiveItemChange();
-                CommitActiveNoteChange();
-            }
+            CommitActiveItemChange();
+            CommitActiveNoteChange();
             this.WindowState = WindowState.Minimized;
         }
         private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -588,6 +579,14 @@ namespace SomewhereDesktop
             RefreshItems();
             RefreshTags();
             InfoText = $"{AllItems.Count()} items discovered.";
+        }
+        private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
+        private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CommitActiveItemChange();
+            CommitActiveNoteChange();
+            InfoText = "Item saved.";
         }
         private void GotoActiveItemEditContentCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = (ActiveItem != null && (ActiveItem.Name == null || ActiveItem.Content != null));
@@ -968,8 +967,7 @@ namespace SomewhereDesktop
             NotifyPropertyChanged(propertyName);
             return true;
         }
+
         #endregion
-
-
     }
 }

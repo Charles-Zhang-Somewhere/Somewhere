@@ -3,6 +3,11 @@
 This list is for myself.
 
 ```
+(Done) `Meta` command
+Remark property (remove Meta property) for Inventory panel
+im * flatten (for reference images)
+Move from SD by changing name (path) e.g. for files under a folder
+
 [Practical Tests and Usage]
 
 1. university folder test; Finish organizing using Somewhere for one actual folder to see how well it works.
@@ -53,6 +58,7 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 2. Basic integration of NtfsReader and NTFS search;
 3. In-depth integration of NtfsReader and actions for NTFS search results;
 4. Notice FileSystemWatcher might break dependency and cause incompatible for Linux, pending verification; Maybe .Net Core has better support for FileSystemWatcher. Focus on Windows for now.
+5. Use rsync or some C# library for storing diff for revision
 
 [(Urgent) Issues and Bugs - Affects Usability]
 
@@ -72,6 +78,7 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 [Usability and UI Improvement - Non Essential]
 
 1. Allow customized color definitions per repository in `ColorSettings` property
+2. Add browsing recent repositories (e.g. in a dialog window) - that information shall be saved along with executable folder's own database
 
 [Pending Documentation: Future Roadmap Features]
 

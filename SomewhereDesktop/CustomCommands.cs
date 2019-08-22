@@ -24,6 +24,7 @@ namespace SomewhereDesktop
         public static readonly RoutedUICommand ShowMarkdownReference = new RoutedUICommand("Show Markdown reference dialog", "ShowMarkdownReference", typeof(CustomCommands));
         public static readonly RoutedUICommand OpenCommandPrompt = new RoutedUICommand("Open a new command prompt window", "OpenCommandPrompt", typeof(CustomCommands));
         public static readonly RoutedUICommand Refresh = new RoutedUICommand("Refresh Inventory tab", "Refresh", typeof(CustomCommands));
+        public static readonly RoutedUICommand Save = new RoutedUICommand("Save current editing item/note", "Save", typeof(CustomCommands));
         public static readonly RoutedUICommand GotoActiveItemEditContent = new RoutedUICommand("Edit content for note item", "GotoActiveItemEditContent", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchInventory = new RoutedUICommand("Switch to Inventory tab", "SwitchInventory", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchNotebook = new RoutedUICommand("Switch to Notebook tab", "SwitchNotebook", typeof(CustomCommands));
