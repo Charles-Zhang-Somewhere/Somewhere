@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SomewhereTest", "SomewhereT
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SW", "SW\SW.csproj", "{D1119B96-C3FF-446E-9138-6681B1FED85C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SomewhereStandard", "SomewhereStandard\SomewhereStandard.csproj", "{0A8BB929-CBDB-4972-B8BD-E7046A576627}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SomewhereStandard", "SomewhereStandard\SomewhereStandard.csproj", "{0A8BB929-CBDB-4972-B8BD-E7046A576627}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SM", "SM\SM.csproj", "{CEC2054E-7F30-4C29-BD66-F01C8829F346}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{0A8BB929-CBDB-4972-B8BD-E7046A576627}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A8BB929-CBDB-4972-B8BD-E7046A576627}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A8BB929-CBDB-4972-B8BD-E7046A576627}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CEC2054E-7F30-4C29-BD66-F01C8829F346}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEC2054E-7F30-4C29-BD66-F01C8829F346}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEC2054E-7F30-4C29-BD66-F01C8829F346}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEC2054E-7F30-4C29-BD66-F01C8829F346}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

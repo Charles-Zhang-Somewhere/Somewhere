@@ -118,6 +118,7 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 4. Homogenous Container: as proposed in MULTITUDE (theory treatment pending summary on detailed proposed knowledge management framework differentiating between tags and folders and how to properly use them).
 0. Repository/Home: each Somewhere home is a repository, managed by SQLite database
 1. (Observation) Non original、non personal item s are usually not worth and not need for very specialized organization, for instance Steam games installation folder - you don't really care how large it is and how many files are there because you don't interact with it directly anyway. Another example might be Audible book local audio files - simple folders suffice for the purpose of organizing those. However soon enough when we are dealing with **custom information**, originality comes into play, this includes custom categorization system which is in effect a Knowledge system even if we are dealing with items whose raw contents are not directly issued by us, for instance organizing news digest - even though we don't wrote news ourselves the organized structure represents our knskle. In this case a tag based system can help. I know this discussion is a bit abstract 
+2. Hierarchical Home Protocol (Multi-Home management)
 
 ## References
 
@@ -271,6 +272,9 @@ MULTITUDE might never get a chance to continue development, so some of its goals
 	* I think I can make it more efficient just with command line, maybe a website though (End remark: I would do it in CLI, especially since we are going to do auto-complete tag and tweak with some ReadKey() level code - but CLI's support for UNICODE display is arcane and code won't be clean if we do that, so WPF/ASP.Net is better option)
 	* The only problem is with **auto-completion**, only if we can solve that - capture tabs in interactive mode?
 4. (Pending) ASP.Net Core Viewer
+5. SM: Somewhere Manager/Home Explorer (Pending a cute animal name)
+	* Find all files
+	* A path to **Hierarchical Home Protocol**
 
 Notice to compile and link SomewhereStandard and SQLite we need to uncheck **Prefer 32-bit** for SomewhereDesktop project.
 

@@ -1412,8 +1412,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Get system meta for item
         /// </summary>
-        public SystemMeta GetSystemMeta(int id)
-            => new Deserializer().Deserialize<SystemMeta>(Connection.ExecuteQuery("select Meta from File where ID=@id").Single<string>());
+        public RemarkMeta GetSystemMeta(int id)
+            => new Deserializer().Deserialize<RemarkMeta>(Connection.ExecuteQuery("select Meta from File where ID=@id").Single<string>());
         /// <summary>
         /// Get raw list of all logs
         /// </summary>
@@ -1588,7 +1588,9 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
                 if (!string.IsNullOrEmpty(item.Meta))
                 {
-                    SystemMeta meta = new Deserializer().Deserialize<SystemMeta>(item.Meta);
+                    RemarkMeta meta = new DeserializerBuilder()
+                        .IgnoreUnmatchedProperties().Build()
+                        .Deserialize<RemarkMeta>(item.Meta);
                     if (!string.IsNullOrEmpty(meta.Remark))
                         Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
                 }
