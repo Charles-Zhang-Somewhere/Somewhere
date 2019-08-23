@@ -1,4 +1,5 @@
-﻿using StringHelper;
+﻿using Somewhere;
+using StringHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,6 +76,16 @@ namespace SomewhereTest
             Assert.Equal("My_File", "My\\File".EscapeFilename());
             Assert.Equal("_______.text", "<>?|\\/*.text".EscapeFilename());
             Assert.Equal("aux_.text", "aux.text".EscapeFilename());   // windows is not case sensitive
+        }
+
+        [Fact]
+        public void TiddlerTagsShouldSplitCorrectly()
+        {
+            var import = new Tiddler()
+            {
+                tags = "[[Super Hot Girl]] 影视"
+            };
+            Assert.Empty(new string[] { "Super Hot Girl", "影视" }.Except(import.Tags));
         }
     }
 }

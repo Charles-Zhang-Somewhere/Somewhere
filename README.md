@@ -6,7 +6,7 @@ Welcome to **Somewhere**, a simple program that enables you to tag your files in
 
 **Features**
 
-1. (Code Design) Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader*, *Markdig.WPF* and *WindowsAPICodePack*);
+1. (Code Design) Free, open source, dedicated (in terms of scope), cross-platform, SQLite based, almost 0 dependency (except *SQLite*, *YAML*, **CSV**, *.Net Core Runtime* and if Windows version is used, *WPF*, *NTFSReader*, *Markdig.WPF* and *WindowsAPICodePack*);
 3. (Implementation Design) Non-intrusive, File system friendly (existing FS based meta-layer), designed for custom files and decent interoperability with existing hierarchical structure;
 4. (Repository Design) Heavily documented including methodology;
 6. (Market Design) Cutting Edge technology, C#.Net Core/Standard based, last for another 100 years, will migrate to .Net Core 3.0 when it comes out;
@@ -225,6 +225,13 @@ Keywords: Minimal UI, Functional, Data Driven, Text based.
 6. GUI (I.e. Somewhere Desktop) is a front end, a client of Somewhere (library), no matter how fancy and how many content related features it supports. This requires us to focus on CLI.
 7. Target **Item count** *5000-10000*: for any reasonable treatment of a given **subject**, 5000 items worth of content is the least expected. One *shouldn't feel slowed down* by the software when dealing with such size. I would target 10000 files per repository, because that's when during my experience with Bookmark Ninja (I.e. organize website bookmarks with tags), things start to become less efficient - around *1000-3000* tags per repository seems reasonable enough, more than that one can become less familiar or existing tags and it's better to *start a new repository for remotely related subjects*.
 Minimal UI, Functional, Data Driven, Text based.
+
+## Design Notes
+
+1. Reagrding the (large) size of new SD executable package: I would consider a minimal size an essential for usability, but due to below reasons I decided to keep it like this, and no more (e.g. Chromium will not be added in near feature)
+	* SW already have almost all functions SD has
+	* SD is already a desktop application
+	* With the addition of libVLC it can be really useful for Multi-media files
 
 ## Roadmap and Next Steps
 

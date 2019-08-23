@@ -62,14 +62,14 @@ namespace SM
                 counter++;
                 Thread.Sleep(100);  // Poll requests at 100ms interval is good enough
             }
-            // Report initialize results
-            int totalItemCount = Homes.Sum(h => h.ItemCount);
-            Console.WriteLine($"{Homes.Length} {(Homes.Length > 1 ? "homes" : "home")} loaded, " +
-                $"with a total of {totalItemCount} {(totalItemCount > 1 ? "items": "item")}.");
             // Clean up initialization resources
             Console.CursorLeft = location;
             Console.WriteLine(' '); // Clear animation symbol
             worker.Dispose();
+            // Report initialize results
+            int totalItemCount = Homes.Sum(h => h.ItemCount);
+            Console.WriteLine($"{Homes.Length} {(Homes.Length > 1 ? "homes" : "home")} loaded, " +
+                $"with a total of {totalItemCount} {(totalItemCount > 1 ? "items" : "item")}.");
             // Interactive session
             while (true)
             {

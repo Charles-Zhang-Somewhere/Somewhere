@@ -138,7 +138,8 @@ namespace StringHelper
         }
 
         /// <summary>
-        /// Split a comma delimited string of tags into array, lower cased and removed empty
+        /// Split a comma delimited string of tags into array, lower cased and removed empty;
+        /// Notice there is no escape for commas
         /// </summary>
         public static IEnumerable<string> SplitTags(this string v)
             => v?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -146,7 +147,7 @@ namespace StringHelper
                 // Save as lower case
                 a.Trim().ToLower()
                 // Replace double quote (it can still be entered because command line allows it) with underscore
-                .Replace('\"', '_'))
+                .Replace('"', '_'))
             .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
             ?? new string[] { };    // Return empty for null string
     }

@@ -1,4 +1,6 @@
-﻿using SQLiteExtension;
+﻿using Csv;
+using Newtonsoft.Json;
+using SQLiteExtension;
 using StringHelper;
 using System;
 using System.Collections.Generic;
@@ -495,20 +497,80 @@ namespace Somewhere
                 return GetCommandHelp(command);
             }
         }
-        [Command("Import items, files, folders and notes.")]
+        [Command("Import items, files, folders and notes.",
+            "Formats: 1) CSV: title,text,created,tags, where tags is space seperated and for items containing spaces using [[]] to enclose them; " +
+            "2) Json: An array of {title,text,created,tags}, rules for tags same for csv.")]
         [CommandArgument("sourcepath", "path for the import source; " +
             "either a file or a folder; suffix indicates source, common ones include: folder, csv, txt, tw (TiddlyWiki Json) and md; " +
             "can be internal or external, can be already managed if it's internal; " +
             "can be * to mean anything (that is both managed and not managed) inside current Home")]
         [CommandArgument("howparameter", "specifies how to import; this is format specific; " +
-            "for text sources (csv, txt and md), this can be `line` or `header`")]
+            "for text sources (csv, txt and md), this can be `line` or `header`", optional: true)]
         [CommandArgument("optionparameter", "defines options for import; source format specific; " +
-            "empty for the most source formats; for `md` sources, this can be `header` or `title`")]
+            "empty for the most source formats; for `md` sources, this can be `header` or `title`", optional: true)]
         [CommandArgument("target", "target for the import; can be either `file`, `archive`, `note`, or `knowledge`; " +
-            "must be supported by the format")]
+            "must be supported by the format", optional: true)]
         public IEnumerable<string> Im(params string[] args)
         {
-            throw new NotImplementedException();
+            ValidateArgs(args);
+            string sourcePath = args[0];
+            // Import Tiddly Wiki format csv as notes
+            List<string> result = new List<string>();
+            string extension = Path.GetExtension(sourcePath).ToLower();
+            // Import Tiddly Wiki format csv and json
+            if (extension == ".csv" || extension == ".json")
+            {
+                IEnumerable<Tiddler> tiddlers = null;
+                // Collect tiddler definitions
+                if (extension == ".csv")
+                {
+                    string content = File.ReadAllText(sourcePath);
+                    var list = new List<Tiddler>();
+                    // TODO: Currently "really simple csv" library is not reading correctly when last attribute is empty like this "",
+                    // which will cause it to read wrong attribute column counts
+                    foreach (var line in CsvReader.ReadFromText(content, new CsvOptions() { AllowNewLineInEnclosedFieldValues = true }))
+                    {
+                        list.Add(new Tiddler()
+                        {
+                            title = line["title"],
+                            text = line["text"],
+                            tags = line["tags"],
+                            created = line["created"]
+                        });
+                    }
+                    tiddlers = list;
+                }
+                else
+                {
+                    string content = File.ReadAllText(sourcePath);
+                    tiddlers = JsonConvert.DeserializeObject<Tiddler[]>(content);
+                }
+                // Perform actual add action
+                foreach (var tiddler in tiddlers)
+                {
+                    try
+                    {
+                        // Add file to DB
+                        int id = AddFile(tiddler.title, tiddler.text);
+                        // Add tags
+                        var tags = tiddler.Tags;
+                        AddTagsToFile(id, tags);
+                        // Modify entry date
+                        ChangeEntryDate(id, tiddler.CreatedDate);
+                        // Return result
+                        result.Add($"`{tiddler.title}` added with {(tags.Length > 1 ? "tags" : "tag")}: {tags.JoinTags()}");
+                    }
+                    catch (Exception e)
+                    {
+                        // Simple handling for cases like non-unique names
+                        result.Add($"{e.Message.Replace('\r', ' ').Replace('\n', ' ')} - Error when importing `{tiddler.title}`");
+                    }
+                }
+            }
+            else
+                result.Add($"Format for `{sourcePath}` is not supported yet.");
+            // Return result outputs
+            return result;
         }
         [Command("Rename file.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
@@ -1075,6 +1137,11 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
             => Connection.ExecuteSQLNonQuery(@"update File 
                 set Name=@filename, Content=@content 
                 where ID=@fileID", new { fileID, filename, content });
+        /// <summary>
+        /// Change entry date for a given item
+        /// </summary>
+        private void ChangeEntryDate(int id, DateTime entryDate)
+            => Connection.ExecuteSQLNonQuery("update File set EntryDate=@entryDate where ID=@id", new { id, entryDate });
         /// <summary>
         /// Add a log entry to database in yaml
         /// </summary>

@@ -41,7 +41,7 @@ namespace Somewhere
                 catch (Exception e) { Console.WriteLine($"{e.InnerException.Message}"); }
             }
             else
-                Console.WriteLine($"Specified command {commandName} doesn't exist. Try again.");
+                Console.WriteLine($"Specified command `{commandName}` doesn't exist. Try again.");
         }
         /// <summary>
         /// Execute command and return result strings and don't output to console, providing silent exception handling
@@ -72,7 +72,7 @@ namespace Somewhere
                 catch (Exception e) { return new List<string>() { $"{e.InnerException.Message}" }; }
             }
             else
-                return new List<string> { $"Specified command {commandName} doesn't exist. Try again." };
+                return new List<string> { $"Specified command `{commandName}` doesn't exist. Try again." };
         }
         #endregion
     }
