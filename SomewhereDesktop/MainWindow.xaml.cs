@@ -88,9 +88,22 @@ namespace SomewhereDesktop
             RefreshItems();
             RefreshNotes();
             RefreshTags();
+            // Initialize UI Theme
+            InitializeUI();
             // Update info
             InfoText = $"Home Directory: {Commands.HomeDirectory}; {Items.Count} items.";
         }
+
+        private void InitializeUI()
+        {
+            if (Commands.IsFileInDatabase("_HomeBackgroundImage.png"))
+                BackgroundImage = Commands.GetPhysicalPath("_HomeBackgroundImage.png");
+            else if (Commands.IsFileInDatabase("_HomeBackgroundImage.jpg"))
+                BackgroundImage = Commands.GetPhysicalPath("_HomeBackgroundImage.jpg");
+            else
+                BackgroundImage = null;
+        }
+
         private void InitializeVLCControl()
         {
             VLCControl = new VlcControl();
@@ -296,6 +309,8 @@ namespace SomewhereDesktop
         #region Public View Properties
         private string _InfoText;
         public string InfoText { get => _InfoText; set => SetField(ref _InfoText, value); }
+        private string _BackgroundImage;
+        public string BackgroundImage { get => _BackgroundImage; set => SetField(ref _BackgroundImage, value); }
         #endregion
 
         #region Inventory View Properties

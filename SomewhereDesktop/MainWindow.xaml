@@ -95,6 +95,8 @@
         </Style>
     </Window.Resources>
     <Grid>
+        <!-- Background Image -->
+        <Image Source="{Binding BackgroundImage}"/>
         <DockPanel LastChildFill="True">
             <Grid Background="{StaticResource Base1}" DockPanel.Dock="Top">
                 <StackPanel Orientation="Horizontal">
