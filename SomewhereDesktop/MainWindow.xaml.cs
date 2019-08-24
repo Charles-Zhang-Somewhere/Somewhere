@@ -855,6 +855,56 @@ namespace SomewhereDesktop
                 e.Handled = true;
             }
         }
+        /// <summary>
+        /// Provides handling for Markdown syntax related shortcuts
+        /// </summary>
+        private void NoteContentTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+            if(textBox.SelectionLength != 0)
+            {
+                if(e.Text == "*")
+                {
+                    textBox.SelectedText = $"*{textBox.SelectedText}*";
+                    e.Handled = true;
+                }
+                else if (e.Text == "_")
+                {
+                    textBox.SelectedText = $"_{textBox.SelectedText}_";
+                    e.Handled = true;
+                }
+                else if (e.Text == "`")
+                {
+                    textBox.SelectedText = $"`{textBox.SelectedText}`";
+                    e.Handled = true;
+                }
+                else if (e.Text == "[")
+                {
+                    textBox.SelectedText = $"[{textBox.SelectedText}]";
+                    e.Handled = true;
+                }
+                else if (e.Text == "{")
+                {
+                    textBox.SelectedText = $"{{{textBox.SelectedText}}}";
+                    e.Handled = true;
+                }
+                else if (e.Text == "(")
+                {
+                    textBox.SelectedText = $"({textBox.SelectedText})";
+                    e.Handled = true;
+                }
+                else if (e.Text == "\"")
+                {
+                    textBox.SelectedText = $"\"{textBox.SelectedText}\"";
+                    e.Handled = true;
+                }
+                else if (e.Text == "'")
+                {
+                    textBox.SelectedText = $"'{textBox.SelectedText}'";
+                    e.Handled = true;
+                }
+            }
+        }
         private void ItemsList_DoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ActiveItem != null)
@@ -944,7 +994,7 @@ namespace SomewhereDesktop
                 }
                 catch (Exception e)
                 {
-                    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
+                    new DialogWindow(this, "Error during updating item", e.Message).ShowDialog();
                 }
             }
         }

@@ -149,6 +149,7 @@ Cautious:
 	* Rule: once defined, you cannot "unset" a meta attribute - if you no longer need it then just set its value to empty; The system may or may not in the future clean up such empty meta attributes.
 2. You can enter **chords** in Status Tab command line by appending "\n" to each command;
 3. Configuration keys prefixed with `<Anything you like>` + `.` (actually everything that has a any *special symbol* including space excluding colons in it will never be used as SW configuration keys) is reserved for personal use. You can exploit this to set arbitary custom repository level properties by using `cf` (configuration) command and create your own (configuration) properties: e.g. `cf My.Birthday 1995/03/05`, this will be saved in your repository and will not be touched by SW. There is no limit what you can save.
+4. (Markdown syntax shortcuts) When editing notes in Notebook Tab, you can select the texts you wish to apply formats then just type in Markdown format symbols to automatically apply brackets and bold and italic etc. Currently it supports: `` *_`'"([{ ``
 
 ## Best Practices
 
