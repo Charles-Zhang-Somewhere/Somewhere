@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Commands.cs~RF2410c3f3.TMP" />
     <None Remove="Commands.cs~RF361182c.TMP" />
   </ItemGroup>
 

@@ -23,6 +23,9 @@ namespace Somewhere
             public string Name { get; set; }
             public string Content { get; set; }
             public string Tags { get; set; }
+            /// <summary>
+            /// Text of all meta attribtues
+            /// </summary>
             public string Meta { get; set; }
             public DateTime? RevisionTime { get; set; }
             public int RevisionCount { get; set; }

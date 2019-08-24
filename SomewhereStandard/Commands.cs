@@ -1454,13 +1454,24 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public void SetMeta(int id, string name, string value)
         {
             string meta = Connection.ExecuteQuery(@"select Meta from File where ID=@id", new { id }).Single<string>();
+            string newMeta = ReplaceOrInitializeMetaAttribute(meta, name, value);
+            SetMeta(id, newMeta);
+        }
+        /// <summary>
+        /// Replace part of a meta text, i.e. one of its attribute with a new one;
+        /// Returns the newly updated meta text
+        /// </summary>
+        public string ReplaceOrInitializeMetaAttribute(string meta, string name, string value)
+        {
             if (meta == null)
-                SetMeta(id, new Serializer().Serialize(new Dictionary<string, string> { { name, value } }));
+                // Set new meta text with one attribute
+                return new Serializer().Serialize(new Dictionary<string, string> { { name, value } });
             else
             {
+                // Replace old meta text's corresponding attribute and set new meta text
                 var dict = new YamlQuery(meta).ToDictionary();
                 dict[name] = value;
-                SetMeta(id, new Serializer().Serialize(dict));
+                return new Serializer().Serialize(dict);
             }
         }
         public void SetMeta(int id, string meta)
@@ -1477,10 +1488,19 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 return new YamlQuery(meta).ToDictionary();
         }
         /// <summary>
-        /// Get system meta for item
+        /// Get remark meta for item
         /// </summary>
-        public RemarkMeta GetSystemMeta(int id)
-            => new Deserializer().Deserialize<RemarkMeta>(Connection.ExecuteQuery("select Meta from File where ID=@id").Single<string>());
+        public RemarkMeta GetRemarkMeta(int id)
+            => ExtractRemarkMeta(Connection.ExecuteQuery("select Meta from File where ID=@id").Single<string>());
+        /// <summary>
+        /// Extract RemarkMeta from meta text
+        /// </summary>
+        public RemarkMeta ExtractRemarkMeta(string meta)
+            => !string.IsNullOrWhiteSpace(meta)
+            ? new DeserializerBuilder()
+                        .IgnoreUnmatchedProperties().Build()
+                        .Deserialize<RemarkMeta>(meta)
+            : null;
         /// <summary>
         /// Get raw list of all logs
         /// </summary>
@@ -1655,9 +1675,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
                 if (!string.IsNullOrEmpty(item.Meta))
                 {
-                    RemarkMeta meta = new DeserializerBuilder()
-                        .IgnoreUnmatchedProperties().Build()
-                        .Deserialize<RemarkMeta>(item.Meta);
+                    RemarkMeta meta = ExtractRemarkMeta(item.Meta);
                     if (!string.IsNullOrEmpty(meta.Remark))
                         Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
                 }

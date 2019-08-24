@@ -241,15 +241,16 @@
                                             <DockPanel DockPanel.Dock="Top">
                                                 <Label Content="Tags" Style="{StaticResource AttributeField}"/>
                                                 <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
-                                                <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                                                <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                             </DockPanel>
                                             <StackPanel DockPanel.Dock="Bottom">
-                                                <Button Content="Save Changes" Click="SaveItemChangesButton_Click" 
-                                                    ToolTip="Explicitly save changes; Usually changes are saved automatically only when text box lose focus."/>
+                                                <Button Content="Save Changes" Command="local:CustomCommands.Save"
+                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}" />
                                                 <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
                                                     DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
                                             </StackPanel>
-                                            <TextBox Text="{Binding ActiveItemMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
+                                            <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
                                         </DockPanel>
                                     </Border>
                                 </Grid>

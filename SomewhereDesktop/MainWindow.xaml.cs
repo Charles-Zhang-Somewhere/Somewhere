@@ -383,14 +383,14 @@ namespace SomewhereDesktop
                 NotifyPropertyChanged("ActiveItemEntryDate");
                 NotifyPropertyChanged("ActiveItemName");
                 NotifyPropertyChanged("ActiveItemTags");
-                NotifyPropertyChanged("ActiveItemMeta");
+                NotifyPropertyChanged("ActiveItemRemarkMeta");
                 UpdateItemPreview();
             }
         }
-        public string ActiveItemMeta
+        public string ActiveItemRemarkMeta
         {
-            get => ActiveItem?.Meta;
-            set { ActiveItem.Meta = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+            get => (ActiveItem != null && ActiveItem.Meta != null) ? Commands.ExtractRemarkMeta(ActiveItem.Meta).Remark : null;
+            set { ActiveItem.Meta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value); NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
         public string ActiveItemEntryDate
         {
@@ -581,7 +581,7 @@ namespace SomewhereDesktop
             InfoText = $"{AllItems.Count()} items discovered.";
         }
         private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
+            => e.CanExecute = ActiveItem != null || ActiveNote != null;
         private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             CommitActiveItemChange();
@@ -840,8 +840,6 @@ namespace SomewhereDesktop
                 e.Handled = true;
             }
         }
-        private void SaveItemChangesButton_Click(object sender, RoutedEventArgs e)
-            => CommitActiveItemChange();
         private void ItemsList_DoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ActiveItem != null)
@@ -926,6 +924,8 @@ namespace SomewhereDesktop
                     // Update log and info display
                     Commands.AddLog("Update Item", $"Item #{ActiveItem.ID} `{ActiveItem.Name}` is updated in SD (Somewhere Desktop).");
                     InfoText = $"Item `{ActiveItem.DisplayName.Limit(150)}` (#{ActiveItem.ID}) saved.";
+                    // Update meta
+                    Commands.SetMeta(ActiveItem.ID, ActiveItem.Meta);
                 }
                 catch (Exception e)
                 {
