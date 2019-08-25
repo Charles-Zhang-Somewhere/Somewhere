@@ -3,8 +3,6 @@
 This list is for myself.
 
 ```
-(Done) `Meta` command
-Remark property (remove Meta property) for Inventory panel
 im * flatten (for reference images)
 Move from SD by changing name (path) e.g. for files under a folder
 

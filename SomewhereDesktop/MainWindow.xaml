@@ -252,7 +252,10 @@
                                                 <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
                                                     DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
                                             </StackPanel>
-                                            <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
+                                            <DockPanel LastChildFill="True">
+                                                <Label Content="Remark" DockPanel.Dock="Top"/>
+                                                <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
+                                            </DockPanel>
                                         </DockPanel>
                                     </Border>
                                 </Grid>
