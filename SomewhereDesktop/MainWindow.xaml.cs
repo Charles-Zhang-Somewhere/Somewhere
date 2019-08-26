@@ -405,7 +405,7 @@ namespace SomewhereDesktop
         public string ActiveItemRemarkMeta
         {
             get => (ActiveItem != null && ActiveItem.Meta != null) ? Commands.ExtractRemarkMeta(ActiveItem.Meta).Remark : null;
-            set { ActiveItem.Meta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value); NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+            set { ActiveItem.Meta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value); NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
         }
         public string ActiveItemEntryDate
         {
@@ -418,12 +418,12 @@ namespace SomewhereDesktop
         public string ActiveItemName
         {
             get => ActiveItem?.Name;
-            set { ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
+            set { ActiveItem.Name = value; NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
         }
         public string ActiveItemTags
         {
             get => ActiveItem?.Tags;
-            set { ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
+            set { ActiveItem.Tags = value; NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
         }
         #endregion
 
@@ -473,17 +473,17 @@ namespace SomewhereDesktop
         public string ActiveNoteName
         {
             get => ActiveNote?.Name;
-            set { ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
+            set { ActiveNote.Name = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
         }
         public string ActiveNoteTags
         {
             get => ActiveNote?.Tags;
-            set { ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
+            set { ActiveNote.Tags = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
         }
         public string ActiveNoteContent
         {
             get => ActiveNote?.Content;
-            set { ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview(); }
+            set { ActiveNote.Content = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview(); }
         }
         public bool IsNoteFieldEditEnabled
             => ActiveNote != null;
@@ -544,8 +544,8 @@ namespace SomewhereDesktop
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // In case things are not saved, commit change for safety and avoid data loss
-            CommitActiveItemChange();
-            CommitActiveNoteChange();
+            TryCommitActiveItemChange();
+            TryCommitActiveNoteChange();
             this.Close();
         }
         private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -570,8 +570,8 @@ namespace SomewhereDesktop
         private void MaximizeWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
-            CommitActiveItemChange();
-            CommitActiveNoteChange();
+            TryCommitActiveItemChange();
+            TryCommitActiveNoteChange();
 
             if (this.WindowState == WindowState.Normal)
                 this.WindowState = WindowState.Maximized;
@@ -582,8 +582,8 @@ namespace SomewhereDesktop
         private void HideWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Safety
-            CommitActiveItemChange();
-            CommitActiveNoteChange();
+            TryCommitActiveItemChange();
+            TryCommitActiveNoteChange();
             this.WindowState = WindowState.Minimized;
         }
         private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -599,8 +599,8 @@ namespace SomewhereDesktop
             => e.CanExecute = ActiveItem != null || ActiveNote != null;
         private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            CommitActiveItemChange();
-            CommitActiveNoteChange();
+            TryCommitActiveItemChange();
+            TryCommitActiveNoteChange();
             InfoText = "Item saved.";
         }
         private void GotoActiveItemEditContentCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -616,6 +616,10 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Save old note by changing focus
+            NotenameTextBox.Focus();
+            NoteContentTextBox.Focus();
+            NotenameTextBox.Focus();
             // Add to database
             int id = Commands.AddFile(null, string.Empty);  // Give some default empty content so it's not considered a binary file
             // Add to view collection
@@ -914,16 +918,20 @@ namespace SomewhereDesktop
             => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            // Safety
+            TryCommitActiveItemChange();
+            TryCommitActiveNoteChange();
+
             // Dispose resources
-            Commands?.Dispose();
-            Popup?.Close();
-            LastWorker?.Dispose();
+            Commands?.Dispose(); Commands = null;
+            Popup?.Close(); Popup = null;
+            LastWorker?.Dispose(); LastWorker = null;
         }
         #endregion
 
         #region Searching Routines and Auxliary
         private int WorkerCount { get; } = 0;
-        private PopupSelectionWindow Popup { get; }
+        private PopupSelectionWindow Popup { get; set; }
         private BackgroundWorker LastWorker { get; set; }
         private ConcurrentBag<string> SearchKeywords { get; }
         /// <summary>
@@ -975,10 +983,11 @@ namespace SomewhereDesktop
         }
         private string this[string arg]
             => GetArgumentValue(arg);
-        private void CommitActiveItemChange()
+        private void TryCommitActiveItemChange()
         {
+            if (Commands == null) return;
             // Commit to database for active item
-            if(ActiveItem != null)
+            if (ActiveItem != null)
             {
                 try
                 {
@@ -998,8 +1007,9 @@ namespace SomewhereDesktop
                 }
             }
         }
-        private void CommitActiveNoteChange()
+        private void TryCommitActiveNoteChange()
         {
+            if (Commands == null) return;
             // Commit to database for active note item
             if (ActiveNote != null)
             {

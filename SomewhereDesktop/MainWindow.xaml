@@ -124,10 +124,10 @@
                     </DockPanel>
                     <!-- Tabs -->
                     <Grid>
-                        <!-- Items Tab -->
+                        <!-- Inventory Tab -->
                         <DockPanel x:Name="InventoryPanel" Visibility="Visible">
                             <!-- Items List Region -->
-                            <Border Style="{StaticResource Panel}" MaxWidth="800">
+                            <Border Style="{StaticResource Panel}" MaxWidth="700">
                                 <DockPanel LastChildFill="True">
                                     <!-- Name Serach -->
                                     <DockPanel DockPanel.Dock="Top" LastChildFill="True">
@@ -142,6 +142,7 @@
                                         <Button Content="Reverse" Click="ItemSortingReverseButton_Click" Width="100" DockPanel.Dock="Right"/>
                                         <ComboBox ItemsSource="{Binding ItemsSortingOptions}" SelectedItem="{Binding SelectedItemSorting}"/>
                                     </DockPanel>
+                                    <!-- Items list view -->
                                     <ListView ItemsSource="{Binding Items}" SelectionMode="Single"
                                               SelectedItem="{Binding ActiveItem}" MouseDoubleClick="ItemsList_DoubleClick">
                                         <ListView.ItemTemplate>
@@ -276,7 +277,7 @@
                                 </DockPanel>
                             </Border>
                             <!-- Notes List -->
-                            <Border Style="{StaticResource Panel}">
+                            <Border Style="{StaticResource Panel}"  MaxWidth="700">
                                 <DockPanel>
                                     <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"
                                             DataContext="{x:Static local:CustomCommands.Create}" ToolTip="{Binding Text}"/>
