@@ -175,7 +175,7 @@ namespace SomewhereDesktop
         /// </summary>
         private void RefreshItems(bool reversedOrder = false)
         {
-            if(reversedOrder)
+            if (reversedOrder)
             {
                 // By name
                 if (SelectedItemSorting == ItemsSortingOptions[0])
@@ -217,7 +217,7 @@ namespace SomewhereDesktop
                 ? new ObservableCollection<string>(AllTags.Except(TagFilters))
                 : new ObservableCollection<string>(AllTags);
             // Update filters
-            if(!searchTagsOnlyExcludeTagFilters)
+            if (!searchTagsOnlyExcludeTagFilters)
                 TagFilters = new ObservableCollection<string>();
         }
         /// <summary>
@@ -240,7 +240,7 @@ namespace SomewhereDesktop
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => GetItemExtensionType(i.Name) == _SelectedTypeFilter));
             // Filter by tags
-            if(TagFilters.Count != 0)            
+            if (TagFilters.Count != 0)
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
@@ -250,7 +250,7 @@ namespace SomewhereDesktop
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
-                = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility 
+                = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
                 = Visibility.Collapsed;
             // Return early in case of items refresh
             if (ActiveItem == null)
@@ -275,7 +275,7 @@ namespace SomewhereDesktop
             {
                 // Preview image
                 string extension = System.IO.Path.GetExtension(ActiveItem.Name).ToLower();
-                if (extension == ".png" || extension == ".img" || extension == ".jpg")
+                if (ImageFileExtensions.Contains(extension))
                 {
                     PreviewImageSource.Visibility = Visibility.Visible;
                     PreviewImage = Commands.GetPhysicalPath(ActiveItem.Name);
@@ -286,13 +286,14 @@ namespace SomewhereDesktop
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
                     PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
                 }
+                // Preview text
                 else if (extension == ".txt")
                 {
                     PreviewTextBox.Visibility = Visibility.Visible;
                     PreviewText = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
                 }
-                // Preview videos
-                else if (extension == ".avi")
+                // Preview videos and audios
+                else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
                 {
                     PreviewWindowsFormsHost.Visibility = Visibility.Visible;
                     VLCControl.Play(new Uri(Commands.GetPhysicalPath(ActiveItem.Name)));
@@ -304,6 +305,9 @@ namespace SomewhereDesktop
                 }
             }
         }
+        private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".bmp" };
+        private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm" };
+        private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv" };
         #endregion
 
         #region Public View Properties
