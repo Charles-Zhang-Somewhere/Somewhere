@@ -261,7 +261,7 @@ namespace Somewhere
         #endregion
 
         #region Commands (Public Interface as Library)
-        [Command("Add an item to home.")]
+        [Command("Add an item to home.", category: "File")]
         [CommandArgument("itemname", "name of item; use * to add all items in current directory; " +
             "if given path is outside Home directory - for files they will be copied, for folders they will be cut and paste inside Home")]
         [CommandArgument("tags", "tags for the item", optional: true)]
@@ -340,7 +340,7 @@ namespace Somewhere
                 return result;
             }
         }
-        [Command("Get or set configurations.")]
+        [Command("Get or set configurations.", category: "Misc.")]
         [CommandArgument("key", "name of the configuration; if not given then return all keys currently exist", optional: true)]
         [CommandArgument("value", "value of the configuration; if given then update key; if not given then return the value for the specified key", optional: true)]
         public IEnumerable<string> Cf(params string[] args)
@@ -376,7 +376,8 @@ namespace Somewhere
         }
         [Command("Create a virtual file (virtual text note).",
             "Virtual text notes may or may not have a name. " +
-            "If it doesn't have a name (i.e. empty), it's also called a \"knowledge\" item, as is used by Somewhere Knowledge subsystem.")]
+            "If it doesn't have a name (i.e. empty), it's also called a \"knowledge\" item, as is used by Somewhere Knowledge subsystem.",
+            category: "File")]
         [CommandArgument("notename", "name for the virtual file, must be unique among all managed files")]
         [CommandArgument("content", "initial content for the virtual file")]
         [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; tags are required", optional: false)]
@@ -398,7 +399,7 @@ namespace Somewhere
             string[] allTags = AddTagsToFile(id, tags);
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.")]
+        [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
         {
             throw new NotImplementedException();
@@ -406,7 +407,7 @@ namespace Somewhere
         /// <remarks>Due to it's particular function of pagination, this command function behaves slightly different from usual ones;
         /// Instead of returning lines of output for the caller to output, it manages output and keyboard input itself</remarks>
         [Command("Show a list of all files.",
-            "Use command line arguments for more advanced display setup.")]
+            "Use command line arguments for more advanced display setup.", category: "Display")]
         [CommandArgument("pageitemcount", "number of items to show each time", true)]
         [CommandArgument("datefilter", "a formatted string filtering items with a given entry date; valid formats: specific date string, recent (10 days)", true)]
         public IEnumerable<string> Files(params string[] args)
@@ -420,7 +421,8 @@ namespace Somewhere
             return new string[] { }; // Return nothing instead
         }
         [Command("Find with (or without) action.",
-            "Find with filename, tags and extra information, and optionally perform an action with find results.")]
+            "Find with filename, tags and extra information, and optionally perform an action with find results.",
+            category: "Display")]
         [CommandArgument("searchtype (either `name` or `tag`)", "indicates search type; more will be added")]
         [CommandArgument("searchstring", "for `name`, use part of file name to search; for `tag`, use comma delimited list of tags to search")]
         [CommandArgument("action (either `show` or `open`)", "optional action to perform on search results; default `show`; more will be added", optional: true)]
@@ -456,7 +458,7 @@ namespace Somewhere
                     throw new ArgumentException($"Unrecognized action: `{action}`");
             }
         }
-        [Command("Generate documentation of Somewhere program.", logged: false)]
+        [Command("Generate documentation of Somewhere program.", logged: false, category: "Misc.")]
         [CommandArgument("path", "path for the generated file.")]
         public IEnumerable<string> Doc(params string[] args)
         {
@@ -477,7 +479,7 @@ namespace Somewhere
             }
             return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
         }
-        [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false)]
+        [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false, category: "Misc.")]
         [CommandArgument("commandname", "name of command", optional: true)]
         public IEnumerable<string> Help(params string[] args)
         {
@@ -486,7 +488,14 @@ namespace Somewhere
             {
                 var list = CommandAttributes
                 .OrderBy(cm => cm.Key.Name) // Sort alphabetically
-                .Select(cm => $"\t{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}").ToList();
+                .GroupBy(cm => cm.Value.Category)   // Group by category
+                // .OrderBy(cmg => cmg.Key)    // Don't sort groups alphabetically so overall commands list follow some alphabetical order
+                .SelectMany(cmg => cmg.Select((cm, index) => 
+                    index == 0 
+                    // Add group label to first item
+                    ? $"{cmg.Key, -10}{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}"
+                    : $"{string.Empty, -10}{cm.Key.Name.ToLower()} - {(cm.Value as CommandAttribute).Description}"))
+                .ToList();
                 list.Insert(0, "Available Commands: ");
                 return list;
             }
@@ -499,7 +508,8 @@ namespace Somewhere
         }
         [Command("Import items, files, folders and notes.",
             "Formats: 1) CSV: title,text,created,tags, where tags is space seperated and for items containing spaces using [[]] to enclose them; " +
-            "2) Json: An array of {title,text,created,tags}, rules for tags same for csv.")]
+            "2) Json: An array of {title,text,created,tags}, rules for tags same for csv.",
+            category: "Mgmt.")]
         [CommandArgument("sourcepath", "path for the import source; " +
             "either a file or a folder; suffix indicates source, common ones include: folder, csv, txt, tw (TiddlyWiki Json) and md; " +
             "can be internal or external, can be already managed if it's internal; " +
@@ -573,7 +583,8 @@ namespace Somewhere
             return result;
         }
         [Command("Rename file.",
-            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.", 
+            category: "File")]
         [CommandArgument("filename", "name of file")]
         [CommandArgument("newfilename", "new name of file")]
         public IEnumerable<string> MV(params string[] args)
@@ -599,7 +610,7 @@ namespace Somewhere
             RenameFile(itemname, newFilename);
             return result;
         }
-        [Command("Read or set meta attribtues.")]
+        [Command("Read or set meta attribtues.", category: "Advanced")]
         [CommandArgument("itemname", "name of the item to read or set meta attribute")]
         [CommandArgument("metaname", "name of the meta parameter; " +
             "if not given then return all meta currently exist", optional: true)]
@@ -653,7 +664,8 @@ namespace Somewhere
         }
         [Command("Move Tags, renames specified tag.",
             "If source tag doesn't exist in database then will issue a warning instead of doing anything. " +
-            "If the target tag name already exist, then this action will merge the two tags.")]
+            "If the target tag name already exist, then this action will merge the two tags.",
+            category: "Tagging")]
         [CommandArgument("sourcetag", "old name for the tag")]
         [CommandArgument("targettag", "new name for the tag")]
         public IEnumerable<string> MVT(params string[] args)
@@ -755,7 +767,7 @@ namespace Somewhere
             return result;
         }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
-            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+            "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.", category: "File")]
         [CommandArgument("filename", "name of file")]
         [CommandArgument("-f", "force physical deletion instead of mark as \"_deleted\"", optional: true)]
         public IEnumerable<string> RM(params string[] args)
@@ -785,7 +797,8 @@ namespace Somewhere
             return result;
         }
         [Command("Removes a tag.", 
-            "This command deletes the tag from the database, there is no going back.")]
+            "This command deletes the tag from the database, there is no going back.",
+            category: "Taggging")]
         [CommandArgument("tags", "comma delimited list of tags in double quotes")]
         public IEnumerable<string> RMT(params string[] args)
         {
@@ -848,7 +861,8 @@ namespace Somewhere
         [Command("Tag a specified file.", 
             "Tags are case-insensitive and will be stored in lower case; Though allowed, it's recommended tags don't contain spaces. " +
             "Use underscore \"_\" to connect words. Spaces immediately before and after comma delimiters are trimmed. Commas are not allowed in tags, otherwise any character is allowed. " +
-            "If specified file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
+            "If specified file doesn't exist on disk or in database then will issue a warning instead of doing anything.",
+            category: "Tagging")]
         [CommandArgument("filename", "name of file")]
         [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; double quotes will be replaced by underscore if entered.")]
         public IEnumerable<string> Tag(params string[] args)
@@ -864,7 +878,7 @@ namespace Somewhere
         }
         [Command("Show all tags currently exist.",
             "The displayed result will be a plain alphanumerically ordered list of tag names, " +
-            "along with ID and tag usage count.")]
+            "along with ID and tag usage count.", category: "Display")]
         public IEnumerable<string> Tags(params string[] args)
         {
             ValidateArgs(args);
@@ -879,7 +893,7 @@ namespace Somewhere
             result.Add($"Total: {TagCount}");
             return result;
         }
-        [Command("Run desktop version of Somewhere.")]
+        [Command("Run desktop version of Somewhere.", category: "Misc.")]
         public IEnumerable<string> UI(params string[] args)
         {
             using (System.Diagnostics.Process pProcess = new System.Diagnostics.Process())
@@ -896,7 +910,7 @@ namespace Somewhere
             }
             return null;
         }
-        [Command("Untag a file.")]
+        [Command("Untag a file.", category: "Tagging")]
         [CommandArgument("filename", "name of file")]
         [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; " +
             "if the file doesn't have a specified tag then the tag is not effected")]
@@ -911,7 +925,7 @@ namespace Somewhere
             string[] allTags = RemoveTags(filename, tags);
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Update or replace tags for a file completely.")]
+        [Command("Update or replace tags for a file completely.", category: "Tagging")]
         [CommandArgument("filename", "name of file")]
         [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed")]
         public IEnumerable<string> Update(params string[] args)
@@ -1703,8 +1717,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         private IEnumerable<string> GetCommandHelp(string commandName)
         {
             List<string> commandHelp = new List<string>();
-            var command = CommandNames[commandName];
-            var commandAttribute = CommandAttributes[command];
+            MethodInfo command = CommandNames[commandName];
+            CommandAttribute commandAttribute = CommandAttributes[command];
             commandHelp.Add($"{commandName} - {commandAttribute.Description}");
             if(commandAttribute.Documentation != null)
                 commandHelp.Add($"\t{commandAttribute.Documentation}");
