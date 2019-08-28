@@ -211,7 +211,7 @@ namespace SomewhereDesktop
         private void RefreshTags(bool searchTagsOnlyExcludeTagFilters = false)
         {
             // Update all tags
-            AllTags = Items.SelectMany(t => t.TagsList).Distinct().ToList();
+            AllTags = Items.SelectMany(t => t.TagsList).Distinct().OrderBy(t => t).ToList();
             // Update search tags
             SearchTags = searchTagsOnlyExcludeTagFilters
                 ? new ObservableCollection<string>(AllTags.Except(TagFilters))
