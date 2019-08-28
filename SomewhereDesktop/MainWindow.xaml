@@ -131,10 +131,10 @@
                                 <DockPanel LastChildFill="True">
                                     <!-- Name Serach -->
                                     <DockPanel DockPanel.Dock="Top" LastChildFill="True">
-                                        <Label Content="Search Name"/>
-                                        <TextBox x:Name="SearchNameKeywordTextBox" Text="{Binding SearchNameKeyword, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <Label Content="Type Filter"/>
-                                        <ComboBox ItemsSource="{Binding TypeFilters}" SelectedItem="{Binding SelectedTypeFilter}"/>
+                                        <Label Content="Search Name" DockPanel.Dock="Left"/>
+                                        <ComboBox ItemsSource="{Binding TypeFilters}" SelectedItem="{Binding SelectedTypeFilter}" DockPanel.Dock="Right"/>
+                                        <Label Content="Type Filter" DockPanel.Dock="Right"/>
+                                        <TextBox x:Name="SearchNameKeywordTextBox" Text="{Binding SearchNameKeyword, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Left"/>
                                     </DockPanel>
                                     <!-- Sortings -->
                                     <DockPanel DockPanel.Dock="Bottom" LastChildFill="True">
