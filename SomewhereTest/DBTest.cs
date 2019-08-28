@@ -461,7 +461,33 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.RM("SomewhereDoc.txt", "-f");
             Assert.True(!Helper.TestFileExists("SomewhereDoc.txt"));
         }
-
+        [Fact]
+        public void PurgeShouldPurge()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            // Create repository and create test files
+            Commands.New();
+            Commands.Doc("Test1.txt");
+            Commands.Doc("Test2.txt");
+            Commands.Add("Test1.txt");
+            Commands.Add("Test2.txt");
+            // Validate added files
+            Assert.True(Helper.TestFileExists("Test1.txt"));
+            Assert.True(Helper.TestFileExists("Test2.txt"));
+            Assert.Equal(2, Commands.FileCount);
+            // Test simple deleting
+            Commands.RM("Test1.txt", "-f"); // Force delete
+            Commands.RM("Test2.txt");
+            Assert.False(Helper.TestFileExists("Test1.txt"));
+            Assert.False(Helper.TestFileExists("Test1.txt_deleted"));
+            Assert.False(Helper.TestFileExists("Test2.txt"));
+            Assert.True(Helper.TestFileExists("Test2.txt_deleted"));
+            Assert.Equal(0, Commands.FileCount);
+            // Test purging
+            Commands.Purge("-f");
+            Assert.False(Helper.TestFileExists("Test2.txt_deleted"));
+        }
         [Fact]
         public void RenameFileShouldUpdatePhysicalFile()
         {

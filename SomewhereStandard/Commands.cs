@@ -15,7 +15,7 @@ using YamlDotNet.Serialization;
 
 namespace Somewhere
 {
-    public class Commands: IDisposable
+    public class Commands : IDisposable
     {
         #region Constructor and Disposing
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
@@ -24,7 +24,7 @@ namespace Somewhere
             // Initialize home directory
             HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar;
             // Create and register file system watcher
-            if(initializeFSWatcher)
+            if (initializeFSWatcher)
                 _FSWatcher = CreateWatcher(HomeDirectory);
         }
         private FileSystemWatcher CreateWatcher(string fullFolderPath)
@@ -100,7 +100,7 @@ namespace Somewhere
         /// Returns a list of all Command methods
         /// </summary>
         public Dictionary<MethodInfo, CommandAttribute> CommandAttributes
-            => _CommandMethods == null 
+            => _CommandMethods == null
             ? (_CommandMethods = typeof(Commands).GetMethods(BindingFlags.Instance | BindingFlags.Public).ToDictionary(m => m,
                 m => m.GetCustomAttributes(typeof(CommandAttribute), false).SingleOrDefault() as CommandAttribute)
                 .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
@@ -269,7 +269,7 @@ namespace Somewhere
         {
             ValidateArgs(args, true);
             // Add single item
-            if(args[0] != "*")
+            if (args[0] != "*")
             {
                 string itemname = null;
                 // Handle foreign (absolute) path (i.e. outside home)
@@ -314,7 +314,7 @@ namespace Somewhere
                 {
                     AddFile(itemname);
                     if (args.Length == 2) AddTagsToFile(itemname, args[1].SplitTags());
-                    return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files": "file")}." };
+                    return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
                 }
             }
             // Add all files (don't add directories by default)
@@ -336,7 +336,7 @@ namespace Somewhere
                     if (args.Length == 2) AddTagsToFile(filename, tags);
                     result.Add($"[Added] `{filename}`");
                 }
-                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files": "file")}.");
+                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files" : "file")}.");
                 return result;
             }
         }
@@ -358,14 +358,14 @@ namespace Somewhere
                 rows.Add($"Total: {configurations.Count} {(configurations.Count > 1 ? "configurations" : "configuration")}.");
             }
             // Return value for one configuration
-            else if(args.Length == 1)
+            else if (args.Length == 1)
             {
                 string key = args[0];
                 rows.Add($"{key}:");
                 rows.Add(GetConfiguration(key));
             }
             // Set value for configuration
-            else if(args.Length == 2)
+            else if (args.Length == 2)
             {
                 string key = args[0];
                 string value = args[1];
@@ -374,7 +374,7 @@ namespace Somewhere
             }
             return rows;
         }
-        [Command("Create a virtual file (virtual text note).", 
+        [Command("Create a virtual file (virtual text note).",
             "Virtual text notes may or may not have a name. " +
             "If it doesn't have a name (i.e. empty), it's also called a \"knowledge\" item, as is used by Somewhere Knowledge subsystem.")]
         [CommandArgument("notename", "name for the virtual file, must be unique among all managed files")]
@@ -396,7 +396,7 @@ namespace Somewhere
             // Get tags
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
-            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
+            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.")]
         public IEnumerable<string> Export(params string[] args)
@@ -615,23 +615,23 @@ namespace Somewhere
             int? id = GetFileID(itemname);
             if (id == null)
             {
-                if(FileExistsAtHomeFolder(itemname))
+                if (FileExistsAtHomeFolder(itemname))
                     throw new ArgumentException($"Specified item `{itemname}` does not exist, i.e. it is not managed.");
                 else
                     throw new ArgumentException($"Specified item `{itemname}` is not managed and it doesn't exist in Home folder.");
             }
             // Show all meta
-            if(args.Length == 1)
+            if (args.Length == 1)
             {
                 rows.Add(itemname);
                 rows.Add(new string('-', Math.Min(itemname.Length, Console.WindowWidth)));
                 var metas = GetMetas(id.Value);
                 foreach (KeyValuePair<string, string> item in metas)
-                    rows.Add($"{item.Key.Limit(20), -20}: {item.Value.Limit(60), -60}");
+                    rows.Add($"{item.Key.Limit(20),-20}: {item.Value.Limit(60),-60}");
                 rows.Add($"Total: {metas.Count}");
             }
             // Show specific meta value
-            else if(args.Length == 2)
+            else if (args.Length == 2)
             {
                 string meta = args[1];
                 string value = GetMeta(id.Value, meta);
@@ -641,7 +641,7 @@ namespace Somewhere
                 rows.Add(value);
             }
             // Set meta value
-            else if(args.Length == 3)
+            else if (args.Length == 3)
             {
                 string meta = args[1];
                 string value = args[2];
@@ -664,7 +664,7 @@ namespace Somewhere
             if (!IsTagInDatabase(sourceTag))
                 throw new InvalidOperationException($"Specified tag `{sourceTag}` does not exist in database.");
             // Update in DB
-            if(!IsTagInDatabase(targetTag)) // If target doesn't exist yet just rename source
+            if (!IsTagInDatabase(targetTag)) // If target doesn't exist yet just rename source
             {
                 RenameTag(sourceTag, targetTag);
                 return new string[] { $"Tag `{sourceTag}` is renamed to `{targetTag}`." };
@@ -672,9 +672,9 @@ namespace Somewhere
             else
             {
                 // Get files with old tag
-                List<FileRow> sourceFiles = FilterByTags(new string[] { sourceTag});
+                List<FileRow> sourceFiles = FilterByTags(new string[] { sourceTag });
                 List<TagRow> tagIDs = GetTagRows(new string[] { sourceTag, targetTag });
-                int sourceTagID = tagIDs.Where(t => t.Name == sourceTag).Single().ID, 
+                int sourceTagID = tagIDs.Where(t => t.Name == sourceTag).Single().ID,
                     targetTagID = tagIDs.Where(t => t.Name == targetTag).Single().ID;
                 // Delete reference to old tag
                 DeleteFileTags(sourceFiles.Select(f => f.ID), sourceTagID);
@@ -698,6 +698,62 @@ namespace Somewhere
             }
             catch (InvalidOperationException) { throw; }
         }
+        [Command("Permanantly delete all the files that are marked as \"_deleted\"")]
+        [CommandArgument("-f", "force purging and purge without warning", optional: true)]
+        public IEnumerable<string> Purge(params string[] args)
+        {
+            // A routine to search in a given folder and its subfolders for deleted files
+            void SearchDirectoryForDeleted(string dir, List<string> resultList)
+            {
+                // Enumerate sub directories
+                foreach (string d in Directory.GetDirectories(dir).OrderBy(d => d))
+                    SearchDirectoryForDeleted(d, resultList);
+                // Enumerate files
+                foreach (string f in Directory.GetFiles(dir).OrderBy(f => f))
+                {
+                    if (Path.GetFileName(f).EndsWith("_deleted"))
+                        resultList.Add(f);
+                }
+            }
+
+            ValidateArgs(args);
+            // Get all files in all directories that are marked as deleted
+            List<string> deletedFiles = new List<string>();
+            try { SearchDirectoryForDeleted(HomeDirectory, deletedFiles); }
+            catch (Exception e) { return new string[] { e.Message }; }
+            // Exit if nothing to purge
+            if (deletedFiles.Count == 0)
+                return new string[] { "Nothing to purge!" };
+
+            List<string> result = new List<string>();
+            // Show warning
+            if ( // If no argument is given
+                args.Length == 0 
+                // If argument given is invalid
+                || args[0] != "-f")
+            {
+                // Warn about invalid argument
+                if (args.Length == 1 && args[0] != "-f")
+                    Console.WriteLine($"Argument {args[0]} is invalid; To force deleting files without warning, use `-f`.");
+                // Print files interactively and ask for confirmation
+                Console.WriteLine($"Following {(deletedFiles.Count > 1 ? $"files (Count: {deletedFiles.Count})" : "file")} will be deleted permanantly: ");
+                deletedFiles.ForEach(f => Console.WriteLine($"\t{f}"));
+                Console.Write($"Are you very very sure? (Y/N) - answer is case sensitive: ");
+                if (Console.ReadLine() != "Y")
+                    return new string[] { "Operation is cancelled." };
+            }
+            // Log the operation but don't ask for warning
+            else
+            {
+                result.Add($"Following {(deletedFiles.Count > 1 ? "files" : "file")} will be deleted permanantly: ");
+                deletedFiles.ForEach(f => result.Add($"\t{f}"));
+            }
+            // Delete files completely
+            deletedFiles.ForEach(f => File.Delete(f));
+            // Generate reports
+            result.Add($"{deletedFiles.Count} {(deletedFiles.Count > 1 ? "files are" : "file is")} permanantly deleted.");
+            return result;
+        }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.")]
         [CommandArgument("filename", "name of file")]
@@ -709,9 +765,9 @@ namespace Somewhere
             // Validate file existence (in database)
             int? id = GetFileID(itemname);
             if (id == null)
-                throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
-            if (!IsFileInDatabase(itemname))
                 throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
+            if (!FileExistsAtHomeFolder(GetPhysicalName(itemname)))
+                throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
             // Delete from filesystem
             string[] result = null;
             if (args.Length == 2 && args[1] == "-f")
