@@ -55,6 +55,17 @@ namespace SomewhereDesktop
         }
         private void OpenRepository(string homeFolderpath)
         {
+            void ShowRecentPathsDialog(string[] recent)
+            {
+                var dialog = new DialogWindow(null, "Recent Homes", 
+                    "Double click on a path to open Home repository.", recent);
+                dialog.ShowDialog();
+                if (dialog.Selection == null)
+                    this.Close();
+                else
+                    OpenRepository(dialog.Selection);
+            }
+
             if (Commands != null)
                 Commands.Dispose();
 
@@ -63,12 +74,20 @@ namespace SomewhereDesktop
             // Validate home existence, if not, give options to open another one or create a new one
             if (!Commands.IsHomePresent)
             {
-                var options = new string[] {
+                var options = new List<string> {
                     "1. Create Home Repository Here",
                     "2. Create Home Repository at A Different Place",
                     "3. Open a Different Home Folder",
-                    "4. Close and Exit" };
-                var dialog = new DialogWindow(null/*This window may not have been initialized yet*/, "Home Action", $"Home repository doesn't exist at path `{homeFolderpath}`, what would you like to do?", options);
+                    "4. Close and Exit"};
+                // Get recent paths if available
+                var recentPaths = GetRecentHomePaths();
+                if (recentPaths.Length != 0)
+                    options.Add("5. Open Recent Home Paths");
+                // Show dialog
+                var dialog = new DialogWindow(null/*This window may not have been initialized yet*/,
+                    "Home Action",
+                    $"Home repository doesn't exist at path `{homeFolderpath}`, what would you like to do?",
+                    options);
                 dialog.ShowDialog();
                 // Create home at current path
                 if (dialog.Selection == options[0])
@@ -79,10 +98,25 @@ namespace SomewhereDesktop
                 // Show open home dialog
                 else if (dialog.Selection == options[2])
                     OpenHomeCommand_Executed(null, null);
-                else
+                else if (dialog.Selection == options[3]
+                    || dialog.Selection == null)
                     this.Close();
+                else if (options.Count == 5 && dialog.Selection == options[4])
+                {
+                    if (recentPaths.Length == 0)
+                        // Just show open home again
+                        OpenHomeCommand_Executed(null, null);
+                    else
+                        // Show recent paths
+                        ShowRecentPathsDialog(recentPaths);
+                }
+                else
+                    throw new ArgumentException($"Unexpected selection `{dialog.Selection}`.");
                 return;
             }
+            // Record path to recent
+            else
+                SaveToRecentHomePaths(Commands.HomeDirectory);
             // Initialize items
             RefreshAllItems();
             RefreshItems();
@@ -1031,6 +1065,40 @@ namespace SomewhereDesktop
                 //{
                 //    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
                 //}
+            }
+        }
+        /// <summary>
+        /// Path to a text file containing recent opened home paths
+        /// </summary>
+        private static readonly string RecentFile = 
+            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recent.txt");
+        /// <summary>
+        /// Get an array of recently opened home paths
+        /// </summary>
+        private string[] GetRecentHomePaths()
+        {
+            if (File.Exists(RecentFile))
+                // Each line represents one location
+                return File.ReadAllText(RecentFile).Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            else return new string[] { };
+        }
+        /// <summary>
+        /// Save to recently opened home paths
+        /// </summary>
+        private void SaveToRecentHomePaths(string newPath)
+        {
+            // First read existing
+            List<string> existingPaths = GetRecentHomePaths().ToList();
+            // Then add to it (most recent inserted as first)
+            existingPaths.Insert(0, newPath);
+            // Then take distinct
+            IEnumerable<string> distinctPaths = existingPaths.Distinct();
+            // Write
+            using (StreamWriter writer = new StreamWriter(RecentFile))
+            {
+                foreach (var line in distinctPaths)
+                    writer.WriteLine(line);
+                writer.Flush();
             }
         }
         #endregion
