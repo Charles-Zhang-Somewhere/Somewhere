@@ -994,7 +994,10 @@ namespace SomewhereDesktop
         }
         private void ItemsList_DoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ActiveItem != null)
+            if ( // Make sure we have some selection
+                ActiveItem != null 
+                // Make sure the selection is not an "Knowledge" item
+                && ActiveItem.Name != null)
                 System.Diagnostics.Process.Start(Commands.GetPhysicalPath(ActiveItem.Name));
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
