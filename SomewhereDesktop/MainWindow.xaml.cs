@@ -57,11 +57,18 @@ namespace SomewhereDesktop
         {
             void ShowRecentPathsDialog(string[] recent)
             {
-                var dialog = new DialogWindow(null, "Recent Homes", 
-                    "Double click on a path to open Home repository.", recent);
+                var options = recent.ToList();
+                options.Add("Clear History");
+                var dialog = new DialogWindow(null, "Recent homes", 
+                    "Double click on a path to open Home repository.", options);
                 dialog.ShowDialog();
                 if (dialog.Selection == null)
                     this.Close();
+                else if(dialog.Selection == "Clear History")
+                {
+                    CleanRecentHomePaths();
+                    OpenHomeCommand_Executed(null, null);
+                }
                 else
                     OpenRepository(dialog.Selection);
             }
@@ -676,6 +683,9 @@ namespace SomewhereDesktop
         }
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
+        /// <summary>
+        /// Shows "Select home directory" dialog
+        /// </summary>
         private void OpenHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             var dialog = GetHomeDirectoryFileDialog("Select home directory", false, true);
@@ -1100,6 +1110,14 @@ namespace SomewhereDesktop
                     writer.WriteLine(line);
                 writer.Flush();
             }
+        }
+        /// <summary>
+        /// Clean recent home paths records
+        /// </summary>
+        private void CleanRecentHomePaths()
+        {
+            if (File.Exists(RecentFile))
+                File.Delete(RecentFile);
         }
         #endregion
 

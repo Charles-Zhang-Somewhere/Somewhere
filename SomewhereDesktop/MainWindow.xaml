@@ -125,9 +125,14 @@
                     <!-- Tabs -->
                     <Grid>
                         <!-- Inventory Tab -->
-                        <DockPanel x:Name="InventoryPanel" Visibility="Visible">
+                        <Grid x:Name="InventoryPanel" Visibility="Visible">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="4*"/>
+                                <ColumnDefinition Width="5"/>
+                                <ColumnDefinition Width="6*"/>
+                            </Grid.ColumnDefinitions>
                             <!-- Items List Region -->
-                            <Border Style="{StaticResource Panel}" MaxWidth="700">
+                            <Border Style="{StaticResource Panel}" Grid.Column="0">
                                 <DockPanel LastChildFill="True">
                                     <!-- Name Serach -->
                                     <DockPanel DockPanel.Dock="Top" LastChildFill="True">
@@ -155,113 +160,118 @@
                                     </ListView>
                                 </DockPanel>
                             </Border>
-                            <!-- Tag Search Region -->
-                            <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Label Content="Tag Filters"/>
-                                        <ListView ItemsSource="{Binding TagFilters}" Style="{StaticResource WrapList}">
-                                            <ListView.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Style="{StaticResource TagFilterButton}">
-                                                        <TextBlock Text="{Binding}" Style="{StaticResource TagFilter}" MouseDown="RemoveTagFilter_MouseDown"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ListView.ItemTemplate>
-                                        </ListView>
-                                    </StackPanel>
-                                    <DockPanel LastChildFill="True">
-                                        <Label Content="Search Tag"/>
-                                        <TextBox Text="{Binding SearchTagKeyword, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <Label Content="Tags" Style="{StaticResource Header}"/>
-                                        <ListView ItemsSource="{Binding SearchTags}" Style="{StaticResource WrapList}">
-                                            <ListView.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Style="{StaticResource TagButton}">
-                                                        <!-- Use TextBlock to avoid underscore be escaped as access key -->
-                                                        <TextBlock Text="{Binding}" Style="{StaticResource Tag}" MouseDown="AddTagFilter_MouseDown"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ListView.ItemTemplate>
-                                        </ListView>
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
-                            <DockPanel LastChildFill="True">
-                                <!-- Actions Region -->
-                                <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
-                                    <DockPanel LastChildFill="True">
-                                        <Button Content="Advanced" DockPanel.Dock="Right" Foreground="{StaticResource Highlight3}"/>
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="Add" Command="local:CustomCommands.Add" 
-                                                        DataContext="{x:Static local:CustomCommands.Add}" ToolTip="{Binding Text}"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="Open" Command="local:CustomCommands.Open"
-                                                        DataContext="{x:Static local:CustomCommands.Open}" ToolTip="{Binding Text}"/>
-                                                <Button Content="New" Command="local:CustomCommands.New"
-                                                        DataContext="{x:Static local:CustomCommands.New}" ToolTip="{Binding Text}"/>
-                                            </StackPanel>
+                            <!-- Grid Splitter -->
+                            <GridSplitter Grid.Column="1"/>
+                            <!-- Actions Regions -->
+                            <DockPanel Grid.Column="2">
+                                <!-- Tag Search Region -->
+                                <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Label Content="Tag Filters"/>
+                                            <ListView ItemsSource="{Binding TagFilters}" Style="{StaticResource WrapList}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Style="{StaticResource TagFilterButton}">
+                                                            <TextBlock Text="{Binding}" Style="{StaticResource TagFilter}" MouseDown="RemoveTagFilter_MouseDown"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
                                         </StackPanel>
-                                    </DockPanel>
-                                </Border>
-                                <!-- Item Preview Region -->
-                                <Grid DockPanel.Dock="Top">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="7*"/>
-                                        <ColumnDefinition Width="5"/>
-                                        <ColumnDefinition Width="3*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Style="{StaticResource Panel}" Grid.Column="0">
-                                        <!-- Preview Area -->
-                                        <Grid>
-                                            <TextBox x:Name="PreviewTextBox" Text="{Binding PreviewText}" Visibility="Collapsed"
-                                                     IsReadOnlyCaretVisible="True" TextWrapping="WrapWithOverflow"/>
-                                            <Image x:Name="PreviewImageSource" Source="{Binding PreviewImage}" Visibility="Collapsed"/>
-                                            <TextBlock x:Name="PreviewTextBlock" Text="{Binding PreviewStatus}" Visibility="Collapsed"/>
-                                            <md:MarkdownViewer x:Name="PreviewMarkdownViewer" Markdown="{Binding PreviewMarkdown}" Visibility="Collapsed"/>
-                                            <WindowsFormsHost x:Name="PreviewWindowsFormsHost" Visibility="Collapsed"/>
-                                        </Grid>
-                                    </Border>
-                                    <GridSplitter Grid.Column="1"/>
-                                    <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                        <DockPanel LastChildFill="True">
+                                            <Label Content="Search Tag"/>
+                                            <TextBox Text="{Binding SearchTagKeyword, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
                                         <DockPanel>
-                                            <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="ID" Style="{StaticResource AttributeField}"/>
-                                                <Label Content="{Binding ActiveItemID}"/>
-                                            </DockPanel>
-                                            <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="Entry Date" Style="{StaticResource AttributeField}"/>
-                                                <Label Content="{Binding ActiveItemEntryDate}"/>
-                                            </DockPanel>
-                                            <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="Name" Style="{StaticResource AttributeField}"/>
-                                                <TextBox Text="{Binding ActiveItemName, UpdateSourceTrigger=LostFocus}"/>
-                                            </DockPanel>
-                                            <DockPanel DockPanel.Dock="Top">
-                                                <Label Content="Tags" Style="{StaticResource AttributeField}"/>
-                                                <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
-                                                <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
-                                            </DockPanel>
-                                            <StackPanel DockPanel.Dock="Bottom">
-                                                <Button Content="Save Changes" Command="local:CustomCommands.Save"
-                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}" />
-                                                <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
-                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
+                                            <Label Content="Tags" Style="{StaticResource Header}"/>
+                                            <ListView ItemsSource="{Binding SearchTags}" Style="{StaticResource WrapList}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Style="{StaticResource TagButton}">
+                                                            <!-- Use TextBlock to avoid underscore be escaped as access key -->
+                                                            <TextBlock Text="{Binding}" Style="{StaticResource Tag}" MouseDown="AddTagFilter_MouseDown"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <DockPanel LastChildFill="True">
+                                    <!-- Actions Region -->
+                                    <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
+                                        <DockPanel LastChildFill="True">
+                                            <Button Content="Advanced" DockPanel.Dock="Right" Foreground="{StaticResource Highlight3}"/>
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="Add" Command="local:CustomCommands.Add" 
+                                                        DataContext="{x:Static local:CustomCommands.Add}" ToolTip="{Binding Text}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="Open" Command="local:CustomCommands.Open"
+                                                        DataContext="{x:Static local:CustomCommands.Open}" ToolTip="{Binding Text}"/>
+                                                    <Button Content="New" Command="local:CustomCommands.New"
+                                                        DataContext="{x:Static local:CustomCommands.New}" ToolTip="{Binding Text}"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                            <DockPanel LastChildFill="True">
-                                                <Label Content="Remark" DockPanel.Dock="Top"/>
-                                                <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
-                                            </DockPanel>
                                         </DockPanel>
                                     </Border>
-                                </Grid>
+                                    <!-- Item Preview Region -->
+                                    <Grid DockPanel.Dock="Top">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="7*"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition Width="3*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource Panel}" Grid.Column="0">
+                                            <!-- Preview Area -->
+                                            <Grid>
+                                                <TextBox x:Name="PreviewTextBox" Text="{Binding PreviewText}" Visibility="Collapsed"
+                                                     IsReadOnlyCaretVisible="True" TextWrapping="WrapWithOverflow"/>
+                                                <Image x:Name="PreviewImageSource" Source="{Binding PreviewImage}" Visibility="Collapsed"/>
+                                                <TextBlock x:Name="PreviewTextBlock" Text="{Binding PreviewStatus}" Visibility="Collapsed"/>
+                                                <md:MarkdownViewer x:Name="PreviewMarkdownViewer" Markdown="{Binding PreviewMarkdown}" Visibility="Collapsed"/>
+                                                <WindowsFormsHost x:Name="PreviewWindowsFormsHost" Visibility="Collapsed"/>
+                                            </Grid>
+                                        </Border>
+                                        <GridSplitter Grid.Column="1"/>
+                                        <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                            <DockPanel>
+                                                <DockPanel DockPanel.Dock="Top">
+                                                    <Label Content="ID" Style="{StaticResource AttributeField}"/>
+                                                    <Label Content="{Binding ActiveItemID}"/>
+                                                </DockPanel>
+                                                <DockPanel DockPanel.Dock="Top">
+                                                    <Label Content="Entry Date" Style="{StaticResource AttributeField}"/>
+                                                    <Label Content="{Binding ActiveItemEntryDate}"/>
+                                                </DockPanel>
+                                                <DockPanel DockPanel.Dock="Top">
+                                                    <Label Content="Name" Style="{StaticResource AttributeField}"/>
+                                                    <TextBox Text="{Binding ActiveItemName, UpdateSourceTrigger=LostFocus}"/>
+                                                </DockPanel>
+                                                <DockPanel DockPanel.Dock="Top">
+                                                    <Label Content="Tags" Style="{StaticResource AttributeField}"/>
+                                                    <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
+                                                    <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                                                </DockPanel>
+                                                <StackPanel DockPanel.Dock="Bottom">
+                                                    <Button Content="Save Changes" Command="local:CustomCommands.Save"
+                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}" />
+                                                    <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
+                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
+                                                </StackPanel>
+                                                <DockPanel LastChildFill="True">
+                                                    <Label Content="Remark" DockPanel.Dock="Top"/>
+                                                    <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
+                                                </DockPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </Grid>
+                                </DockPanel>
                             </DockPanel>
-                        </DockPanel>
+                        </Grid>
                         <!-- Notebook Tab -->
                         <DockPanel x:Name="NotebookPanel" Visibility="Collapsed">
                             <!-- Search Bar -->
@@ -276,53 +286,63 @@
                                     <TextBox Text="{Binding SearchNotebookKeyword, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Left"/>
                                 </DockPanel>
                             </Border>
-                            <!-- Notes List -->
-                            <Border Style="{StaticResource Panel}"  MaxWidth="700">
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"
+                            <!-- Actions Region -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="6*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Notes List -->
+                                <Border Style="{StaticResource Panel}" Grid.Column="0">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Bottom" Content="Create Note" Command="local:CustomCommands.Create"
                                             DataContext="{x:Static local:CustomCommands.Create}" ToolTip="{Binding Text}"/>
-                                    <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
+                                        <ListView ItemsSource="{Binding Notes}" SelectionMode="Single"
                                               SelectedItem="{Binding ActiveNote}">
-                                        <ListView.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Label Content="{Binding DisplayName}" Style="{StaticResource Header}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ListView.ItemTemplate>
-                                    </ListView>
-                                </DockPanel>
-                            </Border>
-                            <!-- Notes Details -->
-                            <Border Style="{StaticResource Panel}">
-                                <DockPanel>
-                                    <DockPanel DockPanel.Dock="Top">
-                                        <Label Content="Name" />
-                                        <TextBlock DockPanel.Dock="Bottom">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Label Content="{Binding DisplayName}" Style="{StaticResource Header}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+                                    </DockPanel>
+                                </Border>
+                                <!-- Grid Splitter -->
+                                <GridSplitter Grid.Column="1"/>
+                                <!-- Notes Details -->
+                                <Border Style="{StaticResource Panel}" Grid.Column="2">
+                                    <DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <Label Content="Name" />
+                                            <TextBlock DockPanel.Dock="Bottom">
                                     Enter the name of the note; Name can be anything that helps you remember.
                                     <LineBreak/>
                                     It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
-                                        </TextBlock>
-                                        <Grid>
-                                            <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                            </TextBlock>
+                                            <Grid>
+                                                <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                      Text="{Binding ActiveNoteName, UpdateSourceTrigger=LostFocus}"/>
-                                            <Label Content="{Binding ActiveNoteName, Converter={StaticResource NotenameToTipConverter}}" HorizontalAlignment="Right"/>
-                                        </Grid>
-                                    </DockPanel>
-                                    <DockPanel DockPanel.Dock="Top">
-                                        <Label Content="Tags"/>
-                                        <TextBlock DockPanel.Dock="Bottom">
+                                                <Label Content="{Binding ActiveNoteName, Converter={StaticResource NotenameToTipConverter}}" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </DockPanel>
+                                        <DockPanel DockPanel.Dock="Top">
+                                            <Label Content="Tags"/>
+                                            <TextBlock DockPanel.Dock="Bottom">
                                     Enter tags for the note, seperated by comma.
                                     <LineBreak/>
                                     Tags are used to organize notes and help quickly search for note.
-                                        </TextBlock>
-                                        <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                            </TextBlock>
+                                            <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
-                                    </DockPanel>
-                                    <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
+                                        </DockPanel>
+                                        <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
                                              Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}" PreviewTextInput="NoteContentTextBox_PreviewTextInput"/>
-                                </DockPanel>
-                            </Border>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
                         </DockPanel>
                         <!-- Knowledge Tab -->
                         <DockPanel x:Name="KnowledgePanel" Visibility="Collapsed">

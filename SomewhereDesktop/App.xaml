@@ -312,7 +312,6 @@
             <Setter Property="ItemContainerStyle" Value="{StaticResource WrapListItem}"/>
         </Style>
         <Style TargetType="TextBox">
-            <Setter Property="MinWidth" Value="150"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="Margin" Value="4"/>

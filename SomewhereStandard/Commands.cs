@@ -22,7 +22,10 @@ namespace Somewhere
         public Commands(string initialWorkingDirectory, bool initializeFSWatcher = false)
         {
             // Initialize home directory
-            HomeDirectory = Path.GetFullPath(initialWorkingDirectory) + Path.DirectorySeparatorChar;
+            string fullPath = Path.GetFullPath(initialWorkingDirectory);
+            HomeDirectory = fullPath.Last() == Path.DirectorySeparatorChar
+                ? fullPath
+                : fullPath + Path.DirectorySeparatorChar;
             // Create and register file system watcher
             if (initializeFSWatcher)
                 _FSWatcher = CreateWatcher(HomeDirectory);
