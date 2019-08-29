@@ -260,6 +260,7 @@ namespace Somewhere
         #endregion
 
         #region Constants
+        public const string ReleaseVersion = "V0.0.5";
         public const string DBName = "Home.somewhere";
         #endregion
 
@@ -1647,7 +1648,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     )",
                     // Assign initial db configuration/status values
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('Version', 'V0.0.5', 'string', 'String code of software version.')",
+                        values ('InitialVersion', '" + ReleaseVersion + "', 'string', 'String code of software version that created this repository.')",
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
                         values ('ThemeColors', '', 'string', 'Theme colors in YAML format.')"
                 };

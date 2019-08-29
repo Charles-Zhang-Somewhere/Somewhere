@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,6 +20,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Somewhere;
 using StringHelper;
@@ -52,6 +54,8 @@ namespace SomewhereDesktop
 
             // Initialize Video Preview Control
             InitializeVLCControl();
+            // Check new versions in background
+            BackgroundCheckNewVersion();
         }
         private void OpenRepository(string homeFolderpath)
         {
@@ -134,7 +138,6 @@ namespace SomewhereDesktop
             // Update info
             InfoText = $"Home Directory: {Commands.HomeDirectory}; {Items.Count} items.";
         }
-
         private void InitializeUI()
         {
             if (Commands.IsFileInDatabase("_HomeBackgroundImage.png"))
@@ -144,7 +147,6 @@ namespace SomewhereDesktop
             else
                 BackgroundImage = null;
         }
-
         private void InitializeVLCControl()
         {
             VLCControl = new VlcControl();
@@ -158,6 +160,39 @@ namespace SomewhereDesktop
             VLCControl.EndInit();
         }
         private VlcControl VLCControl { get; set; }
+        private void BackgroundCheckNewVersion()
+        {
+            BackgroundWorker worker = null;
+
+            void ShowLatestVersionNotificationDialog(string newVersion, string currentVersion, string downloadAddress)
+            {
+                var dialog = new DialogWindow(null, "New version available!", 
+                    $"Your copy of Somewhere (**{currentVersion}**) is outdated! " +
+                    $"A new version (**{newVersion}**) is available at address [{downloadAddress}]({downloadAddress})");
+                dialog.Show();
+            }
+            async void CheckNewVersion(object sender, DoWorkEventArgs e)
+            {
+                string latestReleaseUrl = await GetRedirection("https://github.com/szinubuntu/Somewhere/releases/latest");
+                // Null check for exception
+                if (latestReleaseUrl == null) return;
+                // E.g. Format like https://github.com/szinubuntu/Somewhere/releases/tag/Va.b.c
+                // Just return the "Va.b.c" part
+                var newVersion = latestReleaseUrl.Substring(latestReleaseUrl.LastIndexOf('/') + 1);
+                var currentVersion = Commands.ReleaseVersion;
+                // If we do not have a latest version, show notification dialog
+                if (newVersion != currentVersion)
+                    await Dispatcher.BeginInvoke(DispatcherPriority.Background,
+                        new Action(() => {
+                            ShowLatestVersionNotificationDialog(newVersion, currentVersion, latestReleaseUrl);
+                        }));
+                // Dispose worker
+                worker.Dispose();
+            }
+            worker = new BackgroundWorker();
+            worker.DoWork += CheckNewVersion;
+            worker.RunWorkerAsync();
+        }
         #endregion
 
         #region Private Properties
@@ -1118,6 +1153,26 @@ namespace SomewhereDesktop
         {
             if (File.Exists(RecentFile))
                 File.Delete(RecentFile);
+        }
+        /// <summary>
+        /// Get redirected result of an HTTP GET request
+        /// </summary>
+        async Task<string> GetRedirection(string originalUrl)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(originalUrl);
+                request.AllowAutoRedirect = true;
+
+                using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+                {
+                    return response.ResponseUri.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
         #endregion
 
