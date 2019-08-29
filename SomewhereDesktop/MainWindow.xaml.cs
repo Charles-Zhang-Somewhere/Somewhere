@@ -540,7 +540,7 @@ namespace SomewhereDesktop
                 else
                     Notes = new ObservableCollection<FileItemObjectModel>(AllItems
                         .Where(i => (i.Name == null || i.Content != null)
-                        && (i?.Name.Contains(_SearchNotebookKeyword) ?? false)));
+                        && (i?.Name?.ToLower().Contains(_SearchNotebookKeyword.ToLower()) ?? false)));
             }
         }
         /// <summary>
