@@ -248,12 +248,12 @@
                                                 </DockPanel>
                                                 <DockPanel DockPanel.Dock="Top">
                                                     <Label Content="Name" Style="{StaticResource AttributeField}"/>
-                                                    <TextBox Text="{Binding ActiveItemName, UpdateSourceTrigger=LostFocus}"/>
+                                                    <TextBox x:Name="ItemNameTextBox" Text="{Binding ActiveItemName, UpdateSourceTrigger=LostFocus}"/>
                                                 </DockPanel>
                                                 <DockPanel DockPanel.Dock="Top">
                                                     <Label Content="Tags" Style="{StaticResource AttributeField}"/>
                                                     <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
-                                                    <TextBox Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
+                                                    <TextBox x:Name="ItemTagsTextBox" Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                                 </DockPanel>
                                                 <StackPanel DockPanel.Dock="Bottom">
@@ -264,7 +264,7 @@
                                                 </StackPanel>
                                                 <DockPanel LastChildFill="True">
                                                     <Label Content="Remark" DockPanel.Dock="Top"/>
-                                                    <TextBox Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
+                                                    <TextBox x:Name="ItemRemarkTextBox" Text="{Binding ActiveItemRemarkMeta, UpdateSourceTrigger=LostFocus}" Style="{StaticResource Content}"/>
                                                 </DockPanel>
                                             </DockPanel>
                                         </Border>
@@ -323,7 +323,7 @@
                                     It's recommended to use a format like "[Category] Identifying Name" to help organize notes.
                                             </TextBlock>
                                             <Grid>
-                                                <TextBox x:Name="NotenameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                                <TextBox x:Name="NoteNameTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                      Text="{Binding ActiveNoteName, UpdateSourceTrigger=LostFocus}"/>
                                                 <Label Content="{Binding ActiveNoteName, Converter={StaticResource NotenameToTipConverter}}" HorizontalAlignment="Right"/>
                                             </Grid>
@@ -335,7 +335,7 @@
                                     <LineBreak/>
                                     Tags are used to organize notes and help quickly search for note.
                                             </TextBlock>
-                                            <TextBox IsEnabled="{Binding IsNoteFieldEditEnabled}" 
+                                            <TextBox x:Name="NoteTagsTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                         </DockPanel>
                                         <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"

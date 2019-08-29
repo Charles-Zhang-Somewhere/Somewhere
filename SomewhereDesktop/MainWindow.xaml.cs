@@ -485,7 +485,14 @@ namespace SomewhereDesktop
         public string ActiveItemRemarkMeta
         {
             get => (ActiveItem != null && ActiveItem.Meta != null) ? Commands.ExtractRemarkMeta(ActiveItem.Meta).Remark : null;
-            set { ActiveItem.Meta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value); NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); }
+            set
+            {
+                string newMeta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value);
+                if(ActiveItem.Meta != newMeta)
+                {
+                    ActiveItem.Meta = newMeta;  NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange();
+                }
+            }
         }
         public string ActiveItemEntryDate
         {
@@ -498,12 +505,24 @@ namespace SomewhereDesktop
         public string ActiveItemName
         {
             get => ActiveItem?.Name;
-            set { ActiveItem.Name = value; NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName"); }
+            set
+            {
+                if(ActiveItem.Name != value)
+                {
+                    ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName");
+                }
+            }
         }
         public string ActiveItemTags
         {
             get => ActiveItem?.Tags;
-            set { ActiveItem.Tags = value; NotifyPropertyChanged(); TryCommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags"); }
+            set
+            {
+                if(ActiveItem.Tags != value)
+                {
+                    ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags");
+                }
+            }
         }
         #endregion
 
@@ -553,17 +572,35 @@ namespace SomewhereDesktop
         public string ActiveNoteName
         {
             get => ActiveNote?.Name;
-            set { ActiveNote.Name = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName"); }
+            set
+            {
+                if(ActiveNote.Name != null)
+                {
+                    ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName");
+                }
+            }
         }
         public string ActiveNoteTags
         {
             get => ActiveNote?.Tags;
-            set { ActiveNote.Tags = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if(ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags"); }
+            set
+            {
+                if(ActiveNote.Tags != value)
+                {
+                    ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags");
+                }
+            }
         }
         public string ActiveNoteContent
         {
             get => ActiveNote?.Content;
-            set { ActiveNote.Content = value; NotifyPropertyChanged(); TryCommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview(); }
+            set
+            {
+                if(ActiveNote.Content != value)
+                {
+                    ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview();
+                }
+            }
         }
         public bool IsNoteFieldEditEnabled
             => ActiveNote != null;
@@ -696,10 +733,9 @@ namespace SomewhereDesktop
             => e.CanExecute = true;
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // Save old note by changing focus
-            NotenameTextBox.Focus();
-            NoteContentTextBox.Focus();
-            NotenameTextBox.Focus();
+            // Save old note by forcing update
+            NoteNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+            NoteContentTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
             // Add to database
             int id = Commands.AddFile(null, string.Empty);  // Give some default empty content so it's not considered a binary file
             // Add to view collection
@@ -713,8 +749,8 @@ namespace SomewhereDesktop
             ActiveNote = item;
             // Show note panel and focus on editing textbox
             TabHeader_MouseDown(NotebookTabLabel, null);
-            NotenameTextBox.Focus();
-            NotenameTextBox.SelectAll();
+            NoteNameTextBox.Focus();
+            NoteNameTextBox.SelectAll();
         }
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
@@ -1071,6 +1107,15 @@ namespace SomewhereDesktop
             => GetArgumentValue(arg);
         private void TryCommitActiveItemChange()
         {
+            if(ActiveItem != null)
+            {
+                ItemNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+                ItemTagsTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+                ItemRemarkTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+            }
+        }
+        private void CommitActiveItemChange()
+        {
             if (Commands == null) return;
             // Commit to database for active item
             if (ActiveItem != null)
@@ -1095,12 +1140,21 @@ namespace SomewhereDesktop
         }
         private void TryCommitActiveNoteChange()
         {
+            if (ActiveNote != null)
+            {
+                NoteNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+                NoteTagsTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+                NoteContentTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+            }
+        }
+        private void CommitActiveNoteChange()
+        {
             if (Commands == null) return;
             // Commit to database for active note item
             if (ActiveNote != null)
             {
-                //try
-                //{
+                try
+                {
                     // Commit Name and Content change
                     Commands.ChangeFile(ActiveNote.ID, ActiveNote.Name, ActiveNote.Content);
                     // Commit Tag change
@@ -1108,11 +1162,11 @@ namespace SomewhereDesktop
                     // Update log and info display
                     Commands.AddLog("Update Item", $"Item #{ActiveNote.ID} `{ActiveNote.Name}` is updated in SD (Somewhere Desktop).");
                     InfoText = $"Item `{ActiveNote.Name.Limit(150)}` saved.";
-                //}
-                //catch (Exception e)
-                //{
-                //    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
-                //}
+                }
+                catch (Exception e)
+                {
+                    new DialogWindow(this, "Error during updating note", e.Message).ShowDialog();
+                }
             }
         }
         /// <summary>
