@@ -574,7 +574,7 @@ namespace SomewhereDesktop
             get => ActiveNote?.Name;
             set
             {
-                if(ActiveNote?.Name != null)
+                if(ActiveNote?.Name != value)
                 {
                     ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName");
                 }
