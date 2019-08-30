@@ -659,12 +659,7 @@ namespace SomewhereDesktop
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            // In case things are not saved, commit change for safety and avoid data loss
-            TryCommitActiveItemChange();
-            TryCommitActiveNoteChange();
-            this.Close();
-        }
+            => this.Close();
         private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void ShowShortcutsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -1040,7 +1035,7 @@ namespace SomewhereDesktop
             => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            // Safety
+            // In case things are not saved, commit change for safety and avoid data loss
             TryCommitActiveItemChange();
             TryCommitActiveNoteChange();
 
