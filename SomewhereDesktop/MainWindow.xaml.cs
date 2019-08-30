@@ -507,7 +507,7 @@ namespace SomewhereDesktop
             get => ActiveItem?.Name;
             set
             {
-                if(ActiveItem.Name != value)
+                if(ActiveItem?.Name != value)
                 {
                     ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName");
                 }
@@ -518,7 +518,7 @@ namespace SomewhereDesktop
             get => ActiveItem?.Tags;
             set
             {
-                if(ActiveItem.Tags != value)
+                if(ActiveItem?.Tags != value)
                 {
                     ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags");
                 }
@@ -574,7 +574,7 @@ namespace SomewhereDesktop
             get => ActiveNote?.Name;
             set
             {
-                if(ActiveNote.Name != null)
+                if(ActiveNote?.Name != null)
                 {
                     ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName");
                 }
@@ -596,7 +596,7 @@ namespace SomewhereDesktop
             get => ActiveNote?.Content;
             set
             {
-                if(ActiveNote.Content != value)
+                if(ActiveNote?.Content != value)
                 {
                     ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview();
                 }
