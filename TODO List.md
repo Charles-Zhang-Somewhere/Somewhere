@@ -3,6 +3,8 @@
 This list is for myself.
 
 ```
+Work on define (very simply) filter syntax, implement for `find` and SD Notebook Tab search and MD hyperlink, refer to somewhere
+
 im * flatten (for reference images) (non-home folder)
 im HomeFolder clean (default copy) - entires and files (first copy/cut all contents, second make a one-by-one item transition from original home, third double check everything exists, finally generate a report as a **file**; No need to delete original home folder)
 Move from SD by changing name (path) e.g. for files under a folder

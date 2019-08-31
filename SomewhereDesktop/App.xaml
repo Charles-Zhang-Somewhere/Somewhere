@@ -8,6 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/generic.xaml"></ResourceDictionary>
+                <ResourceDictionary Source="ScrollViewerResourceDictionary.xaml"></ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         
         

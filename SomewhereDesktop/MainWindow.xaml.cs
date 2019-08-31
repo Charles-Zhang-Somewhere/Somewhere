@@ -507,7 +507,7 @@ namespace SomewhereDesktop
             get => ActiveItem?.Name;
             set
             {
-                if(ActiveItem.Name != value)
+                if(ActiveItem?.Name != value)
                 {
                     ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName");
                 }
@@ -518,7 +518,7 @@ namespace SomewhereDesktop
             get => ActiveItem?.Tags;
             set
             {
-                if(ActiveItem.Tags != value)
+                if(ActiveItem?.Tags != value)
                 {
                     ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags");
                 }
@@ -574,7 +574,7 @@ namespace SomewhereDesktop
             get => ActiveNote?.Name;
             set
             {
-                if(ActiveNote.Name != null)
+                if(ActiveNote?.Name != value)
                 {
                     ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName");
                 }
@@ -596,7 +596,7 @@ namespace SomewhereDesktop
             get => ActiveNote?.Content;
             set
             {
-                if(ActiveNote.Content != value)
+                if(ActiveNote?.Content != value)
                 {
                     ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview();
                 }
@@ -653,18 +653,19 @@ namespace SomewhereDesktop
                 if (dialog.FileNames.Count() > 1)
                     InfoText = $"{dialog.FileNames.Count()} items added.";
                 else
-                    InfoText = result.First();
+                {
+                    string text = result.First();
+                    // Show highlight dialog
+                    new DialogWindow(this, "Add file", InfoText).ShowDialog();
+                    // Update info text
+                    InfoText = text;
+                }
             }
         }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            // In case things are not saved, commit change for safety and avoid data loss
-            TryCommitActiveItemChange();
-            TryCommitActiveNoteChange();
-            this.Close();
-        }
+            => this.Close();
         private void ShowShortcutsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void ShowShortcutsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -957,12 +958,13 @@ namespace SomewhereDesktop
                 foreach (string chordNote in chord)
                 {
                     string[] positions = chordNote.BreakCommandLineArgumentPositions();
-                    string command = positions.GetCommandName();
+                    string command = positions.GetCommandName().ToLower();
                     string[] arguments = positions.GetArguments();
                     if (chord.Length > 1)
                         result.AppendLine($"{command}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
-                    if (command == "files" || command == "find")
+                    string[] disabledCommands = new string[] { "files", "find", "purge" };
+                    if (disabledCommands.Contains(command))
                     {
                         ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
                         break;
@@ -1040,7 +1042,7 @@ namespace SomewhereDesktop
             => this.DragMove();
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            // Safety
+            // In case things are not saved, commit change for safety and avoid data loss
             TryCommitActiveItemChange();
             TryCommitActiveNoteChange();
 
