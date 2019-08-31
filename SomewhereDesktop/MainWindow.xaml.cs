@@ -653,7 +653,13 @@ namespace SomewhereDesktop
                 if (dialog.FileNames.Count() > 1)
                     InfoText = $"{dialog.FileNames.Count()} items added.";
                 else
-                    InfoText = result.First();
+                {
+                    string text = result.First();
+                    // Show highlight dialog
+                    new DialogWindow(this, "Add file", InfoText).ShowDialog();
+                    // Update info text
+                    InfoText = text;
+                }
             }
         }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
