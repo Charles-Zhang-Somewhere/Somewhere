@@ -958,12 +958,13 @@ namespace SomewhereDesktop
                 foreach (string chordNote in chord)
                 {
                     string[] positions = chordNote.BreakCommandLineArgumentPositions();
-                    string command = positions.GetCommandName();
+                    string command = positions.GetCommandName().ToLower();
                     string[] arguments = positions.GetArguments();
                     if (chord.Length > 1)
                         result.AppendLine($"{command}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
-                    if (command == "files" || command == "find")
+                    string[] disabledCommands = new string[] { "files", "find", "purge" };
+                    if (disabledCommands.Contains(command))
                     {
                         ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
                         break;
