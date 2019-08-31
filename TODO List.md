@@ -98,3 +98,12 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 1. Wholeshare Era - An Explorable Novel
 	* (Sounds, notes, visuals, items, notes...)....
 ```
+
+# Unidentified
+
+Somethings that used to be an issue and is no longer identified:
+
+1. (Bug) Look like when editing Tags for active note then switching directly to IT, tags are not saved. Also F5 refresh probably should refresh active item/note properties for safety.
+2. (Bug) There is a potential bug that during video preview when adding new videos it can cause a crash or take too long to respond especially on a networking environment - check how during such circumstances files are added and how it affect behavior of the program.
+3. (Issue) IT region type filter still too large on laptop.
+4. (Issue) There is an exception with DragMove() event on laptop when clicking on buttons and hold and move finger.

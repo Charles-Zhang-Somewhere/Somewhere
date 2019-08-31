@@ -34,3 +34,12 @@ A functional version of CLI interface, with support for following commands. GUI 
 * \[Windows\] Basic Somewhere Desktop implementation.
 
 ## Detailed Change List
+
+# V0.1.0
+
+## Summary
+
+* \[Windows\] Add **Recent homes** history;
+* \[Standard\]
+
+
