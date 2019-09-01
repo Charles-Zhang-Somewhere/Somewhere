@@ -47,5 +47,63 @@ namespace Somewhere
     /// </summary>
     public class JournalEvent: LogEvent
     {
+        #region Type
+        /// <summary>
+        /// Types of recognized commit operations
+        /// </summary>
+        public enum CommitOperation
+        {
+            CreateNote,
+            AddFile,
+            ChangeName,
+            ChangeTag,
+            ChangeContent
+        }
+        /// <summary>
+        /// Format of the recorded updated value
+        /// </summary>
+        public enum UpdateValueFormat
+        {
+            /// <summary>
+            /// The value is recorded in full
+            /// </summary>
+            Full,
+            /// <summary>
+            /// The value is recorded as a difference from a previous one
+            /// </summary>
+            Difference
+        }
+        #endregion
+
+        #region Properties
+        /// <summary>
+        /// Type of commit operation
+        /// </summary>
+        public CommitOperation Operation { get; set; }
+        /// <summary>
+        /// Target of operation, i.e. name of item
+        /// </summary>
+        public string Target { get; set; }
+        /// <summary>
+        /// New value for the target, depending on operation, e.g. for change name, this is new name;
+        /// Notice due to the nature of such records - i.e. they are atomic and single value operations, 
+        /// for a composite action e.g. add a note with initial contents - it should be recorded as two 
+        /// commits
+        /// </summary>
+        /// <remarks>
+        /// For available operations, those are the updated values:
+        /// - CreateNote: N/A
+        /// - AddFile: N/A
+        /// - ChangeName: New name
+        /// - ChangeTag: New updated tags (complete)
+        /// - ChangeContent: New update content
+        /// </remarks>
+        public string UpdateValue { get; set; }
+        /// <summary>
+        /// Indicates the format of the updated value, only useful for ChangeContent operation;
+        /// Currently only applicable to ChangeContent operation, and we are implementing only `Full` mode.
+        /// </summary>
+        public UpdateValueFormat ValueFormat { get; set; }
+        #endregion
     }
 }
