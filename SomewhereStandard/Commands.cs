@@ -403,6 +403,25 @@ namespace Somewhere
             string[] allTags = AddTagsToFile(id, tags);
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
+        [Command("Dump historical versions of repository.", category: "Misc.")]
+        [CommandArgument("outputPath", "Path of output")]
+        [CommandArgument("outputFormat", "Format of output, available values: csv, report, sqlite", optional: true)]
+        [CommandArgument("targetItemname", "Name of an item to track history of changes", optional: true)]
+        public IEnumerable<string> Dump(params string[] args)
+        {
+            ValidateArgs(args);
+            string outputPath = args[0];
+            string targetName = args.Length == 2 ? args[1] : null;
+            string format = args.Length == 3 ? args[2] : "csv";   // Default csv
+            // Get history and pass through it
+            var repoState = new VirtualRepository();
+            if(targetName != null)
+                repoState.PassThrough(GetAllCommits(), targetName);
+            else
+                repoState.PassThrough(GetAllCommits());
+            repoState.Dump((VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format), outputPath);
+            return new string[] { $"Repository state is dumped into {outputPath}" };
+        }
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
         {
@@ -1580,6 +1599,11 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         public List<LogRow> GetAllLogs()
             => Connection.ExecuteQuery(@"select * from Journal where Type='Log'").Unwrap<LogRow>();
+        /// <summary>
+        /// Get raw list of all commits
+        /// </summary>
+        public List<JournalRow> GetAllCommits()
+            => Connection.ExecuteQuery(@"select * from Journal where Type='Commit'").Unwrap<JournalRow>();
         /// <summary>
         /// Get raw list of all journal
         /// </summary>
