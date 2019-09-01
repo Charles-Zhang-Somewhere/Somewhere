@@ -64,16 +64,16 @@ namespace Somewhere
             foreach (var commit in commits)
             {
                 // Skip irrelevant entries
-                if (commit.Type == JournalType.Log) continue;
+                if (commit.JournalType == JournalType.Log) continue;
                 // Simulate state per operation type
                 var commitEvent = commit.JournalEvent;
                 switch (commitEvent.Operation)
                 {
                     case JournalEvent.CommitOperation.CreateNote:
-                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.UpdateValue });    // Assum only success operations are recorded as commit journal entry
+                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
                         break;
                     case JournalEvent.CommitOperation.AddFile:
-                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.UpdateValue });    // Assum only success operations are recorded as commit journal entry
+                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
                         break;
                     case JournalEvent.CommitOperation.ChangeName:
                         items[commitEvent.Target].Name = commitEvent.UpdateValue;    // Assume it exists and there is no name conflict due to natural order of commit journal records
@@ -91,6 +91,7 @@ namespace Somewhere
                         continue;
                 }
             }
+            Items = items.Values.ToList();
         }
         /// <summary>
         /// Pass-through a sequence of commits and track one particular file;
@@ -99,32 +100,29 @@ namespace Somewhere
         /// <param name="targetFilename">Can be any particular name the file ever taken</param>
         public void PassThrough(List<JournalRow> commits, string targetFilename)
         {
-            foreach (var commit in commits)
+            HashSet<string> usedNames = new HashSet<string>();
+            usedNames.Add(targetFilename);
+            List<JournalRow> relevantCommits = new List<JournalRow>();
+            // Go through each commit once in reverse order to collect all potential names
+            foreach (var commit in commits.Reverse<JournalRow>())
             {
+                var commitEvent = commit.JournalEvent;
                 // Skip irrelevant entries
-                if (commit.Type == JournalType.Log)
+                if (commit.JournalType == JournalType.Log)
                     // Skip this commit event
                     continue;
-                // Initialize new item
-                int stepSequence = 1;
-                Item newItem = new Item()
-                {
-                    Name = Items.Last()?.Name + $"_Step: {stepSequence}", // Give it a name to show stages of changes throughout lifetime
-                    Tags = Items.Last()?.Tags,
-                    Content = Items.Last()?.Content
-                };
-                // Skip irrelevant commits
-                var commitEvent = commit.JournalEvent;
-                if (commitEvent.Target != targetFilename)
+                // Even if the commit's target name is not targetFilename, it may still refer to the same file
+                else if (!usedNames.Contains(commitEvent.Target))
                 {
                     switch (commitEvent.Operation)
                     {
-                        // If there is a change name event, then the target can skill be relevant
+                        // If there is a change name event, then the target can still be relevant
                         case JournalEvent.CommitOperation.ChangeName:
-                            if (commitEvent.UpdateValue == targetFilename)
+                            if (usedNames.Contains(commitEvent.UpdateValue))
                             {
-                                // Handle this commit event
-                                newItem.Name = commitEvent.Target + $"_Step: {stepSequence}";
+                                // Record this as a used name
+                                usedNames.Add(commitEvent.Target);
+                                relevantCommits.Add(commit);
                                 break;
                             }
                             else
@@ -139,6 +137,24 @@ namespace Somewhere
                             continue;
                     }
                 }
+                // Commit contains the target filename
+                else
+                    relevantCommits.Add(commit);
+            }
+            // Go through each commit again to simulate changes in normal order
+            int stepSequence = 1;
+            foreach (var commit in relevantCommits.Reverse<JournalRow>())
+            {
+                // Initialize new item
+                Item newItem = new Item()
+                {
+                    Name = Items.Last()?.Name + $"_Step: {stepSequence}", // Give it a name to show stages of changes throughout lifetime
+                    Tags = Items.Last()?.Tags,
+                    Content = Items.Last()?.Content
+                };
+                // Handle this commit event
+                var commitEvent = commit.JournalEvent;
+                newItem.Name = commitEvent.Target + $"_Step: {stepSequence}";
                 // Record sequence of changes
                 Items.Add(newItem);
                 // Increment
@@ -152,13 +168,13 @@ namespace Somewhere
         {
             string EscapeCSV(string field)
             {
-                if (field.Contains(','))
+                if (field != null && field.Contains(','))
                 {
                     if (field.Contains('"'))
                         field.Replace("\"", "\"\"");
                     field = $"\"{field}\"";
                 }
-                return field;
+                return field ?? string.Empty;
             }
 
             switch (format)

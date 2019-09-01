@@ -30,7 +30,9 @@ namespace Somewhere
     /// </summary>
     public class JournalRow: LogRow
     {
-        public JournalType Type { get; set; }
+        public string Type { get; set; }
+        public JournalType JournalType 
+            => (JournalType)Enum.Parse(typeof(JournalType), Type);
         public JournalEvent JournalEvent
             => new Deserializer().Deserialize<JournalEvent>(Event);
     }
