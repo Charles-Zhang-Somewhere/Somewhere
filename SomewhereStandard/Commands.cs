@@ -887,19 +887,27 @@ namespace Somewhere
             int? id = GetFileID(itemname);
             if (id == null)
                 throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
-            if (!FileExistsAtHomeFolder(GetPhysicalName(itemname)))
-                throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
-            // Delete from filesystem
+            // Delete file on disk if it's not note
             string[] result = null;
-            if (args.Length == 2 && args[1] == "-f")
+            if (GetFileDetail(id.Value).Content == null)
             {
-                DeleteFileFromHomeFolder(itemname);
-                result = new string[] { $"File `{itemname}` is forever gone (deleted)." };
-            }
-            else
-            {
-                MoveFileInHomeFolder(id.Value, itemname, itemname + "_deleted");
-                result = new string[] { $"File `{itemname}` is marked as \"_deleted\"." };
+                // Check file existence
+                if (!FileExistsAtHomeFolder(GetPhysicalName(itemname)))
+                    throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
+                else
+                {
+                    // Delete from filesystem
+                    if (args.Length == 2 && args[1] == "-f")
+                    {
+                        DeleteFileFromHomeFolder(itemname);
+                        result = new string[] { $"File `{itemname}` is forever gone (deleted)." };
+                    }
+                    else
+                    {
+                        MoveFileInHomeFolder(id.Value, itemname, itemname + "_deleted");
+                        result = new string[] { $"File `{itemname}` is marked as \"_deleted\"." };
+                    }
+                }
             }
             // Delete from DB
             RemoveFile(itemname);
