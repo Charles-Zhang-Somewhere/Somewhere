@@ -912,6 +912,8 @@ namespace Somewhere
                     }
                 }
             }
+            else
+                result = new string[] { $"Note `{itemname}` has been deleted." };
             // Delete from DB
             RemoveFile(itemname);
             TryRecordCommit(JournalEvent.CommitOperation.DeleteFile, itemname, null);
