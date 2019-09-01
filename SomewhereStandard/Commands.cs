@@ -1966,7 +1966,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     Connection.ExecuteSQLNonQuery(transaction, "insert into Journal(DateTime, Event, Type) values(@dateTime, @text, @type)",
                         new {
                             dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                            text = new Serializer().Serialize(new JournalEvent()
+                            text = new SerializerBuilder().EmitDefaults().Build().Serialize(new JournalEvent()
                                 {
                                     Operation = operation,
                                     Target = itemname,
