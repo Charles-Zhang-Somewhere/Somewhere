@@ -690,7 +690,7 @@ namespace SomewhereDesktop
                     InfoText = text;
                     // Select added item
                     if (InventoryPanel.Visibility == Visibility.Visible)
-                        ActiveItem = Items.Where(i => i.Name == result.First()).SingleOrDefault() ?? ActiveItem;
+                        ActiveItem = Items.OrderBy(i => i.EntryDate).LastOrDefault() ?? ActiveItem;
                 }
             }
         }
