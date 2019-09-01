@@ -148,13 +148,15 @@ namespace Somewhere
                 // Initialize new item
                 Item newItem = new Item()
                 {
-                    Name = Items.Last()?.Name + $"_Step: {stepSequence}", // Give it a name to show stages of changes throughout lifetime
-                    Tags = Items.Last()?.Tags,
-                    Content = Items.Last()?.Content
+                    Name = Items.LastOrDefault()?.Name + $"_Step: {stepSequence}", // Give it a name to show stages of changes throughout lifetime
+                    Tags = Items.LastOrDefault()?.Tags,
+                    Content = Items.LastOrDefault()?.Content
                 };
                 // Handle this commit event
                 var commitEvent = commit.JournalEvent;
-                newItem.Name = commitEvent.Target + $"_Step: {stepSequence}";
+                newItem.Name = commitEvent.Operation == JournalEvent.CommitOperation.ChangeName 
+                    ? (commitEvent.UpdateValue + $"_Step: {stepSequence}")
+                    : (commitEvent.Target + $"_Step: {stepSequence}");
                 // Record sequence of changes
                 Items.Add(newItem);
                 // Increment

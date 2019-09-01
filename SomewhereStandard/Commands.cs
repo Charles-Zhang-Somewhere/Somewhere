@@ -426,16 +426,21 @@ namespace Somewhere
         {
             ValidateArgs(args);
             string outputPath = args[0];
-            string targetName = args.Length == 2 ? args[1] : null;
-            string format = args.Length == 3 ? args[2] : "csv";   // Default csv
+            string format = args.Length == 2 ? args[1] : "csv";   // Default csv
+            string targetName = args.Length == 3 ? args[2] : null;
+            format = format.ToUpper();
             // Get history and pass through it
             var repoState = new VirtualRepository();
             if(targetName != null)
                 repoState.PassThrough(GetAllCommits(), targetName);
             else
                 repoState.PassThrough(GetAllCommits());
-            repoState.Dump((VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format), outputPath);
-            return new string[] { $"Repository state is dumped into {outputPath}" };
+            try
+            {
+                repoState.Dump((VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format), outputPath);
+                return new string[] { $"Repository state is dumped into {outputPath}" };
+            }
+            catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }            
         }
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
