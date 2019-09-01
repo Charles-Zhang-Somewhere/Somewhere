@@ -14,6 +14,9 @@ namespace Somewhere
     /// Virtual Repository simulates all operations in journal and creates
     /// a state that mimic effects to database from input commits at a given time
     /// </summary>
+    /// <remarks>
+    /// The implementation of this class is subject to change so it's internal
+    /// </remarks>
     internal class VirtualRepository
     {
         #region Private Types
@@ -86,6 +89,8 @@ namespace Somewhere
                         break;
                     case JournalEvent.CommitOperation.ChangeItemName:
                         items[commitEvent.Target].Name = commitEvent.UpdateValue;    // Assume it exists and there is no name conflict due to natural order of commit journal records
+                        items.Add(commitEvent.UpdateValue, items[commitEvent.Target]);
+                        items.Remove(commitEvent.Target);
                         break;
                     case JournalEvent.CommitOperation.ChangeItemTags:
                         items[commitEvent.Target].Tags = commitEvent.UpdateValue;    // Assume it exists
@@ -126,55 +131,132 @@ namespace Somewhere
         /// The output for this tracking will be a sequence of updates to that particular file
         /// </summary>
         /// <param name="targetFilename">Can be any particular name the file ever taken</param>
+        /// <remarks>
+        /// The complexity is that the name can occur anywhere any time and can be delted then recreated
+        /// which is in essence different entities but it still make sense to show it
+        /// </remarks>
         public void PassThrough(List<JournalRow> commits, string targetFilename)
         {
-            HashSet<string> usedNames = new HashSet<string>();
-            usedNames.Add(targetFilename);
-            List<JournalRow> relevantCommits = new List<JournalRow>();
-            // Go through each commit once in reverse order to collect all potential names
-            foreach (var commit in commits.Reverse<JournalRow>())
+            // Extract all commit events
+            var events = commits.Where(row => row.JournalType == JournalType.Commit)
+                .Select(row => row.JournalEvent).ToList();
+            // Go through each commit once to collect name progression
+            Dictionary<string, List<string>> nameProgression = new Dictionary<string, List<string>>();  // The development of name changes for any given path
+            Dictionary<string, HashSet<List<string>>> nameOccurences = new Dictionary<string, HashSet<List<string>>>();   // The occurences of names in any paths
+            void UpdateNameOccurence(string name, List<string> sourcePath)
             {
-                var commitEvent = commit.JournalEvent;
-                // Skip irrelevant entries
-                if (commit.JournalType == JournalType.Log)
-                    // Skip this commit event
-                    continue;
-                // Even if the commit's target name is not targetFilename, it may still refer to the same file
-                else if (!usedNames.Contains(commitEvent.Target))
-                {
-                    switch (commitEvent.Operation)
-                    {
-                        // If there is a change name event, then the target can still be relevant
-                        case JournalEvent.CommitOperation.ChangeItemName:
-                            if (usedNames.Contains(commitEvent.UpdateValue))
-                            {
-                                // Record this as a used name
-                                usedNames.Add(commitEvent.Target);
-                                relevantCommits.Add(commit);
-                                break;
-                            }
-                            else
-                                // Skip this commit event
-                                continue;
-                        case JournalEvent.CommitOperation.ChangeItemTags:
-                        case JournalEvent.CommitOperation.ChangeItemContent:
-                        case JournalEvent.CommitOperation.DeleteTag:
-                        case JournalEvent.CommitOperation.RenameTag:
-                        case JournalEvent.CommitOperation.CreateNote:
-                        case JournalEvent.CommitOperation.AddFile:
-                        case JournalEvent.CommitOperation.DeleteFile:
-                        default:
-                            // Skip this commit event
-                            continue;
-                    }
-                }
-                // Commit contains the target filename
+                if (nameOccurences.ContainsKey(name))
+                    nameOccurences[name].Add(sourcePath);
                 else
-                    relevantCommits.Add(commit);
+                    nameOccurences[name] = new HashSet<List<string>>() { sourcePath };
+            }
+            foreach (var commitEvent in events)
+            {
+                switch (commitEvent.Operation)
+                {
+                    case JournalEvent.CommitOperation.CreateNote:
+                    case JournalEvent.CommitOperation.AddFile:
+                        if(!nameProgression.ContainsKey(commitEvent.Target))    // The progression might already contains the name if it was created before then renamed or deleted
+                            nameProgression.Add(commitEvent.Target, new List<string>());
+                        nameProgression[commitEvent.Target].Add(commitEvent.Target);
+                        UpdateNameOccurence(commitEvent.Target, nameProgression[commitEvent.Target]);
+                        break;
+                    case JournalEvent.CommitOperation.ChangeItemName:
+                        foreach (var namePath in nameOccurences[commitEvent.Target])
+                        {
+                            namePath.Add(commitEvent.UpdateValue);
+                            UpdateNameOccurence(commitEvent.UpdateValue, namePath);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            // Go through each commit to collect tag progression
+            Dictionary<string, List<string>> tagProgression = new Dictionary<string, List<string>>();  // The development of tag changes for any given path
+            Dictionary<string, HashSet<List<string>>> tagOccurences = new Dictionary<string, HashSet<List<string>>>();   // The occurences of tags in any paths
+            Dictionary<string, HashSet<string>> tagUsers = new Dictionary<string, HashSet<string>>();   // Tags and the names it was used with
+            void UpdateTagOccurence(string tag, List<string> sourcePath)
+            {
+                if (tagOccurences.ContainsKey(tag))
+                    tagOccurences[tag].Add(sourcePath);
+                else
+                    tagOccurences[tag] = new HashSet<List<string>>() { sourcePath };
+            }
+            foreach (var commitEvent in events)
+            {
+                switch (commitEvent.Operation)
+                {
+                    case JournalEvent.CommitOperation.ChangeItemTags:
+                        var tags = commitEvent.UpdateValue.SplitTags();
+                        // Tag creation
+                        foreach (var tag in tags)
+                        {
+                            // Record tag
+                            if (!tagProgression.ContainsKey(tag))   // Tag might already exist because it was created before
+                            {
+                                var path = new List<string>() { tag };
+                                tagProgression.Add(tag, path);
+                                UpdateTagOccurence(tag, path);
+                            }
+                            // Record item name to tag
+                            if (!tagUsers.ContainsKey(tag))
+                                tagUsers[tag] = new HashSet<string>();
+                            tagUsers[tag].Add(commitEvent.Target);
+                        }
+                        break;
+                    case JournalEvent.CommitOperation.RenameTag:
+                        // Tag renaming
+                        foreach (var tagPath in tagOccurences[commitEvent.Target])
+                        {
+                            tagPath.Add(commitEvent.UpdateValue);
+                            UpdateTagOccurence(commitEvent.UpdateValue, tagPath);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            // Null check
+            if (!nameOccurences.ContainsKey(targetFilename))
+                return;
+            // Go through each commit to find relevant commits
+            List<JournalEvent> relevantCommits = new List<JournalEvent>();
+            HashSet<string> usedNames = new HashSet<string>(nameOccurences[targetFilename].SelectMany(path => path));
+            bool IsTagUserEverInvolvedTargetFilename(string sourceTag)
+                => tagOccurences[sourceTag]
+                // Get all paths items for the source tag
+                .SelectMany(path => path)
+                // Get all users for the ever taken variety of the tag and check whether them contained the wanted target file
+                .Select(tag => tagUsers[tag]
+                    // Get the names that tag are created with
+                    .SelectMany(name =>
+                        // Get the sequences of all changes for that name
+                        nameProgression[name])
+                    .Contains(targetFilename))
+                .Contains(true);
+            foreach (var commitEvent in events)
+            {
+                // If event target is one of used names, then it's relevant
+                if (usedNames.Contains(commitEvent.Target))
+                    relevantCommits.Add(commitEvent);
+                // If this operation is about tags, i.e. its target parameter is not name of item, then it can still be relevant
+                else if (commitEvent.Operation == JournalEvent.CommitOperation.RenameTag
+                    || commitEvent.Operation == JournalEvent.CommitOperation.DeleteTag)
+                {
+                    // Check whether the tag's tagged items involve the wanted item
+                    var oldTag = commitEvent.Target;
+                    var newTag = commitEvent.UpdateValue;   // Can be null if operation is DeleteTag
+                    if ( // Old tag's user's name progression contains target file name
+                        IsTagUserEverInvolvedTargetFilename(oldTag) || 
+                        // New tag's user is involved
+                        (newTag != null && IsTagUserEverInvolvedTargetFilename(newTag)))
+                        relevantCommits.Add(commitEvent);
+                }
             }
             // Go through each commit again to simulate changes in normal order
             int stepSequence = 1;
-            foreach (var commit in relevantCommits.Reverse<JournalRow>())
+            foreach (var commitEvent in relevantCommits)
             {
                 // Initialize new item by referring to an earlier version
                 Item newItem = new Item()
@@ -184,16 +266,19 @@ namespace Somewhere
                     Content = Items.LastOrDefault()?.Content
                 };
                 // Handle this commit event
-                var commitEvent = commit.JournalEvent;
                 switch (commitEvent.Operation)
                 {
                     case JournalEvent.CommitOperation.CreateNote:
                         newItem.Name = $"(Step: {stepSequence})" + commitEvent.Target;  // Use note name
-                        newItem.Remark = "New";  // Indicate the note has been created at this step
+                        newItem.Tags = null; // Clear tags for new item
+                        newItem.Content = null; // Clear content for new item
+                        newItem.Remark = "New creation";  // Indicate the note has been created at this step
                         break;
                     case JournalEvent.CommitOperation.AddFile:
                         newItem.Name = $"(Step: {stepSequence})" + commitEvent.Target;  // Use file name
-                        newItem.Remark = "New";  // Indicate the file has been created at this step
+                        newItem.Tags = null; // Clear tags for new item
+                        newItem.Content = null; // Clear content for new item
+                        newItem.Remark = "New add";  // Indicate the file has been created at this step
                         break;
                     case JournalEvent.CommitOperation.DeleteFile:
                         newItem.Remark = "Deleted";    // Indicate the file has been deleted at this step
