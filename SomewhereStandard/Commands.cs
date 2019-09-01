@@ -413,9 +413,12 @@ namespace Somewhere
             // Get content and save the file
             string content = args[1];
             int id = AddFile(name, content);
+            TryRecordCommit(JournalEvent.CommitOperation.CreateNote, name, null);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeContent, name, content);
             // Get tags
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Dump historical versions of repository.", category: "Misc.")]
@@ -651,6 +654,7 @@ namespace Somewhere
                 result = new string[] { $"Virtual file `{itemname}` has been renamed to `{newFilename}`." };
             // Update in DB
             RenameFile(itemname, newFilename);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeName, itemname, newFilename);
             return result;
         }
         [Command("Read or set meta attribtues.", category: "Advanced")]
@@ -841,7 +845,7 @@ namespace Somewhere
             if (id == null)
             {
                 List<string> result = new List<string>();
-                result.Add($"(`{itemname}` is not managed.)");
+                result.Add($"(`{itemname}` is not managed)");
                 result.AddRange(ReadPhysicalFile(itemname));
                 return result;
             }
@@ -971,6 +975,7 @@ namespace Somewhere
             // Add tags
             string[] tags = args[1].SplitTags().ToArray();
             string[] allTags = AddTagsToFile(filename, tags);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, filename, allTags.JoinTags());
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Show all tags currently exist.",
