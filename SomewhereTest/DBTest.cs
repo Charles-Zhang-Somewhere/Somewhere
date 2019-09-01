@@ -525,7 +525,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
             Commands.New();
-            Assert.Throws<ArgumentException>(() => { Commands.RM("Some non existing file.extension"); });
+            Assert.Throws<InvalidOperationException>(() => { Commands.RM("Some non existing file.extension"); });
             // Clean up
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
@@ -537,7 +537,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
             Commands.New();
-            Assert.Throws<ArgumentException>(() => { Commands.RM("Somewhere.exe"); });
+            Assert.Throws<InvalidOperationException>(() => { Commands.RM("Somewhere.exe"); });
             // Clean up
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
