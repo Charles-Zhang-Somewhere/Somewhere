@@ -82,5 +82,37 @@ Prop2: 25";
             Assert.Throws<ArgumentException>(() => { new YamlQuery(yaml).Get<string>("prop1"); });   // Case sensitive
             Assert.Equal(25, new YamlQuery(yaml).Get<int>("Prop2")); 
         }
+
+        [Fact]
+        public void YamlShouldSerializeAndDeserializeJournalEvent()
+        {
+            // Do notice default values will not be serialized
+            string serialization = new Serializer().Serialize(new JournalEvent()
+            {
+                Operation = JournalEvent.CommitOperation.CreateNote,    // Will not be serialized
+                Target = "note",
+                UpdateValue = null,
+                ValueFormat = JournalEvent.UpdateValueFormat.Full   // Will not be serialized
+            });
+            var obj = new Deserializer().Deserialize<JournalEvent>(serialization);
+            Assert.Equal(JournalEvent.CommitOperation.CreateNote, obj.Operation);
+            Assert.Equal("note", obj.Target);
+            Assert.Null(obj.UpdateValue);
+            Assert.Equal(JournalEvent.UpdateValueFormat.Full, obj.ValueFormat);
+
+            // In this case defaults will be serialized
+            serialization = new SerializerBuilder().EmitDefaults().Build().Serialize(new JournalEvent()
+            {
+                Operation = JournalEvent.CommitOperation.CreateNote,    // Will not be serialized
+                Target = "note",
+                UpdateValue = null,
+                ValueFormat = JournalEvent.UpdateValueFormat.Full   // Will not be serialized
+            });
+            obj = new Deserializer().Deserialize<JournalEvent>(serialization);
+            Assert.Equal(JournalEvent.CommitOperation.CreateNote, obj.Operation);
+            Assert.Equal("note", obj.Target);
+            Assert.Null(obj.UpdateValue);
+            Assert.Equal(JournalEvent.UpdateValueFormat.Full, obj.ValueFormat);
+        }
     }
 }
