@@ -447,8 +447,9 @@ namespace Somewhere
                     repoState.Dump(dumpFormat, outputPath);
                     return new string[] { $"Repository state is dumped into {outputPath}" };
                 }
+                catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }
             }
-            catch (Exception e) { return new string[] { $"Invalid output format `{format}`." }; }
+            catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
         }
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
