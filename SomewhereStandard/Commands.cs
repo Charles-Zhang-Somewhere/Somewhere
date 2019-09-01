@@ -419,7 +419,7 @@ namespace Somewhere
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
             TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, name, allTags.JoinTags());
-            return new string[] { $"{(name == null ? $"Knowledge #{id}" : "Note `{ name }`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
+            return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Dump historical versions of repository.", category: "Misc.")]
         [CommandArgument("outputPath", "Path of output")]
