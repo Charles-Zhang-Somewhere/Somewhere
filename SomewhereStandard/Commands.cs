@@ -326,7 +326,7 @@ namespace Somewhere
                     if (args.Length == 2)
                     {
                         var tags = AddTagsToFile(itemname, args[1].SplitTags());
-                        TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, itemname, tags.JoinTags());
+                        TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, itemname, tags.JoinTags());
                     }
                     return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
                 }
@@ -351,7 +351,7 @@ namespace Somewhere
                     if (args.Length == 2)
                     {
                         var resultTags = AddTagsToFile(filename, tags);
-                        TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, filename, resultTags.JoinTags());
+                        TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, filename, resultTags.JoinTags());
                     }
                     result.Add($"[Added] `{filename}`");
                 }
@@ -414,11 +414,11 @@ namespace Somewhere
             string content = args[1];
             int id = AddFile(name, content);
             TryRecordCommit(JournalEvent.CommitOperation.CreateNote, name, null);
-            TryRecordCommit(JournalEvent.CommitOperation.ChangeContent, name, content);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeItemContent, name, content);
             // Get tags
             string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
-            TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, name, allTags.JoinTags());
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Dump historical versions of repository.", category: "Misc.")]
@@ -654,7 +654,7 @@ namespace Somewhere
                 result = new string[] { $"Virtual file `{itemname}` has been renamed to `{newFilename}`." };
             // Update in DB
             RenameFile(itemname, newFilename);
-            TryRecordCommit(JournalEvent.CommitOperation.ChangeName, itemname, newFilename);
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeItemName, itemname, newFilename);
             return result;
         }
         [Command("Read or set meta attribtues.", category: "Advanced")]
@@ -722,6 +722,8 @@ namespace Somewhere
             string targetTag = args[1];
             if (!IsTagInDatabase(sourceTag))
                 throw new InvalidOperationException($"Specified tag `{sourceTag}` does not exist in database.");
+            // Commit
+            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, targetTag);
             // Update in DB
             if (!IsTagInDatabase(targetTag)) // If target doesn't exist yet just rename source
             {
@@ -916,6 +918,7 @@ namespace Somewhere
                 DeleteFileTag(tagID.Value);
                 // Delete tag itself
                 DeleteTag(tag);
+                TryRecordCommit(JournalEvent.CommitOperation.DeleteTag, tag, null);
                 return new string[] { $"Tag `{tag}` has been deleted from database." };
             }
             // For more than one tag we don't enforce strict existence validation
@@ -925,7 +928,11 @@ namespace Somewhere
                 // Delete from FileTag table
                 DeleteFileTags(realTags.Select(t => t.ID), false);
                 // Delete from Tag table
-                DeleteTags(realTags.Select(t=>t.ID));
+                DeleteTags(realTags.Select(t => t.ID));
+                // Commit deletion
+                foreach (var tag in realTags)
+                    TryRecordCommit(JournalEvent.CommitOperation.DeleteTag, tag.Name, null);
+                // Return
                 return new string[] { $"Tags `{realTags.Select(t => t .Name).JoinTags()}` " +
                     $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
             }            
@@ -975,7 +982,7 @@ namespace Somewhere
             // Add tags
             string[] tags = args[1].SplitTags().ToArray();
             string[] allTags = AddTagsToFile(filename, tags);
-            TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, filename, allTags.JoinTags());
+            TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, filename, allTags.JoinTags());
             return new string[] { $"File `{filename}` has been updated with a total of {allTags.Length} {(allTags.Length > 1 ? "tags": "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Show all tags currently exist.",

@@ -57,9 +57,11 @@ namespace Somewhere
         {
             CreateNote,
             AddFile,
-            ChangeName,
-            ChangeTag,
-            ChangeContent
+            ChangeItemName,
+            ChangeItemTags,
+            ChangeItemContent,
+            RenameTag,
+            DeleteTag
         }
         /// <summary>
         /// Format of the recorded updated value
@@ -96,9 +98,11 @@ namespace Somewhere
         /// For available operations, those are the updated values:
         /// - CreateNote: N/A
         /// - AddFile: N/A
-        /// - ChangeName: New name
-        /// - ChangeTag: New updated tags (complete)
-        /// - ChangeContent: New update content
+        /// - ChangeItemName: New name
+        /// - ChangeItemTags: New updated tags (complete)
+        /// - ChangeItemContent: New update content
+        /// - DeleteTag: N/A
+        /// - RenameTag: New name
         /// </remarks>
         public string UpdateValue { get; set; }
         /// <summary>

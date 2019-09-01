@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StringHelper;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -75,13 +76,32 @@ namespace Somewhere
                     case JournalEvent.CommitOperation.AddFile:
                         items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
                         break;
-                    case JournalEvent.CommitOperation.ChangeName:
+                    case JournalEvent.CommitOperation.ChangeItemName:
                         items[commitEvent.Target].Name = commitEvent.UpdateValue;    // Assume it exists and there is no name conflict due to natural order of commit journal records
                         break;
-                    case JournalEvent.CommitOperation.ChangeTag:
+                    case JournalEvent.CommitOperation.ChangeItemTags:
                         items[commitEvent.Target].Tags = commitEvent.UpdateValue;    // Assume it exists
                         break;
-                    case JournalEvent.CommitOperation.ChangeContent:
+                    case JournalEvent.CommitOperation.DeleteTag:
+                        foreach (var item in items)
+                        {
+                            List<string> oldTags = item.Value.Tags.SplitTags().ToList();
+                            if (oldTags.Contains(commitEvent.Target))
+                                item.Value.Tags = oldTags.Except(new string[] { commitEvent.Target }).JoinTags();
+                        }
+                        break;
+                    case JournalEvent.CommitOperation.RenameTag:
+                        foreach (var item in items)
+                        {
+                            List<string> oldTags = item.Value.Tags.SplitTags().ToList();
+                            if (oldTags.Contains(commitEvent.Target))
+                                item.Value.Tags = oldTags
+                                    .Except(new string[] { commitEvent.Target })
+                                    .Union(new string[] { commitEvent.UpdateValue })
+                                    .JoinTags();
+                        }
+                        break;
+                    case JournalEvent.CommitOperation.ChangeItemContent:
                         if (commitEvent.ValueFormat == JournalEvent.UpdateValueFormat.Difference)
                             throw new ArgumentException("Difference based content commit journal is not supported yet.");
                         items[commitEvent.Target].Content = commitEvent.UpdateValue;    // Assume it exists
@@ -117,7 +137,7 @@ namespace Somewhere
                     switch (commitEvent.Operation)
                     {
                         // If there is a change name event, then the target can still be relevant
-                        case JournalEvent.CommitOperation.ChangeName:
+                        case JournalEvent.CommitOperation.ChangeItemName:
                             if (usedNames.Contains(commitEvent.UpdateValue))
                             {
                                 // Record this as a used name
@@ -128,8 +148,10 @@ namespace Somewhere
                             else
                                 // Skip this commit event
                                 continue;
-                        case JournalEvent.CommitOperation.ChangeTag:
-                        case JournalEvent.CommitOperation.ChangeContent:
+                        case JournalEvent.CommitOperation.ChangeItemTags:
+                        case JournalEvent.CommitOperation.ChangeItemContent:
+                        case JournalEvent.CommitOperation.DeleteTag:
+                        case JournalEvent.CommitOperation.RenameTag:
                         case JournalEvent.CommitOperation.CreateNote:
                         case JournalEvent.CommitOperation.AddFile:
                         default:
@@ -154,7 +176,7 @@ namespace Somewhere
                 };
                 // Handle this commit event
                 var commitEvent = commit.JournalEvent;
-                newItem.Name = commitEvent.Operation == JournalEvent.CommitOperation.ChangeName 
+                newItem.Name = commitEvent.Operation == JournalEvent.CommitOperation.ChangeItemName 
                     ? (commitEvent.UpdateValue + $"_Step: {stepSequence}")
                     : (commitEvent.Target + $"_Step: {stepSequence}");
                 // Record sequence of changes
