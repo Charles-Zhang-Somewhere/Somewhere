@@ -28,6 +28,7 @@
         <!-- Repository Commands -->
         <CommandBinding Command="local:CustomCommands.Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.New" CanExecute="NewHomeCommand_CanExecute" Executed="NewHomeCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Recent" CanExecute="RecentHomesCommand_CanExecute" Executed="RecentHomesCommand_Executed"/>
         <!-- Inventory Commands -->
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
@@ -213,6 +214,8 @@
                                                         DataContext="{x:Static local:CustomCommands.Open}" ToolTip="{Binding Text}"/>
                                                     <Button Content="New" Command="local:CustomCommands.New"
                                                         DataContext="{x:Static local:CustomCommands.New}" ToolTip="{Binding Text}"/>
+                                                    <Button Content="Recent" Command="local:CustomCommands.Recent"
+                                                        DataContext="{x:Static local:CustomCommands.Recent}" ToolTip="{Binding Text}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </DockPanel>

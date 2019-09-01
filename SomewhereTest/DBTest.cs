@@ -166,7 +166,7 @@ namespace SomewhereTest
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
             Commands.New();
-            Assert.NotNull(Commands.GetConfiguration("Version"));
+            Assert.NotNull(Commands.GetConfiguration("InitialVersion"));
         }
         [Fact]
         public void ConfigurationTestGetNonExistingValue()

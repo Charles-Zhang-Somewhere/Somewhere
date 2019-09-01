@@ -18,6 +18,7 @@ namespace SomewhereDesktop
         #endregion
 
         #region UI Commands
+        public static readonly RoutedUICommand Recent = new RoutedUICommand("Show recent home paths", "Recent", typeof(CustomCommands));
         public static readonly RoutedUICommand Maximize = new RoutedUICommand("Maximize window", "Maximize", typeof(CustomCommands));
         public static readonly RoutedUICommand Hide = new RoutedUICommand("Hide window", "Hide", typeof(CustomCommands));
         public static readonly RoutedUICommand ShowShortcuts = new RoutedUICommand("Show shortcuts dialog", "ShowShortcuts", typeof(CustomCommands));

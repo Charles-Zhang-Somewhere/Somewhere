@@ -57,26 +57,25 @@ namespace SomewhereDesktop
             // Check new versions in background
             BackgroundCheckNewVersion();
         }
+        private void ShowRecentPathsDialog(string[] recent)
+        {
+            var options = recent.ToList();
+            options.Add("Clear History");
+            var dialog = new DialogWindow(this?.Visibility == Visibility.Visible ? this : null, 
+                "Recent homes", "Double click on a path to open Home repository.", options);
+            dialog.ShowDialog();
+            if (dialog.Selection == null)
+                this.Close();
+            else if (dialog.Selection == "Clear History")
+            {
+                CleanRecentHomePaths();
+                OpenHomeCommand_Executed(null, null);
+            }
+            else
+                OpenRepository(dialog.Selection);
+        }
         private void OpenRepository(string homeFolderpath)
         {
-            void ShowRecentPathsDialog(string[] recent)
-            {
-                var options = recent.ToList();
-                options.Add("Clear History");
-                var dialog = new DialogWindow(null, "Recent homes", 
-                    "Double click on a path to open Home repository.", options);
-                dialog.ShowDialog();
-                if (dialog.Selection == null)
-                    this.Close();
-                else if(dialog.Selection == "Clear History")
-                {
-                    CleanRecentHomePaths();
-                    OpenHomeCommand_Executed(null, null);
-                }
-                else
-                    OpenRepository(dialog.Selection);
-            }
-
             if (Commands != null)
                 Commands.Dispose();
 
@@ -689,6 +688,9 @@ namespace SomewhereDesktop
                     new DialogWindow(this, "Add file", InfoText).ShowDialog();
                     // Update info text
                     InfoText = text;
+                    // Select added item
+                    if (InventoryPanel.Visibility == Visibility.Visible)
+                        ActiveItem = Items.OrderBy(i => i.EntryDate).LastOrDefault() ?? ActiveItem;
                 }
             }
         }
@@ -794,6 +796,10 @@ namespace SomewhereDesktop
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 OpenRepository(dialog.FileName);
         }
+        private void RecentHomesCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void RecentHomesCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => ShowRecentPathsDialog(GetRecentHomePaths());
         private void NewHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void NewHomeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -1278,5 +1284,6 @@ namespace SomewhereDesktop
         }
 
         #endregion
+
     }
 }

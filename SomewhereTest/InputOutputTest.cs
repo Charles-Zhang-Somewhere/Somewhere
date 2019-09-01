@@ -27,7 +27,7 @@ namespace SomewhereTest
             // Mimic user interactive experience
             var info = new ProcessStartInfo()
             {
-                FileName = "somewhere",
+                FileName = "somewhere", // Notice this unit test require PATH is set so this executable can be found
                 WorkingDirectory = Helper.GetFolderPath(),
                 UseShellExecute = false,
                 RedirectStandardInput = true,
