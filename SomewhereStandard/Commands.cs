@@ -259,6 +259,11 @@ namespace Somewhere
             => Path.Combine(HomeDirectory, GetNewPhysicalName(itemname, itemID));
         #endregion
 
+        #region Configuration Shortcuts
+        public bool ShouldRecordCommits
+            => GetConfiguration<bool>("RegisterCommits");
+        #endregion
+
         #region Constants
         public const string ReleaseVersion = "V0.1.0";
         public const string DBName = "Home.somewhere";
@@ -317,7 +322,12 @@ namespace Somewhere
                 else
                 {
                     AddFile(itemname);
-                    if (args.Length == 2) AddTagsToFile(itemname, args[1].SplitTags());
+                    TryRecordCommit(JournalEvent.CommitOperation.AddFile, itemname, null);
+                    if (args.Length == 2)
+                    {
+                        var tags = AddTagsToFile(itemname, args[1].SplitTags());
+                        TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, itemname, tags.JoinTags());
+                    }
                     return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
                 }
             }
@@ -337,10 +347,15 @@ namespace Somewhere
                 foreach (var filename in newFiles)
                 {
                     AddFile(filename);
-                    if (args.Length == 2) AddTagsToFile(filename, tags);
+                    TryRecordCommit(JournalEvent.CommitOperation.AddFile, filename, null);
+                    if (args.Length == 2)
+                    {
+                        var resultTags = AddTagsToFile(filename, tags);
+                        TryRecordCommit(JournalEvent.CommitOperation.ChangeTag, filename, resultTags.JoinTags());
+                    }
                     result.Add($"[Added] `{filename}`");
                 }
-                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files" : "file")}.");
+                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files" : "file")} in database.");
                 return result;
             }
         }
@@ -1247,6 +1262,12 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         public void AddLog(string actionID, string content)
             => AddLog(new LogEvent() { Command = actionID, Result = content });
         /// <summary>
+        /// Add a journal entry to database in yaml
+        /// </summary>
+        public void AddJournal(JournalEvent content, JournalType type)
+            => Connection.ExecuteSQLNonQuery("insert into Journal(DateTime, Event, Type) values(@dateTime, @text, @type)",
+                new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content), type = type.ToString() });
+        /// <summary>
         /// Get ID of file (item) in database, this can sometimes be useful, though practical application shouldn't depend on it
         /// and should treat it as transient
         /// </summary>
@@ -1680,7 +1701,9 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
                         values ('InitialVersion', '" + ReleaseVersion + "', 'string', 'String code of software version that created this repository.')",
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
-                        values ('ThemeColors', '', 'string', 'Theme colors in YAML format.')"
+                        values ('ThemeColors', '', 'string', 'Theme colors in YAML format.')",
+                    @"INSERT INTO Configuration (Key, Value, Type, Comment) 
+                        values ('RegisterCommits', 'true', 'boolean', 'Indicates whether Somewhere should record commit operations into Journal; Commit records are used to reconstruct and dump the state of repository. Possible values are `true` and `false`.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
             }
@@ -1714,12 +1737,23 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                             @"select Value from Configuration where Key='ReleaseVersion'")
                             .Single<string>();
                         if (releaseVersion == null || releaseVersion != ReleaseVersion)
-                            _Connection.ExecuteSQLNonQuery(transaction, 
-                                @"INSERT OR REPLACE INTO Configuration (Key, Value, Type, Comment) 
+                        {
+                            // Add ReleaseVersion configuration property
+                            _Connection.ExecuteSQLNonQuery(transaction,
+                               @"INSERT OR REPLACE INTO Configuration (Key, Value, Type, Comment) 
                                 VALUES (@key, @value,
                                     COALESCE((SELECT Type FROM Configuration WHERE Key = @key), 'string'),
                                     COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'Somewhere executable release version.')
                                     )", new { key = "ReleaseVersion", value = ReleaseVersion });
+                            // Add RegisterCommits configuration property
+                            _Connection.ExecuteSQLNonQuery(transaction,
+                                @"INSERT OR REPLACE INTO Configuration (Key, Value, Type, Comment) 
+                                VALUES (@key, 
+                                    COALESCE((SELECT Value FROM Configuration WHERE Key = @key), 'true'),
+                                    COALESCE((SELECT Type FROM Configuration WHERE Key = @key), 'boolean'),
+                                    COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), @comment)
+                                    )", new { key = "RegisterCommits", comment = "Indicates whether Somewhere should record commit operations into Journal; Commit records are used to reconstruct and dump the state of repository. Possible values are `true` and `false`." });
+                        }
                         // Automatic update old Log table to new Journal table
                         if (_Connection.ExecuteQuery(transaction, @"SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Log'")
                             .Single<int>() != 0)
@@ -1825,6 +1859,35 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             // Show total only if we are at last page page
             if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)    // (Get ceiling)
                 Console.WriteLine($"Total: {fileRows.Count()}");
+        }
+        /// <summary>
+        /// Try to make a commit journal entry if commiting is enabled
+        /// </summary>
+        private void TryRecordCommit(JournalEvent.CommitOperation operation, string itemname, string value)
+        {
+            // Check whether we have enabled committing and record new journal entry in one single line instead of calling ShouldRecordCommits and AddJournal()
+            using(SQLiteTransaction transaction = Connection.BeginTransaction())
+            {
+                bool shouldRecordCommit = Connection.ExecuteQuery(transaction,
+                    @"select Value from Configuration where Key=@key", new { key = "RegisterCommits" })
+                    .Single<bool>();
+                if(shouldRecordCommit)
+                {
+                    Connection.ExecuteSQLNonQuery(transaction, "insert into Journal(DateTime, Event, Type) values(@dateTime, @text, @type)",
+                        new {
+                            dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                            text = new Serializer().Serialize(new JournalEvent()
+                                {
+                                    Operation = operation,
+                                    Target = itemname,
+                                    UpdateValue = value,
+                                    ValueFormat = JournalEvent.UpdateValueFormat.Full
+                                }),
+                            type = JournalType.Commit.ToString()
+                        });
+                    transaction.Commit();
+                }
+            }
         }
         #endregion
 

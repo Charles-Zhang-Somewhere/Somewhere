@@ -45,7 +45,7 @@ namespace Somewhere
     /// <summary>
     /// Journal is a superset of log
     /// </summary>
-    public class JournalEvent: LogEvent
+    public class JournalEvent
     {
         #region Type
         /// <summary>
