@@ -244,6 +244,7 @@ namespace SQLiteExtension
             while (reader.Read())   // Necessary to close the reading even if we have only one row
                 value = reader[0];
 
+            reader.Close();
             if (value == DBNull.Value && canBeNull)
                 return default(Type);
             else
@@ -308,6 +309,7 @@ namespace SQLiteExtension
                 // Add to return list
                 list.Add(ConvertExtension.ChangeType<type>(reader[0]));
 
+            reader.Close();
             return list;
         }
         #endregion

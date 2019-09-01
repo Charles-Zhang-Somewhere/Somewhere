@@ -60,6 +60,9 @@ namespace SomewhereTest
             Assert.Equal(1, Commands.FileCount);
             Assert.Equal(1, Commands.TagCount);
             Assert.Equal("1516", Commands.GetConfiguration("My.Test"));
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
         }
     }
 }

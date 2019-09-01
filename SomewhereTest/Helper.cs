@@ -34,6 +34,17 @@ namespace SomewhereTest
             Directory.CreateDirectory(unitTestFolderName);
         }
         /// <summary>
+        /// Clean up unit test folder
+        /// </summary>
+        public static void CleanTestFolderRemoveAllFiles([CallerMemberName] string unitTestFolderName = null)
+        {
+            // Make sure we (the runtime) are in the test folder
+            BaseTestLocationIsInBinaryOutputFolder();
+
+            if (Directory.Exists(unitTestFolderName))
+                Directory.Delete(unitTestFolderName, true);
+        }
+        /// <summary>
         /// Check whether a given test file exist in test folder
         /// </summary>
         public static bool TestFileExists(string fileName, [CallerMemberName] string unitTestFolderName = null)

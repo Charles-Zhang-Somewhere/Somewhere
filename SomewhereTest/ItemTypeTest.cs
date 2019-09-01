@@ -24,6 +24,9 @@ namespace SomewhereTest
             Assert.Equal(1, Commands.ItemCount);
             Assert.Equal(0, Commands.FileCount);
             Assert.Equal(1, Commands.FolderCount);
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
         }
         #endregion
 
@@ -41,6 +44,9 @@ namespace SomewhereTest
             Assert.Equal(0, Commands.FileCount);
             Assert.Equal(1, Commands.NoteCount);
             Assert.Equal(1, Commands.KnowledgeCount);
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
         }
         #endregion
     }

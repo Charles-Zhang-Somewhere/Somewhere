@@ -60,6 +60,7 @@ namespace Somewhere
         public void Dispose()
         {
             // Dispose DB connection
+            _Connection?.Close();
             _Connection?.Dispose();
             // Dispose FS watcher
             _FSWatcher?.Dispose();
@@ -1293,7 +1294,7 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// Rename a tag in database
         /// </summary>
         public void RenameTag(string tagname, string newTagname)
-            => Connection.ExecuteQuery("update Tag set Name=@newTagname where Name=@tagname", new { tagname, newTagname});
+            => Connection.ExecuteSQLNonQuery("update Tag set Name=@newTagname where Name=@tagname", new { tagname, newTagname});
         /// <summary>
         /// Change the name of a file by file ID
         /// </summary>
@@ -1782,6 +1783,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                         values ('RegisterCommits', 'true', 'boolean', 'Indicates whether Somewhere should record commit operations into Journal; Commit records are used to reconstruct and dump the state of repository. Possible values are `true` and `false`.')"
                 };
                 connection.ExecuteSQLNonQuery(commands);
+                connection.Close();
             }
             return Path.Combine(folderPath, DBName);
         }

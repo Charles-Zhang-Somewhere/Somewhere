@@ -19,6 +19,9 @@ namespace SomewhereTest
             Commands.New(); // Create a new db
             Commands.Cf("My.Property", "2019");
             Assert.Equal("2019", Commands.GetConfiguration("My.Property"));
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
         }
     }
 }
