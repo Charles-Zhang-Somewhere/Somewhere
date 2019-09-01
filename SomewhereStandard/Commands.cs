@@ -430,6 +430,7 @@ namespace Somewhere
         {
             ValidateArgs(args);
             string outputPath = args[0];
+            if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
             string format = args.Length == 2 ? args[1] : "csv";   // Default csv
             string targetName = args.Length == 3 ? args[2] : null;
             format = format.ToUpper();
@@ -511,13 +512,13 @@ namespace Somewhere
             }
         }
         [Command("Generate documentation of Somewhere program.", logged: false, category: "Misc.")]
-        [CommandArgument("path", "path for the generated file.")]
+        [CommandArgument("path", "path for the generated file; relative to home folder")]
         public IEnumerable<string> Doc(params string[] args)
         {
             string documentation = "SomewhereDoc.txt";
             if (args != null && args?.Length != 0)
                 documentation = args[0];
-            using (FileStream file = new FileStream(Path.Combine(HomeDirectory, documentation), FileMode.Create))
+            using (FileStream file = new FileStream(GetPathInHomeHolder(documentation), FileMode.Create))
             using (StreamWriter writer = new StreamWriter(file))
             {
                 foreach (string line in Help(null))
@@ -529,7 +530,7 @@ namespace Somewhere
                         writer.WriteLine(line);
                 }
             }
-            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? Path.Combine(HomeDirectory, documentation) : documentation)}" };
+            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? GetPathInHomeHolder(documentation) : documentation)}" };
         }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false, category: "Misc.")]
         [CommandArgument("commandname", "name of command", optional: true)]
@@ -644,6 +645,8 @@ namespace Somewhere
             ValidateArgs(args);
             string itemname = args[0];
             string newFilename = args[1];
+            if (itemname == newFilename)
+                return new string[] { $"Filename `{itemname}` is the same as new filename: `{newFilename}`." };
             int? id = GetFileID(itemname);
             if (id == null)
                 throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
@@ -1814,7 +1817,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 if (_Connection == null && IsHomePresent)
                 {
                     // Open connection
-                    _Connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Version=3;");
+                    _Connection = new SQLiteConnection($"DataSource={GetPathInHomeHolder(DBName)};Version=3;");
                     _Connection.Open();
                     // Automatic update
                     using (SQLiteTransaction transaction = _Connection.BeginTransaction())
