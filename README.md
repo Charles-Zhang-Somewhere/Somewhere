@@ -453,3 +453,8 @@ In summary, those tables:
 Before Somewhere reach a stable release, i.e. release version V0.5.0 or 250 commits - whichever comes first, you are ONLY allowed to download, compile and read the code. Released binary files are always free to be used in anyway you see fit - except no redistribution of source and binary files are allowed until further notice.
 
 When the concept and documentation for Somewhere is mature I will relax the license terms and provide a truly free license.
+
+# Trouble Shooting for Compilation
+
+1. Some unit test are "manual", this is intentional😉;
+2. You need to publish Somewhere, SomewhereStandard and SW projects to target platform (Portable won't work) before you can debug SomewhereDesktop
