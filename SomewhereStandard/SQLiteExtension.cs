@@ -34,12 +34,17 @@ namespace SQLiteExtension
     {
         #region Interface Method
         /// <summary>
+        /// Execute a SQL query (e.g. select) in a given transaction with SQLite parameters defined in an object
+        /// </summary>
+        public static SQLiteDataReader ExecuteQuery(this SQLiteConnection connection, SQLiteTransaction transaction, string command, object parameters = null, bool containsBlob = false)
+            => connection.BuildSQL(transaction, command, parameters, cmd =>
+                // Optionally we can store result to in-memory table: new DataTable().Load(reader);
+                cmd.ExecuteReader(containsBlob? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
+        /// <summary>
         /// Execute a SQL query (e.g. select) with given command and SQLite parameters defined in an object
         /// </summary>
         public static SQLiteDataReader ExecuteQuery(this SQLiteConnection connection, string command, object parameters = null, bool containsBlob = false)
-            => connection.BuildSQL(command, parameters, cmd =>
-                // Optionally we can store result to in-memory table: new DataTable().Load(reader);
-                cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
+            => ExecuteQuery(connection, null, command, parameters, containsBlob);
         /// <summary>
         /// Execute a SQL query (e.g. select) with given command and SQLite parameters defined in a dictionary for string parameters;
         /// Useful in cases parameter name need to be procedurally generated in which case objects won't work
@@ -49,10 +54,15 @@ namespace SQLiteExtension
                 // Optionally we can store result to in-memory table: new DataTable().Load(reader);
                 cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
         /// <summary>
+        /// Execute a SQL non-query (e.g. insert and update) in a given transaction with SQLite parameters defined in an object
+        /// </summary>
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, SQLiteTransaction transaction, string command, object parameters = null)
+            => connection.BuildSQL(transaction, command, parameters, cmd => { cmd.ExecuteNonQuery(); return null; });
+        /// <summary>
         /// Execute a SQL non-query (e.g. insert and update) with given command and SQLite parameters defined in an object
         /// </summary>
         public static void ExecuteSQLNonQuery(this SQLiteConnection connection, string command, object parameters = null)
-            => connection.BuildSQL(command, parameters, cmd => { cmd.ExecuteNonQuery(); return null; });
+            => ExecuteSQLNonQuery(connection, null, command, parameters);
         /// <summary>
         /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
         /// </summary>
@@ -95,25 +105,28 @@ namespace SQLiteExtension
         /// <summary>
         /// Build a sql command with given dynamic paramters using database provider methods
         /// </summary>
-        private static SQLiteDataReader BuildSQL(this SQLiteConnection connection, string command, object parameters,
+        private static SQLiteDataReader BuildSQL(this SQLiteConnection connection, SQLiteTransaction transaction,
+            string command, object parameters,
             Func<SQLiteCommand, SQLiteDataReader> action)
         {
             // Build command
-            using (SQLiteCommand cmd = new SQLiteCommand(command.TrimEnd(';'), connection))
+            SQLiteCommand cmd = transaction == null 
+                ? new SQLiteCommand(command.TrimEnd(';'), connection)
+                : new SQLiteCommand(command.TrimEnd(';'), connection, transaction);
+            // Handle parameters
+            if (parameters != null)
             {
-                // Handle parameters
-                if (parameters != null)
-                {
-                    foreach (PropertyInfo property in parameters.GetType().GetProperties())
-                        cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
-                }
-
-                // Execute command
-                SQLiteDataReader returnValue = action(cmd);    // May or may not return anything depending on 
-                // whether we are executing query or nonquery but just catch it
-
-                return returnValue;
+                foreach (PropertyInfo property in parameters.GetType().GetProperties())
+                    cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
             }
+
+            // Execute command
+            SQLiteDataReader returnValue = action(cmd);    // May or may not return anything depending on 
+            // whether we are executing query or nonquery but just catch it
+
+            // Manual dispose and return
+            cmd.Dispose();
+            return returnValue;
         }
         /// <summary>
         /// Build a sql command with given dynamic paramters using database provider methods

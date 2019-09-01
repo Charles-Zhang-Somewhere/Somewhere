@@ -1,4 +1,4 @@
-Implementation change log per **release**; Contents here should match that from [Release page](https://github.com/szinubuntu/Somewhere/releases) and serve as a text copy.
+Implementation *change log* per **release**; Contents here should match that from [Release page](https://github.com/szinubuntu/Somewhere/releases) and serve as a text copy.
 
 # V0.0.1
 
@@ -36,6 +36,15 @@ A functional version of CLI interface, with support for following commands. GUI 
 ## Detailed Change List
 
 # V0.1.0
+
+\[Major Feature\] This release is not compatible with earlier releases! Upon executing this version, your home repository will be updated automatically and earlier versions is no longer usable.
+
+The specific updates to the repository database are as follows:
+
+1. Change "**Log**" table's name to "**Journal**";
+2. Add a new attribute column "**Type**" to **Journal** table;
+3. Set all existing entries' **Type** field's value to "**Log**";
+4. Update repository version to `V0.1.0`.
 
 ## Summary
 

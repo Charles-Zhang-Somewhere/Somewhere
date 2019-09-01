@@ -155,7 +155,7 @@ namespace Somewhere
         /// Get count of log entry
         /// </summary>
         public int LogCount
-            => Connection.ExecuteQuery("select count(*) from Log").Single<int>();
+            => Connection.ExecuteQuery("select count(*) from Journal where Type='Log'").Single<int>();
         /// <summary>
         /// Get count of tags
         /// </summary>
@@ -260,7 +260,7 @@ namespace Somewhere
         #endregion
 
         #region Constants
-        public const string ReleaseVersion = "V0.0.5";
+        public const string ReleaseVersion = "V0.1.0";
         public const string DBName = "Home.somewhere";
         #endregion
 
@@ -1220,7 +1220,7 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// Add a log entry to database in yaml
         /// </summary>
         public void AddLog(LogEvent content)
-            => Connection.ExecuteSQLNonQuery("insert into Log(DateTime, Event) values(@dateTime, @text)",
+            => Connection.ExecuteSQLNonQuery("insert into Journal(DateTime, Event) values(@dateTime, @text)",
                 new { dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text = new Serializer().Serialize(content) });
         /// <summary>
         /// Add simple text log to database
@@ -1509,7 +1509,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     VALUES (@key, 
                         @value,
                         COALESCE((SELECT Type FROM Configuration WHERE Key = @key), 'string'),
-                        COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'A custom configuration')
+                        COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'A custom configuration.')
                         )", new { key, value });
         /// <summary>
         /// Get meta for a given item
@@ -1579,7 +1579,12 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// Get raw list of all logs
         /// </summary>
         public List<LogRow> GetAllLogs()
-            => Connection.ExecuteQuery(@"select * from Log").Unwrap<LogRow>();
+            => Connection.ExecuteQuery(@"select * from Journal where Type='Log'").Unwrap<LogRow>();
+        /// <summary>
+        /// Get raw list of all journal
+        /// </summary>
+        public List<JournalRow> GetAllJournal()
+            => Connection.ExecuteQuery(@"select * from Journal").Unwrap<JournalRow>();
         /// <summary>
         /// Get joined table between File, Tag and FileTag database tables
         /// </summary>
@@ -1627,9 +1632,10 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
 	                    FOREIGN KEY(""FileID"") REFERENCES ""File""(""ID""),
 	                    FOREIGN KEY(""TagID"") REFERENCES ""Tag""(""ID"")
                     )",
-                    @"CREATE TABLE ""Log"" (
+                    @"CREATE TABLE ""Journal"" (
 	                    ""DateTime""	TEXT,
-	                    ""Event""	TEXT
+	                    ""Event""	TEXT,
+                        ""Type""    TEXT DEFAULT 'Log'
                     )",
                     @"CREATE TABLE ""Configuration"" (
 	                    ""Key""	TEXT,
@@ -1673,8 +1679,32 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             {
                 if (_Connection == null && IsHomePresent)
                 {
+                    // Open connection
                     _Connection = new SQLiteConnection($"DataSource={Path.Combine(HomeDirectory, DBName)};Version=3;");
                     _Connection.Open();
+                    // Automatic update
+                    using (SQLiteTransaction transaction = _Connection.BeginTransaction())
+                    {
+                        // Automatic update release version
+                        string releaseVersion = _Connection.ExecuteQuery(transaction, 
+                            @"select Value from Configuration where Key='ReleaseVersion'")
+                            .Single<string>();
+                        if (releaseVersion == null || releaseVersion != ReleaseVersion)
+                            _Connection.ExecuteSQLNonQuery(transaction, 
+                                @"INSERT OR REPLACE INTO Configuration (Key, Value, Type, Comment) 
+                                VALUES (@key, @value,
+                                    COALESCE((SELECT Type FROM Configuration WHERE Key = @key), 'string'),
+                                    COALESCE((SELECT Comment FROM Configuration WHERE Key = @key), 'Somewhere executable release version.')
+                                    )", new { key = "ReleaseVersion", value = ReleaseVersion });
+                        // Automatic update old Log table to new Journal table
+                        if (_Connection.ExecuteQuery(transaction, @"SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Log'")
+                            .Single<int>() != 0)
+                        {
+                            _Connection.ExecuteSQLNonQuery(transaction, @"ALTER TABLE Log RENAME TO Journal");
+                            _Connection.ExecuteSQLNonQuery(transaction, @"ALTER TABLE Journal ADD COLUMN Type TEXT DEFAULT 'Log'"); // Will automatic set default values so no need for another @"Update Journal set Type='Log'"
+                        }
+                        transaction.Commit();
+                    }
                     return _Connection;
                 }
                 else if (_Connection != null && IsHomePresent)

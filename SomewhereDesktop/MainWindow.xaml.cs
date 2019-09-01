@@ -171,20 +171,50 @@ namespace SomewhereDesktop
                     $"A new version (**{newVersion}**) is available at address [{downloadAddress}]({downloadAddress})");
                 dialog.Show();
             }
+            // Extract MAJOR, MINOR, PATCH version string from version code in this form: 
+            // `VMAJOR-BETA/ALPHA+WHATEVER.MINOR-BETA/ALPHA+WHATEVER.PATCH-BETA/ALPHA+WHATEVER` 
+            // without space
+            string GetVersionNumber(string versionCode, string partName)
+            {
+                if (versionCode.ToLower().First() != 'v')
+                    throw new ArgumentException($"Invalid version code format: `{versionCode}`; Expect starting with 'v'.");
+                if (versionCode.Contains(' '))
+                    throw new ArgumentException($"Invalid version code format: `{versionCode}`; Should not contain space.");
+                // Remove leading v
+                versionCode = versionCode.Substring(1);
+                switch (partName.ToLower())
+                {
+                    case "major":
+                        return versionCode.Split('.')[0];
+                    case "minor":
+                        return versionCode.Split('.')[1];
+                    case "patch":
+                        return versionCode.Split('.')[2];
+                    default:
+                        throw new ArgumentException($"Invalid part name: `{partName}`; Expect one of MAJOR, MINOR and PATCH (case insensitive).");
+                }
+            }
             async void CheckNewVersion(object sender, DoWorkEventArgs e)
             {
                 string latestReleaseUrl = await GetRedirection("https://github.com/szinubuntu/Somewhere/releases/latest");
                 // Null check for exception
                 if (latestReleaseUrl == null) return;
-                // E.g. Format like https://github.com/szinubuntu/Somewhere/releases/tag/Va.b.c
+                // E.g. Format like https://github.com/szinubuntu/Somewhere/releases/tag/Va.b.c-alpha_or_beta
                 // Just return the "Va.b.c" part
                 var newVersion = latestReleaseUrl.Substring(latestReleaseUrl.LastIndexOf('/') + 1);
                 var currentVersion = Commands.ReleaseVersion;
                 // If we do not have a latest version, show notification dialog
-                if (newVersion != currentVersion)
+                if (newVersion != currentVersion
+                    && (Convert.ToInt32(GetVersionNumber(newVersion, "major")) > (Convert.ToInt32(GetVersionNumber(currentVersion, "major"))))
+                    && (Convert.ToInt32(GetVersionNumber(newVersion, "minor")) > (Convert.ToInt32(GetVersionNumber(currentVersion, "minor")))))
                     await Dispatcher.BeginInvoke(DispatcherPriority.Background,
                         new Action(() => {
                             ShowLatestVersionNotificationDialog(newVersion, currentVersion, latestReleaseUrl);
+                        }));
+                else
+                    await Dispatcher.BeginInvoke(DispatcherPriority.Background,
+                        new Action(() => {
+                            InfoText = "Current version is up-to-date.";
                         }));
                 // Dispose worker
                 worker.Dispose();
