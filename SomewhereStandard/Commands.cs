@@ -440,10 +440,14 @@ namespace Somewhere
                 repoState.PassThrough(GetAllCommits());
             try
             {
-                repoState.Dump((VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format), outputPath);
-                return new string[] { $"Repository state is dumped into {outputPath}" };
+                VirtualRepository.DumpFormat dumpFormat = (VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format);
+                try
+                {
+                    repoState.Dump(dumpFormat, outputPath);
+                    return new string[] { $"Repository state is dumped into {outputPath}" };
+                }
             }
-            catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }            
+            catch (Exception e) { return new string[] { $"Invalid output format `{format}`." }; }
         }
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
@@ -897,6 +901,7 @@ namespace Somewhere
             }
             // Delete from DB
             RemoveFile(itemname);
+            TryRecordCommit(JournalEvent.CommitOperation.DeleteFile, itemname, null);
             return result;
         }
         [Command("Removes a tag.", 
@@ -1896,7 +1901,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         private void InteractiveFileRows(IEnumerable<QueryRows.FileDetail> fileRows, int pageItemCount = 20)
         {
-            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name",-40}{"Rev. Time",-18}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
+            string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name (Alphabetical order)",-40}{"Rev. Time",-18}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
             Console.WriteLine(headerLine);
             Console.WriteLine(new string('-', headerLine.Length));
             int itemCount = 0, pageCount = 1;

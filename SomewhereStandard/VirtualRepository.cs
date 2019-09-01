@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Somewhere
 {
@@ -25,6 +26,10 @@ namespace Somewhere
             public string Name { get; set; }
             public string Tags { get; set; }
             public string Content { get; set; }
+            /// <summary>
+            /// Used for providing extra communicative information to the user, not data content
+            /// </summary>
+            public string Remark { get; set; }
         }
         #endregion
 
@@ -75,6 +80,9 @@ namespace Somewhere
                         break;
                     case JournalEvent.CommitOperation.AddFile:
                         items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
+                        break;
+                    case JournalEvent.CommitOperation.DeleteFile:
+                        items.Remove(commitEvent.Target);   // Assume it exists
                         break;
                     case JournalEvent.CommitOperation.ChangeItemName:
                         items[commitEvent.Target].Name = commitEvent.UpdateValue;    // Assume it exists and there is no name conflict due to natural order of commit journal records
@@ -154,6 +162,7 @@ namespace Somewhere
                         case JournalEvent.CommitOperation.RenameTag:
                         case JournalEvent.CommitOperation.CreateNote:
                         case JournalEvent.CommitOperation.AddFile:
+                        case JournalEvent.CommitOperation.DeleteFile:
                         default:
                             // Skip this commit event
                             continue;
@@ -167,18 +176,56 @@ namespace Somewhere
             int stepSequence = 1;
             foreach (var commit in relevantCommits.Reverse<JournalRow>())
             {
-                // Initialize new item
+                // Initialize new item by referring to an earlier version
                 Item newItem = new Item()
                 {
-                    Name = Items.LastOrDefault()?.Name + $"_Step: {stepSequence}", // Give it a name to show stages of changes throughout lifetime
+                    Name = $"(Step: {stepSequence})" + Regex.Replace(Items.LastOrDefault()?.Name ?? string.Empty, "\\(Step: .*?\\)(.*?)", "$1"), // Give it a name to show stages of changes throughout lifetime
                     Tags = Items.LastOrDefault()?.Tags,
                     Content = Items.LastOrDefault()?.Content
                 };
                 // Handle this commit event
                 var commitEvent = commit.JournalEvent;
-                newItem.Name = commitEvent.Operation == JournalEvent.CommitOperation.ChangeItemName 
-                    ? (commitEvent.UpdateValue + $"_Step: {stepSequence}")
-                    : (commitEvent.Target + $"_Step: {stepSequence}");
+                switch (commitEvent.Operation)
+                {
+                    case JournalEvent.CommitOperation.CreateNote:
+                        newItem.Name = $"(Step: {stepSequence})" + commitEvent.Target;  // Use note name
+                        newItem.Remark = "New";  // Indicate the note has been created at this step
+                        break;
+                    case JournalEvent.CommitOperation.AddFile:
+                        newItem.Name = $"(Step: {stepSequence})" + commitEvent.Target;  // Use file name
+                        newItem.Remark = "New";  // Indicate the file has been created at this step
+                        break;
+                    case JournalEvent.CommitOperation.DeleteFile:
+                        newItem.Remark = "Deleted";    // Indicate the file has been deleted at this step
+                        break;
+                    case JournalEvent.CommitOperation.ChangeItemName:
+                        newItem.Name = $"(Step: {stepSequence})" + commitEvent.UpdateValue;  // Use updated file name
+                        newItem.Remark = "Name change";  // Indicate name change at this step
+                        break;
+                    case JournalEvent.CommitOperation.ChangeItemTags:
+                        newItem.Tags = commitEvent.UpdateValue; // Use updated tags
+                        newItem.Remark = "Tag change";  // Indicate tag change at this step
+                        break;
+                    case JournalEvent.CommitOperation.ChangeItemContent:
+                        newItem.Content = commitEvent.UpdateValue;    // Use updated file content
+                        newItem.Remark = "Content change";  // Indicate content change at this step
+                        break;
+                    case JournalEvent.CommitOperation.RenameTag:
+                        newItem.Tags = newItem.Tags.SplitTags()
+                            .Except(new string[] { commitEvent.Target })
+                            .Union(new string[] { commitEvent.UpdateValue })
+                            .JoinTags();
+                        newItem.Remark = "Tag change";  // Indicate tag change at this step
+                        break;
+                    case JournalEvent.CommitOperation.DeleteTag:
+                        newItem.Tags = newItem.Tags.SplitTags()
+                            .Except(new string[] { commitEvent.Target })
+                            .JoinTags();
+                        newItem.Remark = "Tag change";  // Indicate tag change at this step
+                        break;
+                    default:
+                        break;
+                }
                 // Record sequence of changes
                 Items.Add(newItem);
                 // Increment
@@ -207,8 +254,8 @@ namespace Somewhere
                     using (StreamWriter writer = new StreamWriter(location))
                     {
                         Csv.CsvWriter.Write(writer, 
-                            new string[] { "Name", "Tags", "Content" }, 
-                            Items.Select(i => new string[] { EscapeCSV(i.Name), EscapeCSV(i.Tags), EscapeCSV(i.Content) }));
+                            new string[] { "Name", "Tags", "Content", "Remark" }, 
+                            Items.Select(i => new string[] { EscapeCSV(i.Name), EscapeCSV(i.Tags), EscapeCSV(i.Content), EscapeCSV(i.Remark) }));
                     }
                     break;
                 case DumpFormat.Report:

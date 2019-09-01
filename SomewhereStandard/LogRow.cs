@@ -57,6 +57,7 @@ namespace Somewhere
         {
             CreateNote,
             AddFile,
+            DeleteFile,
             ChangeItemName,
             ChangeItemTags,
             ChangeItemContent,
@@ -98,6 +99,7 @@ namespace Somewhere
         /// For available operations, those are the updated values:
         /// - CreateNote: N/A
         /// - AddFile: N/A
+        /// - DeleteFile: N/A
         /// - ChangeItemName: New name
         /// - ChangeItemTags: New updated tags (complete)
         /// - ChangeItemContent: New update content
