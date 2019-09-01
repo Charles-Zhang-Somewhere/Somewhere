@@ -804,6 +804,60 @@ namespace Somewhere
             result.Add($"{deletedFiles.Count} {(deletedFiles.Count > 1 ? "files are" : "file is")} permanantly deleted.");
             return result;
         }
+        [Command("Read content of an item.", category: "Display")]
+        [CommandArgument("itemname", "name of item; can be either managed or not managed")]
+        [CommandArgument("linecount", "the number of lines to display; if not specified, read all lines", optional: true)]
+        public IEnumerable<string> Read(params string[] args)
+        {
+            ValidateArgs(args);
+            string itemname = args[0];
+            int lineCount = args.Length == 2 ? Convert.ToInt32(args[1]) : 0;
+
+            IEnumerable<string> ReadPhysicalFile(string path)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        var lines = File.ReadAllLines(path);
+                        if (lineCount != 0)
+                            return lines.Take(lineCount);
+                        return lines;
+                    }
+                    else
+                        return new string[] { $"Specified file {path} doesn't exist." };
+                }
+                catch (Exception e) { return new string[] { $"Unable to read file: {e.Message}" }; }
+            }
+
+            // Validate file existence
+            int? id = GetFileID(itemname);
+            // Non-managed file, try to read from disk
+            if (id == null)
+            {
+                List<string> result = new List<string>();
+                result.Add($"(`{itemname}` is not managed.)");
+                result.AddRange(ReadPhysicalFile(itemname));
+                return result;
+            }
+            // Managed file
+            var file = GetFileDetail(id.Value);
+            if (file.Content != null)
+            {
+                var lines = file.Content.Split(new char[] { '\r', '\n' });
+                if (lineCount != 0)
+                    return lines.Take(lineCount);
+                return lines;
+            }
+            else
+            {
+                string path = GetPhysicalName(itemname);
+                if (!FileExistsAtHomeFolder(path))
+                    return new string[] { $"Item name `{itemname}` with path `{path}` doesn't exist at home folder." };
+                else
+                    return ReadPhysicalFile(path);
+            }
+        }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
             "If the file doesn't exist on disk or in database then will issue a warning instead of doing anything.", category: "File")]
         [CommandArgument("filename", "name of file")]
