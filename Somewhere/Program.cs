@@ -19,8 +19,9 @@ namespace Somewhere
             // Print working directory for identification
             if (args.Length == 0)
             {
-                Console.WriteLine($"Welcome to Somewhere, a tag-based personal file management system!");   // Show greeting only when it's not annoying, i.e. people not sending any specific command
-                Console.WriteLine($"Current working Directory: {Directory.GetCurrentDirectory()} {(Commands.IsHomePresent ? "" : "(Not a Home folder)")}");
+                Console.WriteLine($"Welcome to Somewhere (Version: {Commands.ReleaseVersion.ToLower()}), a tag-based personal file management system!");   // Show greeting only when it's not annoying, i.e. people not sending any specific command
+                Console.WriteLine($"Current Working Directory: {Directory.GetCurrentDirectory()}" +
+                    $"{(Commands.IsHomePresent ? $" (Created with {Commands.GetConfiguration("InitialVersion").ToLower()})" : " (Not a Home folder)")}");
             }
 
             // Show help if no argument is given then enter interactive session
