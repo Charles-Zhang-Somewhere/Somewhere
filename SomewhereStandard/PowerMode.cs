@@ -1,10 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using StringHelper;
 
 namespace Somewhere
 {
+    /// <summary>
+    /// Power mode is an intrusive mode injecting behaviors onto normal commands,
+    /// in this sense power mode plays well with normal commands by exploiting 
+    /// conventions used by normal commands to provide extra behaviors e.g. auto completion,
+    /// in which case power mode augments existing commands without them needing to change 
+    /// implementation explicityly, as such power model is command-aware and command-specific.
+    /// </summary>
     internal class PowerMode
     {
         #region Entrance
@@ -38,14 +46,42 @@ namespace Somewhere
         }
         void ProcessInput()
         {
+            Tuple<string, string>[] extraCommands = new Tuple<string, string>[]
+            {
+                new Tuple<string, string>("clr", "clear screen")
+            };
+            void HandleExtraCommand(string command, string[] arguments)
+            {
+                switch (command)
+                {
+                    case "clr":
+                        ClearConsole();
+                        break;
+                }
+            }
             void ProcessCommand(string line)
             {
+                // Get command parameters
                 string[] positions = line.BreakCommandLineArgumentPositions();
                 string command = positions.GetCommandName().ToLower();
                 string[] arguments = positions.GetArguments();
-                var results = Commands.ExecuteCommand(command, arguments);
-                foreach (var result in results)
-                    PrintLine(result);
+                // Handle extra commands
+                if (extraCommands.Select(c => c.Item1).Contains(command))
+                    HandleExtraCommand(command, arguments);
+                // Handle normal commands
+                else
+                {
+                    var results = Commands.ExecuteCommand(command, arguments);
+                    foreach (var result in results)
+                        PrintLine(result);
+                    // Print extra commands
+                    if (command == "help")
+                    {
+                        PrintLine("Power Mode Commands: ");
+                        foreach (var item in extraCommands)
+                            PrintLine($"\tUse `{item.Item1}` to {item.Item2}.");
+                    }
+                }                
             }
             void AppendAndPrint(char c)
             {
@@ -439,6 +475,7 @@ namespace Somewhere
                 Console.CursorTop = i;
                 ClearLine();
             }
+            SetPosition(0, 0);
         }
         void SetPosition(int top, int left)
         {
