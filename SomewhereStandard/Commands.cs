@@ -1071,6 +1071,21 @@ namespace Somewhere
             ChangeFileTags(fileID.Value, tags);
             return new string[] { $"Item `{filename}` has been updated with {tags.Length} {(tags.Length > 1 ? "tags" : "tag")}: `{tags.JoinTags()}`." };
         }
+        [Command("Enter Somewhere power mode.", 
+            "Power mode operates on whole screen area and provides many keyboard specific behaviors.", category: "Advanced")]
+        public IEnumerable<string> X(params string[] args)
+        {
+            // Instantiate and enter power mode
+            if (new PowerMode().Enter(this, args))
+                InternalBreakSignal = true;
+            // Return empty
+            return new string[] { };
+        }
+        /// <summary>
+        /// Set by a command to indicate it wishes SW to exit completely;
+        /// Handled and respected by caller of commands, not enforced.
+        /// </summary>
+        public bool InternalBreakSignal { get; set; }
         #endregion
 
         #region Medium Level Functions (Operational Logics Involved)
@@ -1617,6 +1632,11 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// </summary>
         public List<FileRow> GetAllItems()
             => Connection.ExecuteQuery(@"select * from File").Unwrap<FileRow>();
+        /// <summary>
+        /// Get raw list of all non-knowledge item names
+        /// </summary>
+        public List<string> GetAllItemNames()
+            => Connection.ExecuteQuery(@"select Name from File where Name is not null").List<string>();
         /// <summary>
         /// Get raw list of all configurations
         /// </summary>

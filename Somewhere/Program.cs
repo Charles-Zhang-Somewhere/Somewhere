@@ -46,6 +46,9 @@ namespace Somewhere
                         var commandName = positions.GetCommandName();
                         string[] arguments = positions.GetArguments();
                         Commands.ProcessCommand(commandName, arguments);
+                        // Handle command's wish to exit completely
+                        if (Commands.InternalBreakSignal)
+                            break;
                     }
                 }
             }
