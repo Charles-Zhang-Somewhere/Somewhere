@@ -1627,6 +1627,11 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public List<FileRow> GetAllItems()
             => Connection.ExecuteQuery(@"select * from File").Unwrap<FileRow>();
         /// <summary>
+        /// Get raw list of all non-knowledge item names
+        /// </summary>
+        public List<string> GetAllItemNames()
+            => Connection.ExecuteQuery(@"select Name from File where Name is not null").List<string>();
+        /// <summary>
         /// Get raw list of all configurations
         /// </summary>
         public List<ConfigurationRow> GetAllConfigurations()

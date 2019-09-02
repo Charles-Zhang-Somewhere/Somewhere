@@ -87,6 +87,7 @@ namespace Somewhere
             int PreviousHintCount = 0;
             string PreviousHintCommand = string.Empty;  // Optimization, avoid hinting again
             string[] PreviousArguments = null;
+            string CurrentLine = null;
             void HintTabCompletion()
             {
                 // Print single line of hint
@@ -119,31 +120,43 @@ namespace Somewhere
                     SetPosition(currentTop, currentLeft);
                     PreviousHintCount = lines.Count();
                 }
+                void UpdateHintForCommandWithFiltering(bool shouldUpdate, IEnumerable<string> options, string keyword)
+                {
+                    if (shouldUpdate)
+                    {
+                        PrintHintLines(options
+                            // Search filter
+                            .Where(f => keyword != null ? f.ToLower().StartsWith(keyword) : true)
+                            // Return results
+                            .Select((f, i) => $"{i + 1}. {f}"));
+                    }
+                }
                 // Get current typed commands
-                string currentLine = Buffer.ToString();
-                if(!string.IsNullOrEmpty(currentLine))
+                CurrentLine = Buffer.ToString();
+                if (!string.IsNullOrEmpty(CurrentLine))
                 {
                     // Get command parameters
-                    string[] positions = currentLine.BreakCommandLineArgumentPositions();
+                    string[] positions = CurrentLine.BreakCommandLineArgumentPositions();
                     string command = positions.GetCommandName().ToLower();
                     string[] arguments = positions.GetArguments();
+                    bool conditionChanged = PreviousHintCommand != CurrentLine.Trim()
+                        || ((arguments.Length != 0 || PreviousArguments.Length != 0) && !PreviousArguments.SequenceEqual(arguments));
                     // Show completion for very specific commands
                     switch (command)
                     {
                         // Hint add
                         case "add":
-                            if (PreviousHintCommand != currentLine.Trim()
-                                || ((arguments.Length != 0 || PreviousArguments.Length != 0) && !PreviousArguments.SequenceEqual(arguments)))
-                            {
-                                PrintHintLines(Directory
-                                    .GetFiles(Commands.HomeDirectory)
-                                    // Get name only
-                                    .Select(f => Path.GetFileName(f))
-                                    // Search filter
-                                    .Where(f => arguments.Length > 0 ? f.ToLower().StartsWith(arguments[0].ToLower()) : true)
-                                    // Return results
-                                    .Select((f, i) => $"{i + 1}. {f}"));
-                            }
+                            UpdateHintForCommandWithFiltering(conditionChanged,
+                                // Get name only
+                                Directory.GetFiles(Commands.HomeDirectory).Select(f => Path.GetFileName(f)), 
+                                arguments.Length > 0 ? arguments[0] : null);
+                            break;
+                        case "mv":
+                            UpdateHintForCommandWithFiltering(conditionChanged, Commands.GetAllItemNames(),
+                                arguments.Length > 0 ? arguments[0] : null);
+                            break;
+                        case "create":
+                            UpdateHintForCommandWithFiltering(PreviousHintCommand != command, Commands.Help("create"), null);
                             break;
                         default:
                             if (PreviousHintCount != 0)
