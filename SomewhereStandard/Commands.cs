@@ -1076,10 +1076,16 @@ namespace Somewhere
         public IEnumerable<string> X(params string[] args)
         {
             // Instantiate and enter power mode
-            new PowerMode().Enter(this, args);
+            if (new PowerMode().Enter(this, args))
+                InternalBreakSignal = true;
             // Return empty
             return new string[] { };
         }
+        /// <summary>
+        /// Set by a command to indicate it wishes SW to exit completely;
+        /// Handled and respected by caller of commands, not enforced.
+        /// </summary>
+        public bool InternalBreakSignal { get; set; }
         #endregion
 
         #region Medium Level Functions (Operational Logics Involved)

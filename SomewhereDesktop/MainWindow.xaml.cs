@@ -1015,7 +1015,7 @@ namespace SomewhereDesktop
                     if (chord.Length > 1)
                         result.AppendLine($"{command}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
-                    string[] disabledCommands = new string[] { "files", "find", "purge" };
+                    string[] disabledCommands = new string[] { "files", "find", "purge", "x" };
                     if (disabledCommands.Contains(command))
                     {
                         ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";

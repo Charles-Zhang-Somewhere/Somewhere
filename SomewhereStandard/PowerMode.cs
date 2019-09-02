@@ -17,7 +17,8 @@ namespace Somewhere
     internal class PowerMode
     {
         #region Entrance
-        internal void Enter(Commands commands, string[] args)
+        /// <returns>Returns whether SW should exit completely</returns>
+        internal bool Enter(Commands commands, string[] args)
         {
             // Save parameters
             Commands = commands;
@@ -27,6 +28,7 @@ namespace Somewhere
             PrintWelcome();
             // Enter command loop
             CommandLoop();
+            return ShouldExitCompletely;
         }
         #endregion
 
@@ -48,7 +50,8 @@ namespace Somewhere
         {
             Tuple<string, string>[] extraCommands = new Tuple<string, string>[]
             {
-                new Tuple<string, string>("clr", "clear screen")
+                new Tuple<string, string>("clr", "clear screen"),
+                new Tuple<string, string>("exit", "exit Somewhere application")
             };
             void HandleExtraCommand(string command, string[] arguments)
             {
@@ -56,6 +59,10 @@ namespace Somewhere
                 {
                     case "clr":
                         ClearConsole(null);
+                        break;
+                    case "exit":
+                        ShouldExit = true;
+                        ShouldExitCompletely = true;
                         break;
                 }
             }
@@ -566,6 +573,7 @@ namespace Somewhere
             Buffer.Clear();
         }
         private bool ShouldExit = false;
+        private bool ShouldExitCompletely = false;
         void CommandLoop()
         {
             while (!ShouldExit)
