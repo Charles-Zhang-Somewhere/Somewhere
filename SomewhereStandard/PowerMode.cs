@@ -80,10 +80,13 @@ namespace Somewhere
                         PrintLine("Power Mode Commands: ");
                         foreach (var item in extraCommands)
                             PrintLine($"\tUse `{item.Item1}` to {item.Item2}.");
+                        PrintLine("Press `ESC` to exit power mode.");
                     }
                 }                
             }
             int PreviousHintCount = 0;
+            string PreviousHintCommand = string.Empty;  // Optimization, avoid hinting again
+            string[] PreviousArguments = null;
             void HintTabCompletion()
             {
                 // Print single line of hint
@@ -106,44 +109,57 @@ namespace Somewhere
                     ClearLines(PreviousHintCount);
                     Left = 0;
                     foreach (var line in lines)
+                    {
                         // Avoid overflow
-                        if(Top <= WindowHeight)
+                        if (Top < WindowHeight)
                             PrintLine(line);
+                        else
+                            break;
+                    }   
                     SetPosition(currentTop, currentLeft);
                     PreviousHintCount = lines.Count();
                 }
                 // Get current typed commands
                 string currentLine = Buffer.ToString();
-                // Get command parameters
-                string[] positions = currentLine.BreakCommandLineArgumentPositions();
-                string command = positions.GetCommandName().ToLower();
-                string[] arguments = positions.GetArguments();
-                // Show completion for very specific commands
-                switch (command)
+                if(!string.IsNullOrEmpty(currentLine))
                 {
-                    case "add":
-                        PrintHintLines(Directory
-                            .GetFiles(Commands.HomeDirectory)
-                            // Get name only
-                            .Select(f => Path.GetFileName(f))
-                            // Search filter
-                            .Where(f => arguments.Length > 0 ? f.ToLower().StartsWith(arguments[0].ToLower()) : true)
-                            // Return results
-                            .Select((f, i) => $"{i + 1}. {f}"));
-                        break;
-                    default:
-                        if (string.IsNullOrEmpty(command) && PreviousHintCount != 0)
-                            ClearLine(Top + 1);
-                        else
-                            PrintHint("No suggestions available.");
-                        break;
+                    // Get command parameters
+                    string[] positions = currentLine.BreakCommandLineArgumentPositions();
+                    string command = positions.GetCommandName().ToLower();
+                    string[] arguments = positions.GetArguments();
+                    // Show completion for very specific commands
+                    switch (command)
+                    {
+                        // Hint add
+                        case "add":
+                            if (PreviousHintCommand != currentLine.Trim()
+                                || ((arguments.Length != 0 || PreviousArguments.Length != 0) && !PreviousArguments.SequenceEqual(arguments)))
+                            {
+                                PrintHintLines(Directory
+                                    .GetFiles(Commands.HomeDirectory)
+                                    // Get name only
+                                    .Select(f => Path.GetFileName(f))
+                                    // Search filter
+                                    .Where(f => arguments.Length > 0 ? f.ToLower().StartsWith(arguments[0].ToLower()) : true)
+                                    // Return results
+                                    .Select((f, i) => $"{i + 1}. {f}"));
+                            }
+                            break;
+                        default:
+                            if (PreviousHintCount != 0)
+                                ClearLines(Top + 1, PreviousHintCount);
+                            else
+                                PrintHint("No suggestions available.");
+                            break;
+                    }
+                    PreviousHintCommand = command;
+                    PreviousArguments = arguments;
                 }
             }
             void AppendAndPrint(char c)
             {
                 Buffer.Append(c);
                 Print(c);
-                HintTabCompletion();
             }
             bool breakProcessing = false;
             while (!breakProcessing)
@@ -211,8 +227,7 @@ namespace Somewhere
                             Buffer.Remove(Buffer.Length - 1, 1);
                             ClearCharacter();
                         }
-                        if (Buffer.Length == 0 && PreviousHintCount != 0)
-                            ClearLine(Top + 1);
+                        HintTabCompletion();
                         break;
                     case ConsoleKey.BrowserBack:
                         break;
@@ -291,11 +306,16 @@ namespace Somewhere
                     // Control Keys
                     case ConsoleKey.Enter:
                         breakProcessing = true;
+                        if (PreviousHintCount != 0)
+                            ClearLines(Top + 1, PreviousHintCount);
                         break;
                     case ConsoleKey.Escape:
                         ShouldExit = true;
-                        ClearLines(Top + 1,PreviousHintCount);
-                        PrintLine();
+                        if(PreviousHintCount != 0)
+                            ClearLines(Top + 1,PreviousHintCount);
+                        Top += 1;
+                        Left = 0;
+                        PrintLine("Exit power mode.");
                         return;
                     case ConsoleKey.Delete:
                         break;
@@ -332,177 +352,190 @@ namespace Somewhere
                     case ConsoleKey.Subtract:
                         break;
                     case ConsoleKey.A:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.B:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.C:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.E:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.F:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.G:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.H:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.I:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.J:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.K:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.L:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;                   
                     case ConsoleKey.M:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.N:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.O:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.P:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Q:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.R:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.S:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.T:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.U:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.V:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.W:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.X:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Y:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Z:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Spacebar:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     // Number keys
                     case ConsoleKey.NumPad0:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad1:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad2:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad3:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad4:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad5:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad6:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad7:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad8:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.NumPad9:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D0:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D1:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D2:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D3:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D4:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D5:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D6:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D7:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D8:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.D9:
-                        AppendAndPrint(key.KeyChar);
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
-                    // OEM
+                    // OEM Characters
                     case ConsoleKey.Oem1:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem102:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem2:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem3:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem4:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem5:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem6:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem7:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.Oem8:
-                        break;
-                    case ConsoleKey.OemClear:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.OemComma:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.OemMinus:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.OemPeriod:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     case ConsoleKey.OemPlus:
+                        AppendAndPrint(key.KeyChar); HintTabCompletion();
                         break;
                     // Unidentified
+                    case ConsoleKey.OemClear:
+                        break;
                     case ConsoleKey.NoName:
                         break;
                     default:
@@ -510,7 +543,10 @@ namespace Somewhere
                 }
                 // Unicode character?
                 if ((byte)key.Key == 0 && (int)key.KeyChar != 0)
+                {
                     AppendAndPrint(key.KeyChar);
+                    HintTabCompletion();
+                }
             }
             PrintLine();
             ProcessCommand(Buffer.ToString());
@@ -568,14 +604,13 @@ namespace Somewhere
         /// </summary>
         void ClearLines(int count)
         {
-            int currentLeft = Left;
+            if (count == 0) return;
             int currentTop = Top;
             for (int i = 0; i < count; i++)
             {
                 Top = currentTop + i;
                 ClearLine();
             }
-            Left = currentLeft;
             Top = currentTop;
         }
         /// <summary>
@@ -584,6 +619,7 @@ namespace Somewhere
         /// </summary>
         void ClearLines(int row, int count)
         {
+            if (count == 0) return;
             int currentLeft = Left;
             int currentTop = Top;
             Top = row;
