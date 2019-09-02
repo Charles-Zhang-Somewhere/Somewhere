@@ -23,7 +23,7 @@ namespace Somewhere
             Commands = commands;
             Arguments = args;
             // Clear console and show welcome message
-            ClearConsole();
+            ClearConsole(Top);
             PrintWelcome();
             // Enter command loop
             CommandLoop();
@@ -41,9 +41,8 @@ namespace Somewhere
         {
             // Go to top left corner
             SetPosition(0, 0);
-            Print("Welcome to Somewhere - Power Mode");
-            // Set cursor location for user input
-            SetPosition(1, 0);
+            // Print a new line to also set cursor location for user input at next line
+            PrintLine("Welcome to Somewhere - Power Mode");
         }
         void ProcessInput()
         {
@@ -56,7 +55,7 @@ namespace Somewhere
                 switch (command)
                 {
                     case "clr":
-                        ClearConsole();
+                        ClearConsole(null);
                         break;
                 }
             }
@@ -84,28 +83,34 @@ namespace Somewhere
                     }
                 }                
             }
+            int PreviousHintCount = 0;
             void HintTabCompletion()
             {
+                // Print single line of hint
                 void PrintHint(string text)
                 {
-                    int currentLeft = Console.CursorLeft;
+                    int currentLeft = Left;
                     SetPositionOffset(1, 0);
-                    SetPosition(null, 0);
-                    Print(text);
-                    SetPositionOffset(-1, 0);
-                    SetPosition(null, currentLeft);
+                    ClearLines(PreviousHintCount);
+                    Left = 0;
+                    PrintLine(text);    // Append new line in case window resizes
+                    SetPositionOffset(-2, 0);
+                    Left = currentLeft;
+                    PreviousHintCount = 1;
                 }
                 void PrintHintLines(IEnumerable<string> lines)
                 {
-                    int currentLeft = Console.CursorLeft;
-                    int currentTop = Console.CursorTop;
+                    int currentLeft = Left;
+                    int currentTop = Top;
                     SetPositionOffset(1, 0);
-                    SetPosition(null, 0);
+                    ClearLines(PreviousHintCount);
+                    Left = 0;
                     foreach (var line in lines)
                         // Avoid overflow
-                        if(Console.CursorTop <= Console.WindowHeight)
+                        if(Top <= WindowHeight)
                             PrintLine(line);
                     SetPosition(currentTop, currentLeft);
+                    PreviousHintCount = lines.Count();
                 }
                 // Get current typed commands
                 string currentLine = Buffer.ToString();
@@ -127,7 +132,10 @@ namespace Somewhere
                             .Select((f, i) => $"{i + 1}. {f}"));
                         break;
                     default:
-                        PrintHint("No suggestions available.");
+                        if (string.IsNullOrEmpty(command) && PreviousHintCount != 0)
+                            ClearLine(Top + 1);
+                        else
+                            PrintHint("No suggestions available.");
                         break;
                 }
             }
@@ -198,6 +206,13 @@ namespace Somewhere
                     case ConsoleKey.Attention:
                         break;
                     case ConsoleKey.Backspace:
+                        if (Buffer.Length > 0 && Left > 0)
+                        {
+                            Buffer.Remove(Buffer.Length - 1, 1);
+                            ClearCharacter();
+                        }
+                        if (Buffer.Length == 0 && PreviousHintCount != 0)
+                            ClearLine(Top + 1);
                         break;
                     case ConsoleKey.BrowserBack:
                         break;
@@ -279,6 +294,7 @@ namespace Somewhere
                         break;
                     case ConsoleKey.Escape:
                         ShouldExit = true;
+                        ClearLines(Top + 1,PreviousHintCount);
                         PrintLine();
                         return;
                     case ConsoleKey.Delete:
@@ -512,37 +528,102 @@ namespace Somewhere
         #endregion
 
         #region Helper Methods
+        /// <summary>
+        /// Removes one character from current line;
+        /// Assume left boundary safe;
+        /// Updates cursor position
+        /// </summary>
+        void ClearCharacter()
+        {
+            Left = Left - 1;
+            Print(' ');
+            Left = Left - 1;
+        }
+        /// <summary>
+        /// Clears current line;
+        /// Updates cursor position
+        /// </summary>
         void ClearLine()
         {
-            Console.CursorLeft = 0;
-            Console.Write(new string(' ', Console.WindowWidth));
+            Left = 0;
+            Print(new string(' ', WindowWidth));
+            Left = 0;
         }
-        void ClearConsole()
+        /// <summary>
+        /// Clears line at specified row and goes back to current position;
+        /// Updates cursor position
+        /// </summary>
+        void ClearLine(int row)
         {
-            for (int i = 0; i < Console.WindowHeight; i++)
+            int currentLeft = Left;
+            int currentTop = Top;
+            Top = row;
+            ClearLine();
+            Left = currentLeft;
+            Top = currentTop;
+        }
+        /// <summary>
+        /// Clears specified number of lines starting from current line;
+        /// Updates cursor position
+        /// </summary>
+        void ClearLines(int count)
+        {
+            int currentLeft = Left;
+            int currentTop = Top;
+            for (int i = 0; i < count; i++)
             {
-                Console.CursorTop = i;
+                Top = currentTop + i;
+                ClearLine();
+            }
+            Left = currentLeft;
+            Top = currentTop;
+        }
+        /// <summary>
+        /// Clears specified number of lines starting from given line and goes back to current position;
+        /// Updates cursor position
+        /// </summary>
+        void ClearLines(int row, int count)
+        {
+            int currentLeft = Left;
+            int currentTop = Top;
+            Top = row;
+            ClearLines(count);
+            Left = currentLeft;
+            Top = currentTop;
+        }
+        void ClearConsole(int? lowerHeight)
+        {
+            for (int i = 0; i < (lowerHeight ?? WindowHeight); i++)
+            {
+                Top = i;
                 ClearLine();
             }
             SetPosition(0, 0);
         }
         void SetPosition(int top, int left)
         {
-            Console.CursorTop = top;
-            Console.CursorLeft = left;
-        }
-        void SetPosition(int? top, int? left)
-        {
-            if(top != null)
-                Console.CursorTop = top.Value;
-            if(left != null)
-                Console.CursorLeft = left.Value;
+            Top = top;
+            Left = left;
         }
         private void SetPositionOffset(int rowOff, int colOff)
         {
-            Console.CursorTop = Console.CursorTop + rowOff;
-            Console.CursorLeft = Console.CursorLeft + colOff;
+            Top = Top + rowOff;
+            Left = Left + colOff;
         }
+        int Left
+        {
+            get => Console.CursorLeft;
+            set => Console.CursorLeft = value;
+        }
+        int Top
+        {
+            get => Console.CursorTop;
+            set => Console.CursorTop = value;
+        }
+        int WindowWidth => Console.WindowWidth;
+        int WindowHeight => Console.WindowHeight;
+        int BufferWidth => Console.BufferWidth;
+        int BufferHeight => Console.BufferHeight;
         void Print(char character)
             => Console.Write(character);
         void Print(string text)
