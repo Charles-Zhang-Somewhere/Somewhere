@@ -1,6 +1,6 @@
 Implementation *change log* per **release**; Contents here should match that from [Release page](https://github.com/szinubuntu/Somewhere/releases) and serve as a text copy.
 
-# V0.0.1
+# V0.0.1 "CLI Functional Release"
 
 ## Summary
 
@@ -27,7 +27,7 @@ A functional version of CLI interface, with support for following commands. GUI 
 
 * \[Standard\] Basic commands implementations.
 
-# V0.0.5
+# V0.0.5 "Functional Desktop!"
 
 ## Summary
 
@@ -35,9 +35,22 @@ A functional version of CLI interface, with support for following commands. GUI 
 
 ## Detailed Change List
 
-# V0.1.0
+# V0.1.0-beta Somewhere "New Beta"🎉
 
-\[Major Feature\] This release is not compatible with earlier releases! Upon executing this version, your home repository will be updated automatically and earlier versions is no longer usable.
+Up-to-date executable..
+
+# V0.1.0-gamma "Gamma"
+
+Just a bit closer to actual release of `V0.1.0`.
+
+This version is distinct from [V0.1.0-beta](https://github.com/szinubuntu/Somewhere/releases/tag/V0.1.0-beta) with notable changes to **update mechanism** and **data table format**. Some other in-progress implementations are also packed in this release, e.g. **journaling** (i.e. anything up to [commit 140](https://github.com/szinubuntu/Somewhere/commit/cea08ca857f317a9a0a2b8e58babbc464af0223c)).
+
+All details of changes from V0.0.5 are expected to be summarized in the formal release of `V0.1.0`, which is expected real soon.
+
+# V0.1.0 "The Real Thing"
+
+* \[Major Feature\] Journaling system!
+* \[Major Feature\] This release is not compatible with earlier releases! Upon executing this version, your home repository will be updated automatically and earlier versions is no longer usable.
 
 The specific updates to the repository database are as follows:
 
