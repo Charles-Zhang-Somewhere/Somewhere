@@ -1072,7 +1072,7 @@ namespace Somewhere
             return new string[] { $"Item `{filename}` has been updated with {tags.Length} {(tags.Length > 1 ? "tags" : "tag")}: `{tags.JoinTags()}`." };
         }
         [Command("Enter Somewhere power mode.", 
-            "Power mode operates on whole screen area and provides many keyboard specific behaviors.", category: "Advanced")]
+            "Power mode operates on whole screen area and provides many keyboard specific behaviors.", logged: false, category: "Advanced")]
         public IEnumerable<string> X(params string[] args)
         {
             // Instantiate and enter power mode

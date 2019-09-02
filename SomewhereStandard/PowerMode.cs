@@ -78,6 +78,11 @@ namespace Somewhere
                 // Handle normal commands
                 else
                 {
+                    if(command == "x")
+                    {
+                        PrintLine("You are already inside power mode.");
+                        return;
+                    }
                     var results = Commands.ExecuteCommand(command, arguments);
                     foreach (var result in results)
                         PrintLine(result);
@@ -89,12 +94,20 @@ namespace Somewhere
                             PrintLine($"\tUse `{item.Item1}` to {item.Item2}.");
                         PrintLine("Press `ESC` to exit power mode and return to normal mode.");
                     }
-                }                
+                }
             }
             int PreviousHintCount = 0;
             string PreviousHintCommand = string.Empty;  // Optimization, avoid hinting again
             string[] PreviousArguments = null;
             string CurrentLine = null;
+            void ClearHints(int startingRow)
+            {
+                if (PreviousHintCount != 0)
+                {
+                    ClearLines(startingRow, PreviousHintCount);
+                    PreviousHintCount = 0;
+                }
+            }
             void HintTabCompletion()
             {
                 // Print single line of hint
@@ -155,7 +168,7 @@ namespace Somewhere
                         case "add":
                             UpdateHintForCommandWithFiltering(conditionChanged,
                                 // Get name only
-                                Directory.GetFiles(Commands.HomeDirectory).Select(f => Path.GetFileName(f)), 
+                                Directory.GetFiles(Commands.HomeDirectory).Select(f => Path.GetFileName(f)),
                                 arguments.Length > 0 ? arguments[0] : null);
                             break;
                         case "rm":
@@ -166,16 +179,23 @@ namespace Somewhere
                         case "create":
                             UpdateHintForCommandWithFiltering(PreviousHintCommand != command, Commands.Help("create"), null);
                             break;
+                        case "x":
+                            PrintHint("You are already inside power mode.");
+                            break;
+                        case "exit":
+                            PrintHint("Exit SW completely.");
+                            break;
                         default:
                             if (PreviousHintCount != 0)
-                                ClearLines(Top + 1, PreviousHintCount);
-                            else
-                                PrintHint("No suggestions available.");
+                                ClearHints(Top + 1);
+                            PrintHint("No suggestions available.");
                             break;
                     }
                     PreviousHintCommand = command;
                     PreviousArguments = arguments;
                 }
+                else if (string.IsNullOrEmpty(CurrentLine) && PreviousHintCount != 0)
+                    ClearHints(Top + 1);
             }
             void AppendAndPrint(char c)
             {
@@ -327,13 +347,11 @@ namespace Somewhere
                     // Control Keys
                     case ConsoleKey.Enter:
                         breakProcessing = true;
-                        if (PreviousHintCount != 0)
-                            ClearLines(Top + 1, PreviousHintCount);
+                        ClearHints(Top + 1);
                         break;
                     case ConsoleKey.Escape:
                         ShouldExit = true;
-                        if(PreviousHintCount != 0)
-                            ClearLines(Top + 1,PreviousHintCount);
+                        ClearHints(Top + 1);
                         Top += 1;
                         Left = 0;
                         PrintLine("Exit power mode.");
@@ -579,7 +597,7 @@ namespace Somewhere
         {
             while (!ShouldExit)
             {
-                Print("> ");
+                Print("⚡> ");
                 ProcessInput();
             }
         }
