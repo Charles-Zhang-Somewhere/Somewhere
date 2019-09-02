@@ -597,7 +597,7 @@ namespace Somewhere
         {
             while (!ShouldExit)
             {
-                Print("⚡> ");
+                Print("PWR> ");
                 ProcessInput();
             }
         }
