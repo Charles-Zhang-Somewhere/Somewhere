@@ -167,9 +167,11 @@ namespace SomewhereDesktop
             // Default installation path of VideoLAN.LibVLC.Windows
             var libDirectory = new DirectoryInfo(System.IO.Path.Combine(currentDirectory, "libvlc", IntPtr.Size == 4 ? "win-x86" : "win-x64"));
             VLCControl.BeginInit();
+            VLCControl.MouseDown += VLCControl_MouseDown;
             VLCControl.VlcLibDirectory = libDirectory;
             VLCControl.EndInit();
         }
+
         private VlcControl VLCControl { get; set; }
         private void BackgroundCheckNewVersion()
         {
@@ -413,7 +415,7 @@ namespace SomewhereDesktop
                 else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
                 {
                     PreviewWindowsFormsHost.Visibility = Visibility.Visible;
-                    VLCControl.Play(new Uri(Commands.GetPhysicalPath(ActiveItem.Name)));
+                    Play(Commands.GetPhysicalPath(ActiveItem.Name));
                 }
                 else
                 {
@@ -424,7 +426,7 @@ namespace SomewhereDesktop
         }
         private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".bmp" };
         private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm" };
-        private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv" };
+        private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
         #endregion
 
         #region Public View Properties
@@ -508,6 +510,8 @@ namespace SomewhereDesktop
         public string PreviewStatus { get => _PreviewStatus; set => SetField(ref _PreviewStatus, value); }
         private string _PreviewImage;
         public string PreviewImage { get => _PreviewImage; set => SetField(ref _PreviewImage, value); }
+        public string _PreviewInput;
+        public string PreviewInput { get => _PreviewInput; set => SetField(ref _PreviewInput, value); }
         private FileItemObjectModel _ActiveItem;
         public FileItemObjectModel ActiveItem
         {
@@ -998,7 +1002,7 @@ namespace SomewhereDesktop
         }
         private void ConsoleCommandInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if(e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
+            if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
             {
                 // Break a chord into notes, each key represent a seperate command
                 string[] chord = ConsoleInput.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -1028,6 +1032,27 @@ namespace SomewhereDesktop
                 e.Handled = true;
             }
         }
+        /// <summary>
+        /// Simple action command handling interface for previewed content
+        /// </summary>
+        private void PreviewActionInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(PreviewInput))
+            {
+                // Handle commands (in lower case)
+                var positions = PreviewInput.BreakCommandLineArgumentPositions();
+                var commandName = positions.GetCommandName();
+                string[] arguments = positions.GetArguments();
+                ProcessPreviewCommand(commandName, arguments);
+                PreviewInput = string.Empty;
+                e.Handled = true;
+            }
+        }
+        /// <summary>
+        /// Mouse down event for VLC player
+        /// </summary>
+        private void VLCControl_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
+            => Pause();
         /// <summary>
         /// Provides shortcut for note content textbox
         /// </summary>
@@ -1106,6 +1131,7 @@ namespace SomewhereDesktop
             TryCommitActiveNoteChange();
 
             // Dispose resources
+            VLCControl?.Stop(); VLCControl.Dispose(); VLCControl = null;
             Commands?.Dispose(); Commands = null;
             Popup?.Close(); Popup = null;
             LastWorker?.Dispose(); LastWorker = null;
@@ -1306,6 +1332,101 @@ namespace SomewhereDesktop
             return true;
         }
 
+        #endregion
+
+        #region Preview Actions
+        private Dictionary<MethodInfo, CommandAttribute> _CommandMethods = null;
+        private Dictionary<MethodInfo, CommandArgumentAttribute[]> _CommandArguments = null;
+        private Dictionary<string, MethodInfo> _CommandNames = null;
+        /// <summary>
+        /// Returns a list of all Command methods
+        /// </summary>
+        public Dictionary<MethodInfo, CommandAttribute> CommandAttributes
+            => _CommandMethods == null
+            ? (_CommandMethods = typeof(MainWindow).GetMethods(BindingFlags.Instance | BindingFlags.Public).ToDictionary(m => m,
+                m => m.GetCustomAttributes(typeof(CommandAttribute), false).SingleOrDefault() as CommandAttribute)
+                .Where(d => d.Value != null).ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
+            : _CommandMethods; // Return already initialized member
+        public Dictionary<MethodInfo, CommandArgumentAttribute[]> CommandArguments
+            => _CommandArguments == null
+            ? (_CommandArguments = CommandAttributes.ToDictionary(m => m.Key,
+                m => m.Key.GetCustomAttributes(typeof(CommandArgumentAttribute), false)
+                .Select(a => a as CommandArgumentAttribute).ToArray())
+                .ToDictionary(d => d.Key, d => d.Value))    // Initialize and return member
+            : _CommandArguments; // Return already initialized member
+        /// <summary>
+        /// Returns a list of all commands by name
+        /// </summary>
+        public Dictionary<string, MethodInfo> CommandNames
+            => _CommandNames == null
+            ? (_CommandNames = CommandAttributes.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
+            : _CommandNames;
+        private void ProcessPreviewCommand(string commandName, string[] arguments)
+        {
+            if (CommandNames.ContainsKey(commandName))
+            {
+                var method = CommandNames[commandName];
+                var attribute = CommandAttributes[method];
+                try
+                {
+                    // Execute the command
+                    IEnumerable<string> result = method.Invoke(this, new[] { arguments }) as IEnumerable<string>;
+                    StringBuilder builder = new StringBuilder();
+                    if (result != null)
+                        foreach (string line in result)
+                            builder.Append(line);
+                    InfoText = builder.ToString();
+                }
+                catch (Exception e) { InfoText = $"{e.InnerException.Message}"; }
+            }
+            else InfoText = $"Specified command `{commandName}` doesn't exist. Try again.";
+        }
+        [Command("Pause or continue play a preview video.")]
+        public IEnumerable<string> Pause(params string[] args)
+        {
+            if (VLCControl != null)
+            {
+                if (VLCControl.IsPlaying)
+                    VLCControl.Pause();
+                else
+                    VLCControl.Play();
+            }
+            return null;
+        }
+        [Command("Continue play or pause a preview video.")]
+        [CommandArgument("url", "an url to play", optional: true)]
+        public IEnumerable<string> Play(params string[] args)
+        {
+            if (VLCControl != null)
+            {
+                if (VLCControl.IsPlaying)
+                    VLCControl.Pause();
+                else
+                {
+                    // Play new media
+                    if (args.Length == 1)
+                    {
+                        VLCControl.Play(new Uri(args[0]));
+                        // Disable VLC input capture and handle it ourselves
+                        VLCControl.Video.IsMouseInputEnabled = false;
+                        VLCControl.Video.IsKeyInputEnabled = false;
+                    }
+                    // Continue play old media
+                    else
+                        VLCControl.Play();
+                }
+                return null;
+            }
+            else
+                return new string[] { "No preview source available. Open some video first." };
+        }
+        [Command("Show available commands.")]
+        [CommandArgument("command", "name of the command to show details", optional: true)]
+        public IEnumerable<string> Help(params string[] args)
+        {
+            string availableCommands = string.Join(", ", CommandNames.Keys.OrderBy(k=>k));
+            return new string[] { $"Available commands: {availableCommands}." };
+        }
         #endregion
     }
 }

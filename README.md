@@ -383,6 +383,18 @@ untag - Untag a file.
 		tags - comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; if the file doesn't have a specified tag then the tag is not effected
 ```
 
+## Inventory Tab Preview Commands
+
+Certain preview actions are available.
+
+```
+play - Play a new or continue play a video.
+	Options:
+			url - url to play
+pause - Pause a currently playing video.
+help - Show available preview actions.
+```
+
 # Somewhere Desktop Shortcuts
 
 The list of shortcuts are also available using `F12` button inside Somewhere Desktop app.
