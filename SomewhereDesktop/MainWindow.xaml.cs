@@ -42,8 +42,20 @@ namespace SomewhereDesktop
             Popup = new PopupSelectionWindow();
             // Create background worker search queue
             SearchKeywords = new ConcurrentBag<string>();
-            // Parse command line arguments
-            Arguments = ParseCommandlineArguments();
+            // Parse single command line argument as home repository path
+            if(Environment.GetCommandLineArgs().Length == 1)
+            {
+                string filePath = Environment.GetCommandLineArgs().Single();
+                // Load directly from somewhere repository database
+                if (System.IO.Path.GetFileName(filePath) == Commands.DBName)
+                    Arguments["dir"] = System.IO.Path.GetDirectoryName(filePath);
+                // Ignore it and initialize empty arguments dictionary
+                else
+                    Arguments = new Dictionary<string, string>();
+            }
+            // Parse as key-value pair command line arguments
+            else
+                Arguments = ParseCommandlineArguments();
             // Create Commands object
             if (Arguments.ContainsKey("dir"))
                 OpenRepository(Arguments["dir"]);
@@ -1199,7 +1211,7 @@ namespace SomewhereDesktop
                     Commands.ChangeFileTags(ActiveNote.ID, ActiveNote.TagsList);
                     // Update log and info display
                     Commands.AddLog("Update Item", $"Item #{ActiveNote.ID} `{ActiveNote.Name}` is updated in SD (Somewhere Desktop).");
-                    InfoText = $"Item `{ActiveNote.Name.Limit(150)}` saved.";
+                    InfoText = $"Item `{ActiveNote.Name?.Limit(150) ?? "(Knowledge)"}` saved.";
                 }
                 catch (Exception e)
                 {

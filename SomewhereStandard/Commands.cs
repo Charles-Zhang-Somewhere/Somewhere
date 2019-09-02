@@ -971,6 +971,7 @@ namespace Somewhere
             var managed = Connection.ExecuteQuery("select Name from File where Name is not null").List<string>()
                 ?.ToDictionary(f => f, f => 1 /* Dummy */) ?? new Dictionary<string, int>();
             List<string> result = new List<string>();
+            result.Add($"Home: {HomeDirectory}");
             result.Add($"{files.Count()} {(files.Count() > 1 ? "files" : "file")} on disk; " +
                 $"{directories.Count()} {(directories.Count() > 1 ? "directories" : "directory")} on disk.");
             result.Add($"------------");
