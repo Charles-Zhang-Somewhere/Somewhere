@@ -26,6 +26,9 @@ namespace Somewhere
         /// </summary>
         private class Item
         {
+            public Item(int rowID)
+                => RowID = rowID;
+            public int RowID { get; set; }
             public string Name { get; set; }
             public string Tags { get; set; }
             public string Content { get; set; }
@@ -51,9 +54,13 @@ namespace Somewhere
             /// </summary>
             CSV,
             /// <summary>
+            /// Dump table entries into log text file, includes row ids
+            /// </summary>
+            LOG,
+            /// <summary>
             /// Dump into a plain HTML report
             /// </summary>
-            Report,
+            HTML,
             /// <summary>
             /// Dump into a SQLite database
             /// </summary>
@@ -79,10 +86,10 @@ namespace Somewhere
                 switch (commitEvent.Operation)
                 {
                     case JournalEvent.CommitOperation.CreateNote:
-                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
+                        items.Add(commitEvent.Target, new Item(commit.RowID) { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
                         break;
                     case JournalEvent.CommitOperation.AddFile:
-                        items.Add(commitEvent.Target, new Item() { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
+                        items.Add(commitEvent.Target, new Item(commit.RowID) { Name = commitEvent.Target });    // Assum only success operations are recorded as commit journal entry
                         break;
                     case JournalEvent.CommitOperation.DeleteFile:
                         items.Remove(commitEvent.Target);   // Assume it exists
@@ -139,7 +146,7 @@ namespace Somewhere
         {
             // Extract all commit events
             var events = commits.Where(row => row.JournalType == JournalType.Commit)
-                .Select(row => row.JournalEvent).ToList();
+                .Select(row => new Tuple<int, JournalEvent>(row.RowID, row.JournalEvent)).ToList();
             // Go through each commit once to collect name progression
             Dictionary<string, List<string>> nameProgression = new Dictionary<string, List<string>>();  // The development of name changes for any given path
             Dictionary<string, HashSet<List<string>>> nameOccurences = new Dictionary<string, HashSet<List<string>>>();   // The occurences of names in any paths
@@ -150,8 +157,9 @@ namespace Somewhere
                 else
                     nameOccurences[name] = new HashSet<List<string>>() { sourcePath };
             }
-            foreach (var commitEvent in events)
+            foreach (var commit in events)
             {
+                var commitEvent = commit.Item2;
                 switch (commitEvent.Operation)
                 {
                     case JournalEvent.CommitOperation.CreateNote:
@@ -183,8 +191,9 @@ namespace Somewhere
                 else
                     tagOccurences[tag] = new HashSet<List<string>>() { sourcePath };
             }
-            foreach (var commitEvent in events)
+            foreach (var commit in events)
             {
+                var commitEvent = commit.Item2;
                 switch (commitEvent.Operation)
                 {
                     case JournalEvent.CommitOperation.ChangeItemTags:
@@ -221,7 +230,7 @@ namespace Somewhere
             if (!nameOccurences.ContainsKey(targetFilename))
                 return;
             // Go through each commit to find relevant commits
-            List<JournalEvent> relevantCommits = new List<JournalEvent>();
+            List<Tuple<int, JournalEvent>> relevantCommits = new List<Tuple<int, JournalEvent>>();
             HashSet<string> usedNames = new HashSet<string>(nameOccurences[targetFilename].SelectMany(path => path));
             bool IsTagUserEverInvolvedTargetFilename(string sourceTag)
                 => tagOccurences[sourceTag]
@@ -235,11 +244,12 @@ namespace Somewhere
                         nameProgression[name])
                     .Contains(targetFilename))
                 .Contains(true);
-            foreach (var commitEvent in events)
+            foreach (var commit in events)
             {
+                var commitEvent = commit.Item2;
                 // If event target is one of used names, then it's relevant
                 if (usedNames.Contains(commitEvent.Target))
-                    relevantCommits.Add(commitEvent);
+                    relevantCommits.Add(commit);
                 // If this operation is about tags, i.e. its target parameter is not name of item, then it can still be relevant
                 else if (commitEvent.Operation == JournalEvent.CommitOperation.RenameTag
                     || commitEvent.Operation == JournalEvent.CommitOperation.DeleteTag)
@@ -251,15 +261,16 @@ namespace Somewhere
                         IsTagUserEverInvolvedTargetFilename(oldTag) || 
                         // New tag's user is involved
                         (newTag != null && IsTagUserEverInvolvedTargetFilename(newTag)))
-                        relevantCommits.Add(commitEvent);
+                        relevantCommits.Add(commit);
                 }
             }
             // Go through each commit again to simulate changes in normal order
             int stepSequence = 1;
-            foreach (var commitEvent in relevantCommits)
+            foreach (var commit in relevantCommits)
             {
+                var commitEvent = commit.Item2;
                 // Initialize new item by referring to an earlier version
-                Item newItem = new Item()
+                Item newItem = new Item(commit.Item1)
                 {
                     Name = $"(Step: {stepSequence})" + Regex.Replace(Items.LastOrDefault()?.Name ?? string.Empty, "\\(Step: .*?\\)(.*?)", "$1"), // Give it a name to show stages of changes throughout lifetime
                     Tags = Items.LastOrDefault()?.Tags,
@@ -341,9 +352,20 @@ namespace Somewhere
                         Csv.CsvWriter.Write(writer, 
                             new string[] { "Name", "Tags", "Content", "Remark" }, 
                             Items.Select(i => new string[] { EscapeCSV(i.Name), EscapeCSV(i.Tags), EscapeCSV(i.Content), EscapeCSV(i.Remark) }));
+                        writer.Flush();
                     }
                     break;
-                case DumpFormat.Report:
+                case DumpFormat.LOG:
+                    using (StreamWriter writer = new StreamWriter(location))
+                    {
+                        writer.WriteLine("[Commits]");
+                        writer.WriteLine($"ROWID\tName\tTags");
+                        foreach (var item in Items)
+                            writer.WriteLine($"{item.RowID}\t{item.Name}\t{item.Tags}");
+                        writer.Flush();
+                    }
+                    break;
+                case DumpFormat.HTML:
                     throw new NotImplementedException();
                 case DumpFormat.SQLite:
                     throw new NotImplementedException();

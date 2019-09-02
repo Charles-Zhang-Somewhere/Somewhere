@@ -423,16 +423,16 @@ namespace Somewhere
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
         [Command("Dump historical versions of repository.", category: "Misc.")]
-        [CommandArgument("outputPath", "Path of output")]
-        [CommandArgument("outputFormat", "Format of output, available values: csv, report, sqlite", optional: true)]
-        [CommandArgument("targetItemname", "Name of an item to track history of changes", optional: true)]
+        [CommandArgument("outputPath", "path of output; contains Format of output, available extensions: .csv (lists with content), " +
+            ".log (commit journal), .html (report), .sqlite (database)")]
+        [CommandArgument("targetItemname", "name of an item to track history of changes; supported by `csv` format", optional: true)]
         public IEnumerable<string> Dump(params string[] args)
         {
             ValidateArgs(args);
             string outputPath = args[0];
             if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
-            string format = args.Length == 2 ? args[1] : "csv";   // Default csv
-            string targetName = args.Length == 3 ? args[2] : null;
+            string format = Path.GetExtension(outputPath).TrimStart('.');
+            string targetName = args.Length == 2 ? args[1] : null;
             format = format.ToUpper();
             // Get history and pass through it
             var repoState = new VirtualRepository();
@@ -1716,12 +1716,12 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// Get raw list of all commits
         /// </summary>
         public List<JournalRow> GetAllCommits()
-            => Connection.ExecuteQuery(@"select * from Journal where Type='Commit'").Unwrap<JournalRow>();
+            => Connection.ExecuteQuery(@"select rowid, * from Journal where Type='Commit'").Unwrap<JournalRow>();
         /// <summary>
         /// Get raw list of all journal
         /// </summary>
         public List<JournalRow> GetAllJournal()
-            => Connection.ExecuteQuery(@"select * from Journal").Unwrap<JournalRow>();
+            => Connection.ExecuteQuery(@"select rowid, * from Journal").Unwrap<JournalRow>();
         /// <summary>
         /// Get joined table between File, Tag and FileTag database tables
         /// </summary>

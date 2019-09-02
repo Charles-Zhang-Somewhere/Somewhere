@@ -30,6 +30,7 @@ namespace Somewhere
     /// </summary>
     public class JournalRow: LogRow
     {
+        public int RowID { get; set; }
         public string Type { get; set; }
         public JournalType JournalType 
             => (JournalType)Enum.Parse(typeof(JournalType), Type);
