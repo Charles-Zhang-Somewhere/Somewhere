@@ -31,6 +31,8 @@ This is /my file/ in Somewhere so I should be able to do <anything> I want with 
 
 However, names like that is *not really recommended* - you should name your file whatever way you wish but keep it **succinct and meaningful** so you can easily find it.
 
+3. Journals: Active version control! Not super optimized yet, but it works!
+
 **Who should use it**
 
 (I will change the tone below when I get a chance, doesn't sound very cool)
@@ -105,7 +107,7 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 20. (deprecated)Never touch physical files directly: to avoid erroenous file errors from programmer's fault..... something like master-slave copy and building a meta layer.... except virtual notes and text files we don't allow direct content modification from our side.... (lesson from MULTITUDE....)
 21. Simple + focused....
 22. No tag shall exist without an item? Or maybe we do want to pre-allocate tags
-23. （Experimental; Feature） Flat notes/tags and knowledge subsystem: don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
+23. （Experimental; Feature） Flat notes/tags and knowledge subsystem (**kw**): don't assume a context, e.g. "chapter 1" doesn't make sense - how to avoid redundancy? - Indexed knowledge point document Workflow, along with *annotated knowledge points* (must be succint/specific to differentiate from documents, or even wikipedia): extract knowledge at *bit level*.
 	* Operators: up, down, filter (scope and scroll details), import (multi line list, assign tags)
 	* Use `\`\`two tilts\`\`` with functional expression for math equations - but devising DSL is a dangerous thing because you risk never having an implementation, so just use LaTex instead.
 	* Knowledge operation command names: `ki` (import), `Ku`, `kd`, `kc` (knowledge **condense** into a copy a text file, under one name, can work for multiple tags in which case no best heading can be deduced directly)
@@ -150,6 +152,7 @@ Cautious:
 2. You can enter **chords** in Status Tab command line by appending "\n" to each command;
 3. Configuration keys prefixed with `<Anything you like>` + `.` (actually everything that has a any *special symbol* including space excluding colons in it will never be used as SW configuration keys) is reserved for personal use. You can exploit this to set arbitary custom repository level properties by using `cf` (configuration) command and create your own (configuration) properties: e.g. `cf My.Birthday 1995/03/05`, this will be saved in your repository and will not be touched by SW. There is no limit what you can save.
 4. (Markdown syntax shortcuts) When editing notes in Notebook Tab, you can select the texts you wish to apply formats then just type in Markdown format symbols to automatically apply brackets and bold and italic etc. Currently it supports: `` *_`'"([{ ``
+5. For time related notes, try tag it with date in this format: `yyyy-MM-dd` e.g. `2019-08-31`; Specialized sorting and related features might be implemented.
 
 ## Best Practices
 
@@ -233,6 +236,7 @@ Minimal UI, Functional, Data Driven, Text based.
 	* SW already have almost all functions SD has
 	* SD is already a desktop application
 	* With the addition of libVLC it can be really useful for Multi-media files
+2. Notice for journaling of notes, it's intended to save full instead of diff, this way it doesn't depend on GUID or ID for a note item (so the File table for database can be clean - though this is a design choice rather than something necessary, we could add an extra column so everything is a bit more complicated including how we handle deleting stuff), and the Journals can be more generic and serve as a sort of "meta" layer. If so desired, we could devise a seperate routine for condensing the commit history table by calculating and replacing **full** with **diff** contents. Supposedly current mechanism is sufficient for knowledge management.
 
 ## Roadmap and Next Steps
 
@@ -259,6 +263,7 @@ A functional and effective application may not just end here, I have several sim
 8. Test support for linux and mac for CLI.
 9. Enable embedding as an option (disabled, "Content" dedicated to text notes)
 10. Add support for compression and archiving
+11. Allow absolute paths arbitary item reference; Fully support sub-repository mechanism as an item (i.e. distinct from SM, integrated as part of reportisotyr mechanism, and allows more coherent information-knowledge-note-tag(as subject/terminology)-repostiroy(as whole treatment) pattern; Currently experimented inside My.All)
 
 **Stretch Goals**
 
