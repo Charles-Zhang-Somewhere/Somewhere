@@ -1071,6 +1071,15 @@ namespace Somewhere
             ChangeFileTags(fileID.Value, tags);
             return new string[] { $"Item `{filename}` has been updated with {tags.Length} {(tags.Length > 1 ? "tags" : "tag")}: `{tags.JoinTags()}`." };
         }
+        [Command("Enter Somewhere power mode.", 
+            "Power mode operates on whole screen area and provides many keyboard specific behaviors.", category: "Advanced")]
+        public IEnumerable<string> X(params string[] args)
+        {
+            // Instantiate and enter power mode
+            new PowerMode().Enter(this, args);
+            // Return empty
+            return new string[] { };
+        }
         #endregion
 
         #region Medium Level Functions (Operational Logics Involved)
