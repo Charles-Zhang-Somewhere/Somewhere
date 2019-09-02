@@ -87,7 +87,7 @@ namespace Somewhere
                         PrintLine("Power Mode Commands: ");
                         foreach (var item in extraCommands)
                             PrintLine($"\tUse `{item.Item1}` to {item.Item2}.");
-                        PrintLine("Press `ESC` to exit power mode.");
+                        PrintLine("Press `ESC` to exit power mode and return to normal mode.");
                     }
                 }                
             }
@@ -158,6 +158,7 @@ namespace Somewhere
                                 Directory.GetFiles(Commands.HomeDirectory).Select(f => Path.GetFileName(f)), 
                                 arguments.Length > 0 ? arguments[0] : null);
                             break;
+                        case "rm":
                         case "mv":
                             UpdateHintForCommandWithFiltering(conditionChanged, Commands.GetAllItemNames(),
                                 arguments.Length > 0 ? arguments[0] : null);
