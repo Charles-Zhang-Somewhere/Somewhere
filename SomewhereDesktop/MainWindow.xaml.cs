@@ -171,7 +171,6 @@ namespace SomewhereDesktop
             VLCControl.VlcLibDirectory = libDirectory;
             VLCControl.EndInit();
         }
-
         private VlcControl VLCControl { get; set; }
         private void BackgroundCheckNewVersion()
         {
@@ -1361,6 +1360,11 @@ namespace SomewhereDesktop
             => _CommandNames == null
             ? (_CommandNames = CommandAttributes.ToDictionary(m => m.Key.Name.ToLower(), m => m.Key)) // Initialize and return member
             : _CommandNames;
+        /// <summary>
+        /// Sessional settings;
+        /// All saved as lower cases
+        /// </summary>
+        public HashSet<string> QuickSettings { get; set; } = new HashSet<string>();
         private void ProcessPreviewCommand(string commandName, string[] arguments)
         {
             if (CommandNames.ContainsKey(commandName))
@@ -1381,7 +1385,27 @@ namespace SomewhereDesktop
             }
             else InfoText = $"Specified command `{commandName}` doesn't exist. Try again.";
         }
-        [Command("Pause or continue play a preview video.")]
+        [Command("Output all available commands into a text file.")]
+        [CommandArgument("filename", "name of the file to dump details", optional: true)]
+        public IEnumerable<string> Doc(params string[] args)
+        {
+            string documentation = "PreviewCommands.txt";
+            if (args.Length != 0)
+                documentation = args[0];
+            using (FileStream file = new FileStream(Commands.GetPathInHomeHolder(documentation), FileMode.Create))
+            using (StreamWriter writer = new StreamWriter(file))
+            {
+                writer.WriteLine(Help().Single());
+                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
+                {
+                    writer.WriteLine(); // Add empty line
+                    foreach (var line in GetCommandHelp(commandName))
+                        writer.WriteLine(line);
+                }
+            }
+            return new string[] { $"Document generated at {Commands.GetPathInHomeHolder(documentation)}" };
+        }
+        [Command("Pause or continue currenly playing video.")]
         public IEnumerable<string> Pause(params string[] args)
         {
             if (VLCControl != null)
@@ -1393,7 +1417,7 @@ namespace SomewhereDesktop
             }
             return null;
         }
-        [Command("Continue play or pause a preview video.")]
+        [Command("Play a new or continue play/pause a video.")]
         [CommandArgument("url", "an url to play", optional: true)]
         public IEnumerable<string> Play(params string[] args)
         {
@@ -1420,12 +1444,88 @@ namespace SomewhereDesktop
             else
                 return new string[] { "No preview source available. Open some video first." };
         }
-        [Command("Show available commands.")]
+        [Command("Set or Show available quick settings and current settings.")]
+        [CommandArgument("setting", "the setting to set", optional: true)]
+        public IEnumerable<string> Set(params string[] args)
+        {
+            if (args.Length == 0)
+                return new string[] { $"Available settings: " +
+                    $"npv - No Preview Video; " +
+                    $"Current settings: {string.Join(", ", QuickSettings.OrderBy(s => s))}" };
+            else if (args.Length == 1)
+            {
+                string setting = args[0].ToLower();
+                QuickSettings.Add(setting);
+                return new string[] { $"`{setting}` is set." };
+            }
+            else
+                return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
+        }
+        [Command("Unset or Show available quick settings and current settings.")]
+        [CommandArgument("setting", "the setting to unset", optional: true)]
+        public IEnumerable<string> Unset(params string[] args)
+        {
+            if (args.Length == 0)
+                return new string[] { $"Available settings: " +
+                    $"npv - No Preview Video; " +
+                    $"Current settings: {string.Join(", ", QuickSettings.OrderBy(s => s))}" };
+            else if (args.Length == 1)
+            {
+                string setting = args[0].ToLower();
+                QuickSettings.Remove(setting);
+                return new string[] { $"`{setting}` is unset." };
+            }
+            else
+                return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
+        }
+        [Command("Show available preview actions.")]
         [CommandArgument("command", "name of the command to show details", optional: true)]
         public IEnumerable<string> Help(params string[] args)
         {
-            string availableCommands = string.Join(", ", CommandNames.Keys.OrderBy(k=>k));
-            return new string[] { $"Available commands: {availableCommands}." };
+            // Show general help, i.e. commands list
+            if (args.Length == 0)
+            {
+                string availableCommands = string.Join(", ", CommandNames.Keys.OrderBy(k => k));
+                // Return single line
+                return new string[] { $"Available commands: {availableCommands}." };
+            }
+            // Show help of specific command in a single line
+            else if (args.Length == 1)
+            {
+                StringBuilder commandHelp = new StringBuilder();
+                string commandName = args[0];
+                MethodInfo command = CommandNames[commandName];
+                CommandAttribute commandAttribute = CommandAttributes[command];
+                commandHelp.Append($"{commandName} ({commandAttribute.Description}). ");
+                CommandArgumentAttribute[] arguments = CommandArguments[command];
+                if (arguments.Length != 0) commandHelp.Append($"Available options: ");
+                for (int i = 0; i < arguments.Length; i++)
+                {
+                    var argument = arguments[i];
+                    commandHelp.Append($"{argument.Name}{(argument.Optional ? "(Optional)" : "")} - {argument.Explanation}" +
+                        $"{(i == arguments.Length - 1 ? "." : "; ")}");
+                }                    
+                return new string[] { commandHelp.ToString() };
+            }
+            else
+                return new string[] { $"Invalid number or arguments: {args.Length} is given; one or none is expected." };
+        }
+        /// <summary>
+        /// Get a formatted help info for a given command
+        /// </summary>
+        private IEnumerable<string> GetCommandHelp(string commandName)
+        {
+            List<string> commandHelp = new List<string>();
+            MethodInfo command = CommandNames[commandName];
+            CommandAttribute commandAttribute = CommandAttributes[command];
+            commandHelp.Add($"{commandName} - {commandAttribute.Description}");
+            if (commandAttribute.Documentation != null)
+                commandHelp.Add($"\t{commandAttribute.Documentation}");
+            var arguments = CommandArguments[command];
+            if (arguments.Length != 0) commandHelp.Add($"\tOptions:");
+            foreach (var argument in arguments)
+                commandHelp.Add($"\t\t{argument.Name}{(argument.Optional ? "(Optional)" : "")} - {argument.Explanation}");
+            return commandHelp;
         }
         #endregion
     }

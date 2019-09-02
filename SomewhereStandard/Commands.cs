@@ -516,12 +516,12 @@ namespace Somewhere
         public IEnumerable<string> Doc(params string[] args)
         {
             string documentation = "SomewhereDoc.txt";
-            if (args != null && args?.Length != 0)
+            if (args.Length != 0)
                 documentation = args[0];
             using (FileStream file = new FileStream(GetPathInHomeHolder(documentation), FileMode.Create))
             using (StreamWriter writer = new StreamWriter(file))
             {
-                foreach (string line in Help(null))
+                foreach (string line in Help())
                     writer.WriteLine(line);
                 foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
                 {
@@ -530,14 +530,14 @@ namespace Somewhere
                         writer.WriteLine(line);
                 }
             }
-            return new string[] { $"Document generated at {((args != null && args.Length == 0) ? GetPathInHomeHolder(documentation) : documentation)}" };
+            return new string[] { $"Document generated at {GetPathInHomeHolder(documentation)}" };
         }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false, category: "Misc.")]
         [CommandArgument("commandname", "name of command", optional: true)]
         public IEnumerable<string> Help(params string[] args)
         {
             // Show list of commands
-            if (args == null || args.Length == 0)
+            if (args.Length == 0)
             {
                 var list = CommandAttributes
                 .OrderBy(cm => cm.Key.Name) // Sort alphabetically
