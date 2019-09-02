@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using StringHelper;
+using System.IO;
 
 namespace Somewhere
 {
@@ -83,10 +84,58 @@ namespace Somewhere
                     }
                 }                
             }
+            void HintTabCompletion()
+            {
+                void PrintHint(string text)
+                {
+                    int currentLeft = Console.CursorLeft;
+                    SetPositionOffset(1, 0);
+                    SetPosition(null, 0);
+                    Print(text);
+                    SetPositionOffset(-1, 0);
+                    SetPosition(null, currentLeft);
+                }
+                void PrintHintLines(IEnumerable<string> lines)
+                {
+                    int currentLeft = Console.CursorLeft;
+                    int currentTop = Console.CursorTop;
+                    SetPositionOffset(1, 0);
+                    SetPosition(null, 0);
+                    foreach (var line in lines)
+                        // Avoid overflow
+                        if(Console.CursorTop <= Console.WindowHeight)
+                            PrintLine(line);
+                    SetPosition(currentTop, currentLeft);
+                }
+                // Get current typed commands
+                string currentLine = Buffer.ToString();
+                // Get command parameters
+                string[] positions = currentLine.BreakCommandLineArgumentPositions();
+                string command = positions.GetCommandName().ToLower();
+                string[] arguments = positions.GetArguments();
+                // Show completion for very specific commands
+                switch (command)
+                {
+                    case "add":
+                        PrintHintLines(Directory
+                            .GetFiles(Commands.HomeDirectory)
+                            // Get name only
+                            .Select(f => Path.GetFileName(f))
+                            // Search filter
+                            .Where(f => arguments.Length > 0 ? f.ToLower().StartsWith(arguments[0].ToLower()) : true)
+                            // Return results
+                            .Select((f, i) => $"{i + 1}. {f}"));
+                        break;
+                    default:
+                        PrintHint("No suggestions available.");
+                        break;
+                }
+            }
             void AppendAndPrint(char c)
             {
                 Buffer.Append(c);
                 Print(c);
+                HintTabCompletion();
             }
             bool breakProcessing = false;
             while (!breakProcessing)
@@ -481,6 +530,18 @@ namespace Somewhere
         {
             Console.CursorTop = top;
             Console.CursorLeft = left;
+        }
+        void SetPosition(int? top, int? left)
+        {
+            if(top != null)
+                Console.CursorTop = top.Value;
+            if(left != null)
+                Console.CursorLeft = left.Value;
+        }
+        private void SetPositionOffset(int rowOff, int colOff)
+        {
+            Console.CursorTop = Console.CursorTop + rowOff;
+            Console.CursorLeft = Console.CursorLeft + colOff;
         }
         void Print(char character)
             => Console.Write(character);
