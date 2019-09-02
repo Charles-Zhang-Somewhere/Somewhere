@@ -406,6 +406,7 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 # Notes
 
 * `Ctrl+S`: Save note (Note contens will also be automatically saved when closing window and minimizing window)
+* `LeftShift+Tab`: Change focus from note content textbox to note tags textbox
 
 # Panels
 

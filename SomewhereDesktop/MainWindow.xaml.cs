@@ -1029,6 +1029,17 @@ namespace SomewhereDesktop
             }
         }
         /// <summary>
+        /// Provides shortcut for note content textbox
+        /// </summary>
+        private void NoteContentTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Tab && Keyboard.IsKeyDown(Key.LeftShift))
+            {
+                e.Handled = true;
+                NoteTagsTextBox.Focus();
+            }
+        }
+        /// <summary>
         /// Provides handling for Markdown syntax related shortcuts
         /// </summary>
         private void NoteContentTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -1296,6 +1307,5 @@ namespace SomewhereDesktop
         }
 
         #endregion
-
     }
 }

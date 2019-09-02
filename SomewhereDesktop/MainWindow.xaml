@@ -342,7 +342,7 @@
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                         </DockPanel>
                                         <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
-                                             Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}" PreviewTextInput="NoteContentTextBox_PreviewTextInput"/>
+                                             Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}" PreviewTextInput="NoteContentTextBox_PreviewTextInput" PreviewKeyDown="NoteContentTextBox_PreviewKeyDown"/>
                                     </DockPanel>
                                 </Border>
                             </Grid>
