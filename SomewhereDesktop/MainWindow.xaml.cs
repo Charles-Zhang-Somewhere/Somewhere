@@ -168,6 +168,7 @@ namespace SomewhereDesktop
             var libDirectory = new DirectoryInfo(System.IO.Path.Combine(currentDirectory, "libvlc", IntPtr.Size == 4 ? "win-x86" : "win-x64"));
             VLCControl.BeginInit();
             VLCControl.MouseDown += VLCControl_MouseDown;
+            VLCControl.Opening += VLCControl_Opening;
             VLCControl.VlcLibDirectory = libDirectory;
             VLCControl.EndInit();
         }
@@ -1053,6 +1054,14 @@ namespace SomewhereDesktop
         private void VLCControl_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
             => Pause();
         /// <summary>
+        /// Opening event for VLC player
+        /// </summary>
+        private void VLCControl_Opening(object sender, Vlc.DotNet.Core.VlcMediaPlayerOpeningEventArgs e)
+        {
+            if (ShouldSkipAutoplay)
+                VLCControl.SetPause(true);  // Notice VLCControl.Pause() won't work, probably because at this time the video is in a state between playing and not playing
+        }
+        /// <summary>
         /// Provides shortcut for note content textbox
         /// </summary>
         private void NoteContentTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -1365,6 +1374,11 @@ namespace SomewhereDesktop
         /// All saved as lower cases
         /// </summary>
         public HashSet<string> QuickSettings { get; set; } = new HashSet<string>();
+        /// <summary>
+        /// Whether item preview should skip autoplay
+        /// </summary>
+        public bool ShouldSkipAutoplay
+            => QuickSettings.Contains("npv");
         private void ProcessPreviewCommand(string commandName, string[] arguments)
         {
             if (CommandNames.ContainsKey(commandName))
