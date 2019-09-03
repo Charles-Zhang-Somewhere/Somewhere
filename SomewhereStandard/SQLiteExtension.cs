@@ -49,8 +49,8 @@ namespace SQLiteExtension
         /// Execute a SQL query (e.g. select) with given command and SQLite parameters defined in a dictionary for string parameters;
         /// Useful in cases parameter name need to be procedurally generated in which case objects won't work
         /// </summary>
-        public static SQLiteDataReader ExecuteQueryDictionary(this SQLiteConnection connection, string command, Dictionary<string, object> parameters = null, bool containsBlob = false)
-            => connection.BuildSQLDictionary(command, parameters, cmd =>
+        public static SQLiteDataReader ExecuteQueryDictionary(this SQLiteConnection connection, SQLiteTransaction transaction, string command, Dictionary<string, object> parameters = null, bool containsBlob = false)
+            => connection.BuildSQLDictionary(transaction, command, parameters, cmd =>
                 // Optionally we can store result to in-memory table: new DataTable().Load(reader);
                 cmd.ExecuteReader(containsBlob ? CommandBehavior.KeyInfo : CommandBehavior.Default));    // Key info is needed if we want to be able to read blob data without explictly require rowid column while using an alias row; However this will also return extra fields for primary keys; However if just we specify rowID and there is an alias the returned rowID will be named as alias (e.g. ID)
         /// <summary>
@@ -66,38 +66,41 @@ namespace SQLiteExtension
         /// <summary>
         /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
         /// </summary>
-        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, string command, IEnumerable<object> commandParameters)
-            => connection.RunSQL(commandParameters.Select(cp => new Tuple<string, object>(command, cp)));
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, SQLiteTransaction transaction, string command, IEnumerable<object> commandParameters)
+            => connection.RunSQL(transaction, commandParameters.Select(cp => new Tuple<string, object>(command, cp)));
         /// <summary>
         /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
         /// </summary>
-        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, IEnumerable<Tuple<string, object>> commandAndParameters)
-            => connection.RunSQL(commandAndParameters);
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, SQLiteTransaction transaction, IEnumerable<Tuple<string, object>> commandAndParameters)
+            => connection.RunSQL(transaction, commandAndParameters);
         /// <summary>
         /// Execute a bunch of sql non-queries in a transaction (e.g. insert many many items)
         /// </summary>
-        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, IEnumerable<string> commandsWithoutParameters)
-            => connection.RunSQL(commandsWithoutParameters.Select(cwp => new Tuple<string, object>(cwp, null)));
+        public static void ExecuteSQLNonQuery(this SQLiteConnection connection, SQLiteTransaction transaction, IEnumerable<string> commandsWithoutParameters)
+            => connection.RunSQL(transaction, commandsWithoutParameters.Select(cwp => new Tuple<string, object>(cwp, null)));
         /// <summary>
         /// Execute a SQL insert query with given command and SQLite parameters defined in an object;
         /// Returns row id
         /// </summary>
-        public static int ExecuteSQLInsert(this SQLiteConnection connection, string command, object parameters = null)
+        public static int ExecuteSQLInsert(this SQLiteConnection connection, SQLiteTransaction transaction, string command, object parameters = null)
         {
-            using (SQLiteCommand cmd = new SQLiteCommand(command.TrimEnd(';'), connection))
+            SQLiteCommand cmd = transaction == null
+                ? new SQLiteCommand(command.TrimEnd(';'), connection)
+                : new SQLiteCommand(command.TrimEnd(';'), connection, transaction);
+
+            // Handle parameters
+            if (parameters != null)
             {
-                // Handle parameters
-                if (parameters != null)
-                {
-                    foreach (PropertyInfo property in parameters.GetType().GetProperties())
-                        cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
-                }
-
-                // Execute command
-                cmd.ExecuteNonQuery();
-
-                return (int)connection.LastInsertRowId;
+                foreach (PropertyInfo property in parameters.GetType().GetProperties())
+                    cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
             }
+
+            // Execute command
+            cmd.ExecuteNonQuery();
+
+            // Dispose and return
+            cmd.Dispose();
+            return (int)connection.LastInsertRowId;
         }
         #endregion
 
@@ -131,48 +134,53 @@ namespace SQLiteExtension
         /// <summary>
         /// Build a sql command with given dynamic paramters using database provider methods
         /// </summary>
-        private static SQLiteDataReader BuildSQLDictionary(this SQLiteConnection connection, string command, Dictionary<string, object> parameters,
+        private static SQLiteDataReader BuildSQLDictionary(this SQLiteConnection connection,SQLiteTransaction transaction,  string command, Dictionary<string, object> parameters,
             Func<SQLiteCommand, SQLiteDataReader> action)
         {
             // Build command
-            using (SQLiteCommand cmd = new SQLiteCommand(command.TrimEnd(';'), connection))
+            SQLiteCommand cmd = transaction == null
+                ? new SQLiteCommand(command.TrimEnd(';'), connection)
+                : new SQLiteCommand(command.TrimEnd(';'), connection, transaction);
+
+            // Handle parameters
+            if (parameters != null)
             {
-                // Handle parameters
-                if (parameters != null)
-                {
-                    foreach (KeyValuePair<string, object> property in parameters)
-                        cmd.Parameters.AddWithValue(property.Key, property.Value);
-                }
-
-                // Execute command
-                SQLiteDataReader returnValue = action(cmd);    // May or may not return anything depending on 
-                // whether we are executing query or nonquery but just catch it
-
-                return returnValue;
+                foreach (KeyValuePair<string, object> property in parameters)
+                    cmd.Parameters.AddWithValue(property.Key, property.Value);
             }
+
+            // Execute command
+            SQLiteDataReader returnValue = action(cmd);    // May or may not return anything depending on 
+            // whether we are executing query or nonquery but just catch it
+
+            // Manual dispose and return
+            cmd.Dispose();
+            return returnValue;
         }
         /// <summary>
         /// Build and run a sequence of sql commands with given dynamic paramters using database provider methods in a transaction
         /// </summary>
-        private static void RunSQL(this SQLiteConnection connection, IEnumerable<Tuple<string, object>> commandAndParameters)
+        private static void RunSQL(this SQLiteConnection connection, SQLiteTransaction existingTransaction, IEnumerable<Tuple<string, object>> commandAndParameters)
         {
-            using (SQLiteTransaction transaction = connection.BeginTransaction())
+            SQLiteTransaction transaction = existingTransaction ?? connection.BeginTransaction();
+            foreach (Tuple<string, object> item in commandAndParameters)
             {
-                foreach (Tuple<string, object> item in commandAndParameters)
+                string command = item.Item1.TrimEnd(';');
+                object parameters = item.Item2;
+                using (SQLiteCommand cmd = new SQLiteCommand(command, connection, transaction))
                 {
-                    string command = item.Item1.TrimEnd(';');
-                    object parameters = item.Item2;
-                    using (SQLiteCommand cmd = new SQLiteCommand(command, connection, transaction))
-                    {
-                        // Handle parameters
-                        if (parameters != null)
-                            foreach (PropertyInfo property in parameters.GetType().GetProperties())
-                                cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
-                        // Execute command
-                        cmd.ExecuteNonQuery();
-                    }
+                    // Handle parameters
+                    if (parameters != null)
+                        foreach (PropertyInfo property in parameters.GetType().GetProperties())
+                            cmd.Parameters.AddWithValue(property.Name, property.GetValue(parameters));
+                    // Execute command
+                    cmd.ExecuteNonQuery();
                 }
+            }
+            if(existingTransaction == null)
+            {
                 transaction.Commit();
+                transaction.Dispose();
             }
         }
         #endregion

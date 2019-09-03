@@ -111,13 +111,14 @@ namespace Somewhere
                         }
                         break;
                     case JournalEvent.CommitOperation.RenameTag:
+                        string[] newTags = commitEvent.UpdateValue.SplitTags().ToArray();
                         foreach (var item in items)
                         {
                             List<string> oldTags = item.Value.Tags.SplitTags().ToList();
                             if (oldTags.Contains(commitEvent.Target))
                                 item.Value.Tags = oldTags
                                     .Except(new string[] { commitEvent.Target })
-                                    .Union(new string[] { commitEvent.UpdateValue })
+                                    .Union(newTags)
                                     .JoinTags();
                         }
                         break;
@@ -215,11 +216,15 @@ namespace Somewhere
                         }
                         break;
                     case JournalEvent.CommitOperation.RenameTag:
-                        // Tag renaming
+                        var newTags = commitEvent.UpdateValue.SplitTags().ToArray();
+                        // Tag renaming (notice merging is not handled)
                         foreach (var tagPath in tagOccurences[commitEvent.Target])
                         {
-                            tagPath.Add(commitEvent.UpdateValue);
-                            UpdateTagOccurence(commitEvent.UpdateValue, tagPath);
+                            foreach (var newTag in newTags)
+                            {
+                                tagPath.Add(newTag);    // Just add tag explosion as multiple renaming
+                                UpdateTagOccurence(newTag, tagPath);
+                            }
                         }
                         break;
                     default:
@@ -256,11 +261,11 @@ namespace Somewhere
                 {
                     // Check whether the tag's tagged items involve the wanted item
                     var oldTag = commitEvent.Target;
-                    var newTag = commitEvent.UpdateValue;   // Can be null if operation is DeleteTag
+                    var newTags = commitEvent.UpdateValue?.SplitTags().ToArray() ?? null;   // Can be null if operation is DeleteTag
                     if ( // Old tag's user's name progression contains target file name
                         IsTagUserEverInvolvedTargetFilename(oldTag) || 
                         // New tag's user is involved
-                        (newTag != null && IsTagUserEverInvolvedTargetFilename(newTag)))
+                        (newTags != null && newTags.Any(newTag => IsTagUserEverInvolvedTargetFilename(newTag))))
                         relevantCommits.Add(commit);
                 }
             }
@@ -307,11 +312,12 @@ namespace Somewhere
                         newItem.Remark = "Content change";  // Indicate content change at this step
                         break;
                     case JournalEvent.CommitOperation.RenameTag:
+                        var newTags = commitEvent.UpdateValue.SplitTags();
                         newItem.Tags = newItem.Tags.SplitTags()
                             .Except(new string[] { commitEvent.Target })
-                            .Union(new string[] { commitEvent.UpdateValue })
+                            .Union(newTags)
                             .JoinTags();
-                        newItem.Remark = "Tag change";  // Indicate tag change at this step
+                        newItem.Remark = $"{(newTags.Count() > 1 ? "Multiple tags change" : "Tag change")}";  // Indicate tag change at this step
                         break;
                     case JournalEvent.CommitOperation.DeleteTag:
                         newItem.Tags = newItem.Tags.SplitTags()

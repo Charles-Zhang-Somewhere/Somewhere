@@ -105,7 +105,7 @@ namespace Somewhere
         /// - ChangeItemTags: New updated tags (complete)
         /// - ChangeItemContent: New update content
         /// - DeleteTag: N/A
-        /// - RenameTag: New name
+        /// - RenameTag: New name(s), can contain multiple values
         /// </remarks>
         public string UpdateValue { get; set; }
         /// <summary>

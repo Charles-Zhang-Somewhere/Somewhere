@@ -723,37 +723,92 @@ namespace Somewhere
             "If the target tag name already exist, then this action will merge the two tags.",
             category: "Tagging")]
         [CommandArgument("sourcetag", "old name for the tag")]
-        [CommandArgument("targettag", "new name for the tag")]
+        [CommandArgument("targettags", "new name(s) for the tag; if more than one is specified, the tag will be replaced with all")]
         public IEnumerable<string> MVT(params string[] args)
         {
             ValidateArgs(args);
             string sourceTag = args[0];
-            string targetTag = args[1];
+            string[] targetTags = args[1].SplitTags().ToArray();
+            List<string> results = new List<string>();
             if (!IsTagInDatabase(sourceTag))
                 throw new InvalidOperationException($"Specified tag `{sourceTag}` does not exist in database.");
-            // Commit
-            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, targetTag);
-            // Update in DB
-            if (!IsTagInDatabase(targetTag)) // If target doesn't exist yet just rename source
+            // Commit (already in a transaction)
+            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, args[1]);
+            // Perform actions in a transaction for efficiency
+            SQLiteTransaction transaction = Connection.BeginTransaction();  // Create and dispose manually to avoid changing too many lines in git
+            // Get files with old tag
+            List<int> sourceFileIDs = FilterByTags(new string[] { sourceTag }, transaction).Select(f => f.ID).ToList();
+            List<TagRow> tagIDs = GetTagRows(targetTags.Union(new string[] { sourceTag })); // Including all mentioned tags that exist
+            int sourceTagID = tagIDs.Find(t => t.Name == sourceTag).ID;
+            // Routine functions
+            void AppendExistingTag(string targetTag)
             {
-                RenameTag(sourceTag, targetTag);
-                return new string[] { $"Tag `{sourceTag}` is renamed to `{targetTag}`." };
-            }
-            else
-            {
-                // Get files with old tag
-                List<FileRow> sourceFiles = FilterByTags(new string[] { sourceTag });
-                List<TagRow> tagIDs = GetTagRows(new string[] { sourceTag, targetTag });
-                int sourceTagID = tagIDs.Where(t => t.Name == sourceTag).Single().ID,
-                    targetTagID = tagIDs.Where(t => t.Name == targetTag).Single().ID;
-                // Delete reference to old tag
-                DeleteFileTags(sourceFiles.Select(f => f.ID), sourceTagID);
+                // Assume exists
+                int targetTagID = tagIDs.Find(t => t.Name == targetTag).ID;
                 // Add reference to new tag
-                AddFileTags(sourceFiles.Select(f => f.ID), targetTagID);
-                // Delete source tag
-                DeleteTag(sourceTagID);
-                return new string[] { $"Tag `{sourceTag}` is merged into `{targetTag}`" };
+                AddFileTags(sourceFileIDs, targetTagID, transaction);
             }
+            void MergeIntoTag(string targetTag)
+            {
+                // Delete reference to old tag
+                DeleteFileTags(sourceFileIDs, sourceTagID, transaction);
+                // Delete source tag
+                DeleteTag(sourceTagID, transaction);
+                // Add new tag
+                AppendExistingTag(targetTag);
+            }
+            void AppendNewTag(string targetTag)
+            {
+                // Assume exists
+                int targetTagID = AddTag(targetTag, transaction);
+                // Add reference to new tag
+                AddFileTags(sourceFileIDs, targetTagID, transaction);
+            }
+            // Rename source tag and add new multiple new tags
+            for (int i = 0; i < targetTags.Length; i++)
+            {
+                var targetTag = targetTags[i];
+                // Handle same
+                if(sourceTag == targetTag)
+                {
+                    results.Add($"Tag `{targetTag}` is the same as source tag, skipped.");
+                    continue;
+                }
+                // For first new tag, old one still exists, so just rename or merge it
+                if (i == 0)
+                {
+                    if (!IsTagInDatabase(targetTag, transaction)) // If target doesn't exist yet just rename source
+                    {
+                        RenameTag(sourceTag, targetTag, transaction);
+                        results.Add($"Tag `{sourceTag}` is renamed to `{targetTag}`.");
+                    }
+                    // Merge tags
+                    else
+                    {
+                        MergeIntoTag(targetTag);
+                        results.Add($"Tag `{sourceTag}` is merged into `{targetTag}`");
+                    }
+                }
+                // For other new tags, old one no longer exist
+                else
+                {
+                    if (!IsTagInDatabase(targetTag, transaction)) // If target doesn't exist yet we need to create it
+                    {
+                        AppendNewTag(targetTag);
+                        results.Add($"New tag `{targetTag}` is added.");
+                    }
+                    // Merge tags by add directly
+                    else
+                    {
+                        AppendExistingTag(targetTag);
+                        results.Add($"Tag `{targetTag}` is appended.");
+                    }
+                }
+            }
+            transaction.Commit();
+            transaction.Dispose();
+            
+            return results;
         }
         [Command("Create a new Somewhere home at current home directory.")]
         public IEnumerable<string> New(params string[] args)
@@ -1235,18 +1290,20 @@ namespace Somewhere
                 return GetMeta(id.Value, name);
         }
         /// <summary>
-        /// Get all files that contain specified tags
+        /// Get all files that contain specified tags;
+        /// Optionally in a transaction
         /// </summary>
-        public List<FileRow> FilterByTags(IEnumerable<string> tags)
-            => Connection.ExecuteQueryDictionary($"select File.* from Tag, File, FileTag " +
+        public List<FileRow> FilterByTags(IEnumerable<string> tags, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQueryDictionary(transaction, $"select File.* from Tag, File, FileTag " +
                 $"where Tag.Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))}) " +
                 $"and FileTag.FileID = File.ID and FileTag.TagID = Tag.ID",
                 tags.Select((t, i) => new KeyValuePair<string, string>($"tag{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<FileRow>();
         /// <summary>
         /// Get all file that contain specified tags with details 
         /// </summary>
-        public List<QueryRows.FileDetail> FilterByTagsDetailed(IEnumerable<string> tags)
-            => Connection.ExecuteQueryDictionary(   // Notice unlike GetFileDetails, here we don't use left join for File and FileTagDetails
+        public List<QueryRows.FileDetail> FilterByTagsDetailed(IEnumerable<string> tags, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQueryDictionary(  transaction,
+                // Notice unlike GetFileDetails, here we don't use left join for File and FileTagDetails
 @"select FileTagDetails.*,
 	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
 from 
@@ -1289,14 +1346,14 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Add a file entry to database
         /// </summary>
-        public int AddFile(string filename)
-            => Connection.ExecuteSQLInsert("insert into File (Name, EntryDate) values (@name, @date)", 
+        public int AddFile(string filename, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLInsert(transaction, "insert into File (Name, EntryDate) values (@name, @date)", 
                 new { name = filename, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") });
         /// <summary>
         /// Add a file entry to database with initial content
         /// </summary>
-        public int AddFile(string filename, string content)
-            => Connection.ExecuteSQLInsert("insert into File (Name, Content, EntryDate) values (@name, @content, @date)", 
+        public int AddFile(string filename, string content, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLInsert(transaction, "insert into File (Name, Content, EntryDate) values (@name, @content, @date)", 
                 new { name = filename, content, date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") });
         /// <summary>
         /// Add files in batch
@@ -1323,8 +1380,8 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Rename a tag in database
         /// </summary>
-        public void RenameTag(string tagname, string newTagname)
-            => Connection.ExecuteSQLNonQuery("update Tag set Name=@newTagname where Name=@tagname", new { tagname, newTagname});
+        public void RenameTag(string tagname, string newTagname, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "update Tag set Name=@newTagname where Name=@tagname", new { tagname, newTagname});
         /// <summary>
         /// Change the name of a file by file ID
         /// </summary>
@@ -1383,8 +1440,8 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Get IDs of files in database
         /// </summary>
-        public List<FileRow> GetFileRows(IEnumerable<string> filenames)
-            => Connection.ExecuteQueryDictionary($"select * from File where Name in ({string.Join(", ", filenames.Select((t, i) => $"@name{i}"))})",
+        public List<FileRow> GetFileRows(IEnumerable<string> filenames, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQueryDictionary(transaction, $"select * from File where Name in ({string.Join(", ", filenames.Select((t, i) => $"@name{i}"))})",
                 filenames.Select((t, i) => new KeyValuePair<string, string>($"name{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<FileRow>();
         /// <summary>
         /// Get ID of tag in database, this can sometimes be useful, though practical application shouldn't depend on it
@@ -1403,8 +1460,8 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Get IDs of tags in database; Notice input tags may or may not be present
         /// </summary>
-        public List<TagRow> GetTagRows(IEnumerable<string> tags)
-            => Connection.ExecuteQueryDictionary($"select * from Tag where Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))})", 
+        public List<TagRow> GetTagRows(IEnumerable<string> tags, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQueryDictionary(transaction, $"select * from Tag where Name in ({string.Join(", ", tags.Select((t, i) => $"@tag{i}"))})", 
                 tags.Select((t, i) => new KeyValuePair<string, string>($"tag{i}", t)).ToDictionary(p => p.Key, p => p.Value as object)).Unwrap<TagRow>();
         /// <summary>
         /// Get a list of tags along with their count of usage
@@ -1421,28 +1478,28 @@ group by FileTagDetails.ID", new { name }).Unwrap<QueryRows.FileDetail>();
         /// <remarks>
         /// Unlike TryAddTag, there is no checking, we just add
         /// </remarks>
-        public int AddTag(string tag)
-            => Connection.ExecuteSQLInsert("insert into Tag(Name) values(@tag)", new { tag });
+        public int AddTag(string tag, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLInsert(transaction, "insert into Tag(Name) values(@tag)", new { tag });
         /// <summary>
         /// Delete from Tag table
         /// </summary>
-        public void DeleteTag(int tagID)
-            => Connection.ExecuteSQLNonQuery("delete from Tag where ID = @id", new { id = tagID});
+        public void DeleteTag(int tagID, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from Tag where ID = @id", new { id = tagID});
         /// <summary>
         /// Delete from Tag table
         /// </summary>
-        public void DeleteTag(string tagName)
-            => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", new { name = tagName});
+        public void DeleteTag(string tagName, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from Tag where Name = @name", new { name = tagName});
         /// <summary>
         /// Delete all tags by name from Tag table
         /// </summary>
-        public void DeleteTags(IEnumerable<string> tagNames)
-            => Connection.ExecuteSQLNonQuery("delete from Tag where Name = @name", tagNames.Select(name => new { name }) );
+        public void DeleteTags(IEnumerable<string> tagNames, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from Tag where Name = @name", tagNames.Select(name => new { name }) );
         /// <summary>
         /// Delete all tags by id from Tag table
         /// </summary>
-        public void DeleteTags(IEnumerable<int> tagIDs)
-            => Connection.ExecuteSQLNonQuery("delete from Tag where ID = @id", tagIDs.Select(id => new { id }));
+        public void DeleteTags(IEnumerable<int> tagIDs, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from Tag where ID = @id", tagIDs.Select(id => new { id }));
         /// <summary>
         /// Add tags with given names to database
         /// </summary>
@@ -1511,111 +1568,112 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Add rows to FileTag table
         /// </summary>
-        public void AddFileTags(int fileID, IEnumerable<int> tagIDs)
-            => Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", tagIDs.Select(tagID => new { fileID, tagID }));
+        public void AddFileTags(int fileID, IEnumerable<int> tagIDs, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "insert into FileTag(FileID, TagID) values(@fileID, @tagID)", tagIDs.Select(tagID => new { fileID, tagID }));
         /// <summary>
         /// Add rows to FileTag table
         /// </summary>
-        public void AddFileTags(IEnumerable<int> fileIDs, int tagID)
-            => Connection.ExecuteSQLNonQuery("insert into FileTag(FileID, TagID) values(@fileId, @tagId)", fileIDs.Select(fileID => new { fileID, tagID }));
+        public void AddFileTags(IEnumerable<int> fileIDs, int tagID, SQLiteTransaction transaction = null)
+            // Already using a transaction
+            => Connection.ExecuteSQLNonQuery(transaction, "insert into FileTag(FileID, TagID) values(@fileID, @tagID)", fileIDs.Select(fileID => new { fileID, tagID }));
         /// <summary>
         /// Delete file tags record
         /// </summary>
-        public void DeleteFileTag(int tagID)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@tagID", new { tagID });
+        public void DeleteFileTag(int tagID, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where TagID=@tagID", new { tagID });
         /// <summary>
         /// <summary>
         /// Delete file tags record
         /// </summary>
-        public void DeleteFileTags(int fileID, IEnumerable<int> tagIDs)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", tagIDs.Select(tagID => new { fileID, tagID }));
+        public void DeleteFileTags(int fileID, IEnumerable<int> tagIDs, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@fileID and tagID=@tagID", tagIDs.Select(tagID => new { fileID, tagID }));
         /// <summary>
         /// Delete file tags record completely for a file or for a tag
         /// </summary>
-        public void DeleteFileTags(int id, bool isFileID)
+        public void DeleteFileTags(int id, bool isFileID, SQLiteTransaction transaction = null)
         {
             if (isFileID)
-                Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id });
+                Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@id", new { id });
             else
-                Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@id", new { id });
+                Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where TagID=@id", new { id });
         }
         /// <summary>
         /// Delete file tags record completely for a file
         /// </summary>
-        public void DeleteFileTagsByFileID(int fileID)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id = fileID });
+        public void DeleteFileTagsByFileID(int fileID, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@id", new { id = fileID });
         /// <summary>
         /// Delete file tags record completely for a tag
         /// </summary>
-        public void DeleteFileTagsByTagID(int tagID)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", new { id = tagID });
+        public void DeleteFileTagsByTagID(int tagID, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@id", new { id = tagID });
         /// <summary>
         /// Delete file tags record
         /// </summary>
-        public void DeleteFileTags(IEnumerable<int> IDs, bool isFileID)
+        public void DeleteFileTags(IEnumerable<int> IDs, bool isFileID, SQLiteTransaction transaction = null)
         {
             if (isFileID)
-                Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@id", IDs.Select(id => new { id }) );
+                Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@id", IDs.Select(id => new { id }) );
             else
-                Connection.ExecuteSQLNonQuery("delete from FileTag where TagID=@id", IDs.Select(id => new { id }));
+                Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where TagID=@id", IDs.Select(id => new { id }));
         }
         /// <summary>
         /// Delete file tags record
         /// </summary>
-        public void DeleteFileTags(IEnumerable<int> fileIDs, int tagID)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", fileIDs.Select(fileID => new { fileID, tagID }));
+        public void DeleteFileTags(IEnumerable<int> fileIDs, int tagID, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@fileID and tagID=@tagID", fileIDs.Select(fileID => new { fileID, tagID }));
         /// <summary>
         /// Delete file tags record
         /// </summary>
-        public void DeleteFileTags(IEnumerable<int> fileIDs, IEnumerable<int> tagIDs)
-            => Connection.ExecuteSQLNonQuery("delete from FileTag where FileID=@fileID and tagID=@tagID", fileIDs.Zip(tagIDs, (fileID, tagID) => new { fileID, tagID }));
+        public void DeleteFileTags(IEnumerable<int> fileIDs, IEnumerable<int> tagIDs, SQLiteTransaction transaction = null)
+            => Connection.ExecuteSQLNonQuery(transaction, "delete from FileTag where FileID=@fileID and tagID=@tagID", fileIDs.Zip(tagIDs, (fileID, tagID) => new { fileID, tagID }));
         /// <summary>
         /// Get tags for the file, if no tags are added, return empty array
         /// </summary>
-        public string[] GetFileTags(string filename)
-            => Connection.ExecuteQuery(@"select Tag.Name from Tag, File, FileTag
+        public string[] GetFileTags(string filename, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select Tag.Name from Tag, File, FileTag
                 where FileTag.FileID = File.ID
                 and FileTag.TagID = Tag.ID
                 and File.Name = @filename", new { filename }).List<string>()?.ToArray() ?? new string[] { };
         /// <summary>
         /// Get tags for the file, if no tags are added, return empty array
         /// </summary>
-        public string[] GetFileTags(int id)
-            => Connection.ExecuteQuery(@"select Tag.Name from Tag, File, FileTag
+        public string[] GetFileTags(int id, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select Tag.Name from Tag, File, FileTag
                 where FileTag.FileID = File.ID
                 and FileTag.TagID = Tag.ID
                 and File.ID = @id", new { id }).List<string>()?.ToArray() ?? new string[] { };
         /// <summary>
         /// Get content for the file
         /// </summary>
-        public string GetFileContent(string filename)
-            => Connection.ExecuteQuery(@"select Content from File where Name = filename", new { filename }).Single<string>();
+        public string GetFileContent(string filename, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select Content from File where Name = filename", new { filename }).Single<string>();
         /// <summary>
         /// Get content for the file
         /// </summary>
-        public string GetFileContent(int id)
-            => Connection.ExecuteQuery(@"select Content from File where ID = id", new { id }).Single<string>();
+        public string GetFileContent(int id, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select Content from File where ID = id", new { id }).Single<string>();
         /// <summary>
         /// Get raw list of all file tags
         /// </summary>
-        public List<FileTagRow> GetAllFileTags()
-            => Connection.ExecuteQuery(@"select * from FileTag").Unwrap<FileTagRow>();
+        public List<FileTagRow> GetAllFileTags(SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select * from FileTag").Unwrap<FileTagRow>();
         /// <summary>
         /// Get raw list of all tags
         /// </summary>
-        public List<TagRow> GetAllTags()
-            => Connection.ExecuteQuery(@"select * from Tag").Unwrap<TagRow>();
+        public List<TagRow> GetAllTags(SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select * from Tag").Unwrap<TagRow>();
         /// <summary>
         /// Get raw list of all files
         /// </summary>
-        public List<FileRow> GetAllFiles()
-            => Connection.ExecuteQuery(@"select * from File where Name is not null and Content is null
+        public List<FileRow> GetAllFiles(SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select * from File where Name is not null and Content is null
                 and Name not like '%/' and Name not like '%\'").Unwrap<FileRow>();
         /// <summary>
         /// Get raw list of all notes
         /// </summary>
-        public List<FileRow> GetAllNotes()
-            => Connection.ExecuteQuery(@"select * from File where Content is not null").Unwrap<FileRow>();
+        public List<FileRow> GetAllNotes(SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, @"select * from File where Content is not null").Unwrap<FileRow>();
         /// <summary>
         /// Get raw list of all folders
         /// </summary>
@@ -1754,10 +1812,10 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         public bool IsFileInDatabase(string filename)
             => Connection.ExecuteQuery("select count(*) from File where Name = @name", new { name = filename }).Single<int>() == 1;
         /// <summary>
-        /// Given a tag check whether it's recorded in the database
+        /// Given a tag check whether it's recorded in the database, optionally in a transaction
         /// </summary>
-        public bool IsTagInDatabase(string tag)
-            => Connection.ExecuteQuery("select count(*) from Tag where Name = @name", new { name = tag }).Single<int>() == 1;
+        public bool IsTagInDatabase(string tag, SQLiteTransaction transaction = null)
+            => Connection.ExecuteQuery(transaction, "select count(*) from Tag where Name = @name", new { name = tag }).Single<int>() == 1;
         /// <summary>
         /// Generate database for Home
         /// </summary>
@@ -1817,7 +1875,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     @"INSERT INTO Configuration (Key, Value, Type, Comment) 
                         values ('RegisterCommits', 'true', 'boolean', 'Indicates whether Somewhere should record commit operations into Journal; Commit records are used to reconstruct and dump the state of repository. Possible values are `true` and `false`.')"
                 };
-                connection.ExecuteSQLNonQuery(commands);
+                connection.ExecuteSQLNonQuery(null, commands);
                 connection.Close();
             }
             return Path.Combine(folderPath, DBName);
