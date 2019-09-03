@@ -656,7 +656,39 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
         }
-
+        [Fact]
+        public void RenameTagShouldAllowExploding()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("test.txt"); // Create a doc file for test
+            Assert.Equal(0, Commands.TagCount);
+            Commands.Add("test.txt", "doc and test");
+            Commands.MVT("doc and test", "doc, test");
+            Assert.Equal(2, Commands.TagCount);
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
+        }
+        [Fact]
+        public void RenameTagShouldAllowExplodingAndMerging()
+        {
+            Helper.CleanOrCreateTestFolderRemoveAllFiles();
+            Commands Commands = Helper.CreateNewCommands();
+            Commands.New();
+            Commands.Doc("test.txt"); // Create a doc file for test
+            Commands.Doc("test2.txt"); // Create a doc file for test
+            Assert.Equal(0, Commands.TagCount);
+            Commands.Add("test.txt", "doc and test");
+            Commands.Add("test2.txt", "sample");
+            Assert.Equal(2, Commands.TagCount);
+            Commands.MVT("doc and test", "doc, test, sample");
+            Assert.Equal(3, Commands.TagCount);
+            // Clean up
+            Commands.Dispose();
+            Helper.CleanTestFolderRemoveAllFiles();
+        }
         [Fact]
         public void RemoveTagShouldActuallyRemoveTheTag()
         {

@@ -33,7 +33,7 @@ namespace SomewhereTest
             Assert.Single(Csv.CsvReader.ReadFromText(csv));
 
             // Dump single file changes
-            Commands.Dump("dump.csv", "csv", "note1"); // Use an intermediate version of name
+            Commands.Dump("dump.csv", "note1"); // Use an intermediate version of name
             // Parse output csv
             csv = File.ReadAllText(Helper.GetFilePath("dump.csv"));
             // We should have 6 versions (initial create counts as 3)
@@ -70,7 +70,7 @@ namespace SomewhereTest
             Assert.Equal(2, Csv.CsvReader.ReadFromText(csv).Count());
 
             // Dump single file changes
-            Commands.Dump("dump.csv", "csv", "note"); // Use an initial name version of name
+            Commands.Dump("dump.csv", "note"); // Use an initial name version of name
             // Parse output csv
             csv = File.ReadAllText(Helper.GetFilePath("dump.csv"));
             // We should have 9 versions (initial create counts as 3)
