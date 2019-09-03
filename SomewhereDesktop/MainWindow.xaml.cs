@@ -701,7 +701,7 @@ namespace SomewhereDesktop
                 {
                     string text = result.First();
                     // Show highlight dialog
-                    new DialogWindow(this, "Add file", InfoText).ShowDialog();
+                    new DialogWindow(this, "Add file", text).ShowDialog();
                     // Update info text
                     InfoText = text;
                     // Select added item
