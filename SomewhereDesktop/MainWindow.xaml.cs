@@ -425,7 +425,7 @@ namespace SomewhereDesktop
             }
         }
         private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".bmp" };
-        private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm" };
+        private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm", ".m4a" };
         private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
         #endregion
 
