@@ -24,6 +24,10 @@ namespace SomewhereTest
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
         }
+        [Fact]
+        public void AddFileShoudWorkWithFilesInsideSubfolders()
+        {
+            throw new NotImplementedException();
         }
         [Fact]
         public void AddFileShouldCopyForeignFile()
@@ -620,6 +624,10 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
         }
+        [Fact]
+        public void RenameFileInsideSubfoldersShouldJustWork()
+        {
+            throw new NotImplementedException();
         }
         [Fact]
         public void RenameFileShouldNotWorkIfFileIsNotManaged()
