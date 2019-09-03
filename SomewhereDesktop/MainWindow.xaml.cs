@@ -1139,7 +1139,7 @@ namespace SomewhereDesktop
             TryCommitActiveNoteChange();
 
             // Dispose resources
-            VLCControl?.Stop(); VLCControl.Dispose(); VLCControl = null;
+            VLCControl?.Stop(); VLCControl?.Dispose(); VLCControl = null;
             Commands?.Dispose(); Commands = null;
             Popup?.Close(); Popup = null;
             LastWorker?.Dispose(); LastWorker = null;
