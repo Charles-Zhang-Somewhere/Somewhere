@@ -32,12 +32,6 @@ This is /my file/ in Somewhere so I should be able to do <anything> I want with 
 
 However, names like that is *not really recommended* - you should name your file whatever way you wish but keep it **succinct and meaningful** so you can easily find it.
 
-To avoid confusion, above convention is governed by following rules:
-
-1. All special characters can only be used as item name part, and the folder path (if present) part of the item name must follow whatever OS requirements;
-2. As soon as your item name contains any of the OS reserved characters, it can no longer reside inside a subfolder or outside home, it must be managed inside home directory;
-3. All virtual items, i.e. notes and knowledge, are not affected by those rules.
-
 
 **Who should use it**
 
@@ -148,9 +142,25 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 
 # Usage Guide
 
-Cautious:
+## Special Caution Against Filename
+
+Let's face it: filenames are tricky. It's especially so due to underlying operating system's filesystem limits. Ideally we can name our file everything we want as is the case in Somewhere when your file is managed by the repository AND resides directly inside Home folder, but in reality, it's a bit more comlicated.
+
+To start with, below are the several absolute facts you must remember when dealing with your filenames:
+
+1. Somewhere impost hard limit on the physical length of actual filename to not contain any of the Linux and Windows special characters, specifically, for Linux: ; for Windows;
+2. On regular filesystems, there is a physical distinction between **file** and **folder** (even on Linux), however in Somewhere there is no such distinction - the only difference between a file and a folder and a file inside folder is indicated in its name;
+3. Somewhere integrates and plays well with ordinary hierarchical file systems (HFS) and guarantee (even if bugs exist) all normal HFS operations should work as expected, e.g. `mv file folder/file` or `mv file folder\file` should both move the file to the target folder (within Home directory);
+
+With above said, 
 
 1. Filename must be either unique or null (for safe add and remove operations, and for compatibility with file system), though length limit is removed (for meaningful description for notes). And as such meaningful filename is encouraged (if not required). For practical (and safe) reasons, files are never actually physically deleted - they are instead marked with suffix `_deleted` at the very end of filename (and disable the extension).
+
+To avoid confusion, above convention is governed by following rules:
+
+1. All special characters can only be used as item name part, and the folder path (if present) part of the item name must follow whatever OS requirements;
+2. As soon as your item name contains any of the OS reserved characters, it can no longer reside inside a subfolder or outside home, it must be managed inside home directory;
+3. All virtual items, i.e. notes and knowledge, are not affected by those rules.
 
 ## Tricks
 

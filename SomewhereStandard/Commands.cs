@@ -1880,7 +1880,7 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                 }
                 else if (_Connection != null && IsHomePresent)
                     return _Connection;
-                else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory.");
+                else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory. Use `new` command to initialize a Home repository at current folder.");
             }
         }
         /// <summary>

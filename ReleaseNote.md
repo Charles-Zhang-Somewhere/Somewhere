@@ -39,6 +39,8 @@ A functional version of CLI interface, with support for following commands. GUI 
 
 Up-to-date executable..
 
+Notice the attached releases are slightly ahead of tagged commits; This is intentional.
+
 # V0.1.0-gamma "Gamma"
 
 Just a bit closer to actual release of `V0.1.0`.

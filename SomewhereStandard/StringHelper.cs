@@ -151,4 +151,272 @@ namespace StringHelper
             .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
             ?? new string[] { };    // Return empty for null string
     }
+
+    /// <summary>
+    /// A class dedicated for file path related operations, all details defined in corresponding functions
+    /// </summary>
+    public static class PathExtension
+    {
+        private readonly static char[] InvalidFilenameCharacters = "/<>:\"\\|?*\r\n".ToCharArray();
+        private readonly static char[] InvalidFilenameCharactersLast = "/<>:\"\\|?*\r\n .".ToCharArray();
+        /// <summary>
+        /// Try to append a separator to the folder path if it's not already appened;
+        /// Assume input is a folder path
+        /// </summary>
+        public static string AppendSeparator(this string folderPath, char preferred = '/')
+        {
+            char last = folderPath.Last();
+            if (!last.IsSeparator() && last != ':')
+                return folderPath + (folderPath.First().IsSeparator() ? folderPath.First() : preferred);
+            else return folderPath;
+        }
+        /// <summary>
+        /// Given a path, check its real path part and see whether file name contains invalid FS characters;
+        /// Folder names are always valid (otherwise it's counted as filename)
+        /// </summary>
+        public static bool ContainsInvalidCharacter(this string path)
+        {
+            string real = path.GetRealFilename();
+            int lastIndex = real.Length - 1;
+            for (int i = 0; i < real.Length; i++)
+            {
+                char c = real[i];
+                if (c.IsInvalidFilenameCharacter(i == lastIndex))
+                    return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Get root of path as defined in IsPathRooted;
+        /// This function allows mixing the two separators.
+        /// Since root is a folder, this function always appends an ending folder separator 
+        /// (except for Windows relative root at drive name)
+        /// </summary>
+        /// <returns>
+        /// Return null if path is not rooted
+        /// </returns>
+        public static string GetPathRoot(this string path)
+        {
+            int NextSeparator(string subpath, int startIndex)
+            {
+                int seperator1 = subpath.IndexOf('/', startIndex);
+                int seperator2 = subpath.IndexOf('\\', startIndex);
+                return seperator1 == -1
+                    ? seperator2
+                    : (seperator2 == -1 ? seperator1 : Math.Min(seperator1, seperator2));
+            }
+            string GetSubfolder(string subpath, int startIndex)
+            {
+                int nextSeperator = NextSeparator(subpath, startIndex);
+                if (nextSeperator == -1)
+                    return path;
+                else
+                    return path.Substring(0, nextSeperator);
+            }
+            // Validate it's rooted
+            if (path.IsPathRooted() == false)
+                return null;
+            // Extract root
+            string root = string.Empty;
+            // Linux root
+            if (path[0] == '/')
+                root = GetSubfolder(path, 1);
+            // Windows root
+            else if (path.Length > 1 && path[1] == ':')
+            {
+                if (path.Length == 2)
+                    root = path;
+                else if (path[2] == '\\' || path[2] == '/')
+                    root = path.Substring(0, 3);
+                else
+                    root = path.Substring(0, 2);
+            }
+            // UNC root
+            else if (path.Length > 1 && path[0] == '\\' && path[1] == '\\')
+                root = GetSubfolder(path, 2);
+            // Check protocol
+            else
+            {
+                string protocol = path.GetPathProtocol();
+                if (protocol != null)
+                    root = protocol;
+            }
+            return root.AppendSeparator();
+        }
+
+        /// <summary>
+        /// Get the protocol part of a path if it contains protocol, otherwise return null
+        /// </summary>
+        public static string GetPathProtocol(this string path)
+        {
+            if (!path.IsPathContainProtocol())
+                return null;
+            else
+            {
+                int colon = path.IndexOf(':');
+                // Get protocol itself
+                string protocol = path.Substring(0, colon + 1);
+                // Get remaining separators
+                foreach (var c in path.Substring(colon + 1))
+                {
+                    if (c.IsSeparator())
+                        protocol += c;
+                    else break;
+                }
+                return protocol;
+            }
+        }
+        /// <summary>
+        /// Check whether a given character is inavlid filename character
+        /// </summary>
+        public static bool IsInvalidFilenameCharacter(this char c, bool characterIsLast)
+            => characterIsLast 
+            ? InvalidFilenameCharactersLast.Contains(c)
+            : InvalidFilenameCharacters.Contains(c);
+        /// <summary>
+        /// Check whether a given path contains protocols
+        /// </summary>
+        public static bool IsPathContainProtocol(this string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+            if (path[0] != ':' && path[0] != '.' && !path[0].IsSeparator()
+                // Make sure it's not a windows root
+                && path.Length > 2 && path[1] != ':')
+            {
+                int seperator1 = path.IndexOf('/');
+                int seperator2 = path.IndexOf('\\');
+                int colon = path.IndexOf(':');
+                // No protocol colon
+                if (colon == -1)
+                    return false;
+                // Assert colon occurs before any of the seperators
+                else
+                {
+                    if (seperator1 != -1 && colon < seperator1)
+                        return true;
+                    else if (seperator2 != -1 && colon < seperator2)
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            else
+                return false;
+        }
+        /// <summary>
+        /// Get the path to directory without protocol and filename;
+        /// This function works for both seperators;
+        /// This function will ensure returned value contains a seperator
+        /// </summary>
+        public static string GetRealDirectoryPath(this string path, char? preferredSeperator = null)
+        {
+            string real = path.GetRealPath().Replace(path.GetRealFilename(), "").AppendSeparator(preferredSeperator ?? '/');
+            if (preferredSeperator.HasValue)
+                return real.Replace('\\', preferredSeperator.Value).Replace('/', preferredSeperator.Value);
+            else return real;
+        }
+        /// <summary>
+        /// A path is considered rooted if: 
+        ///     - On Linux it starts with '/';
+        ///     - On Windows it starts with a drive letter and a colon (and may not have drive root separator e.g. 
+        ///     it can be `c:Documents` i.e. relative to current working directory and not absolute but it's still 
+        ///     considered rooted like `c:\user\my\Documents`)
+        ///     - On both platforms if it starts with `\\` (i.e. UNC path);
+        ///     - On both platforms it starts with a protocol in the form of `protocolName://` or `protocolName:\\`
+        /// This function allows mixing the two separators.
+        /// </summary>
+        public static bool IsPathRooted(this string path)
+        {
+            // Null check
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            // Relative check
+            else if (path[0] == '.')
+                return false;
+            // Linux root
+            else if (path[0] == '/')
+                return true;
+            // Windows root
+            else if (path.Length > 1 && path[1] == ':')
+                return true;
+            // UNC root
+            else if (path.Length > 1 && path[0] == '\\' && path[1] == '\\')
+                return true;
+            // Check protocol
+            else if (path.IsPathContainProtocol())
+                return true;
+            else
+                return false;
+        }
+        /// <summary>
+        /// Test whether a character is folder seperator
+        /// </summary>
+        public static bool IsSeparator(this char c)
+            => c == '/' || c == '\\';
+        /// <summary>
+        /// Get path without protocol
+        /// </summary>
+        public static string GetRealPath(this string path)
+        {
+            string root = path.GetPathProtocol();
+            if (root != null)
+                return path.Substring(root.Length);
+            else
+                return path;
+        }
+        /// <summary>
+        /// Get path without protocol then get root of that path
+        /// </summary>
+        public static string GetRealPathRoot(this string path)
+            => path.GetRealPath().GetPathRoot();
+        /// <summary>
+        /// Given arbitary string representing a path, assuming all folder names are valid,
+        /// get the part of string that represents an arbitary filename which main contain
+        /// invalid FS characters; If no such a filename is found, empty string is returned
+        /// </summary>
+        public static string GetRealFilename(this string path)
+        {
+            string realPath = path.GetRealPath();
+            string realRoot = realPath.GetPathRoot();
+            string remaining = realPath.Substring(realRoot?.Length ?? 0);
+
+            // Enumerate
+            int lastIndex = remaining.Length - 1;
+            bool folderState = true;
+            int lastFolderEndingIndex = 0;
+            string lastFoldername = string.Empty;
+            string realFilename = string.Empty;
+            for (int i = 0; i < remaining.Length; i++)
+            {
+                char c = remaining[i];
+                // We are still inside valid folder name paths
+                if (folderState)
+                {
+                    if (c.IsSeparator())
+                    {
+                        lastFolderEndingIndex = i;
+                        lastFoldername = string.Empty;
+                    }
+                    else if (c.IsInvalidFilenameCharacter(i == lastIndex))
+                    {
+                        folderState = false;
+                        i = lastFolderEndingIndex;
+                    }
+                    else
+                        lastFoldername += c;
+                }
+                // We are gathering filename
+                else
+                    realFilename += c;
+            }
+            // Check for the case when no invalid file names are encountered and the last captured
+            // foldername is actually filename
+            if (!path.Last().IsSeparator() && folderState)
+                return lastFoldername;
+            // In the end if it's pure folder path (i.e. path ending with folder separator and 
+            // doesn't contain a file name), we will return empty
+            else
+                return realFilename;
+        }
+    }
 }

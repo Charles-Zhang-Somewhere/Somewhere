@@ -16,8 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ItemTypeTest.cs~RF3bbe01.TMP" />
-    <None Remove="UnitTest1.cs~RF1facca09.TMP" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,6 +3,18 @@
 This list is for myself.
 
 ```
+(Important)SW programming on imports/exports, or physical filename - test on references folder and P9
+Power Mode tab compmletion
+GetPhysicalName(string itemName) has very serious issue - as when called by Add(): What if the name indicates a file inside folder?
+	We need to fix this "Add" command;
+	See example trying to add reference to Wendy's photos in Project Nine repo
+
+Full journalling mplementation in Core
+Unit tests for jounaling opertaion - test simulated virual repository state
+GUI integration - all GUI operations especially notes
+
+Immediately work on Knowledge sybsystem, see new implementation ui note.
+
 Work on define (very simply) filter syntax, implement for `find` and SD Notebook Tab search and MD hyperlink, refer to somewhere
 
 im * flatten (for reference images) (non-home folder)
