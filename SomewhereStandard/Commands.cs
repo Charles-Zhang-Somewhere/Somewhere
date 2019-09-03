@@ -723,7 +723,7 @@ namespace Somewhere
             "If the target tag name already exist, then this action will merge the two tags.",
             category: "Tagging")]
         [CommandArgument("sourcetag", "old name for the tag")]
-        [CommandArgument("targettags", "new name(s) for the tag; if more than one is specified, the tag will be replaced with all")]
+        [CommandArgument("targettags", "new name(s) for the tag; if more than one is specified, the tag will be replaced with all of them")]
         public IEnumerable<string> MVT(params string[] args)
         {
             ValidateArgs(args);
