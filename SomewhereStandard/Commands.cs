@@ -654,22 +654,28 @@ namespace Somewhere
                 // Perform actual add action
                 foreach (var tiddler in tiddlers)
                 {
-                    try
+                    // Handling file with same name already exist, or already imported before
+                    if(IsFileInDatabase(tiddler.title))
+                        result.Add($"[Warning] `{tiddler.title}` already exist in database.");
+                    else
                     {
-                        // Add file to DB
-                        int id = AddFile(tiddler.title, tiddler.text);
-                        // Add tags
-                        var tags = tiddler.Tags;
-                        AddTagsToFile(id, tags);
-                        // Modify entry date
-                        ChangeEntryDate(id, tiddler.CreatedDate);
-                        // Return result
-                        result.Add($"`{tiddler.title}` added with {(tags.Length > 1 ? "tags" : "tag")}: {tags.JoinTags()}");
-                    }
-                    catch (Exception e)
-                    {
-                        // Simple handling for cases like non-unique names
-                        result.Add($"{e.Message.Replace('\r', ' ').Replace('\n', ' ')} - Error when importing `{tiddler.title}`");
+                        try
+                        {
+                            // Add file to DB
+                            int id = AddFile(tiddler.title, tiddler.text);
+                            // Add tags
+                            var tags = tiddler.Tags;
+                            AddTagsToFile(id, tags);
+                            // Modify entry date
+                            ChangeEntryDate(id, tiddler.CreatedDate);
+                            // Return result
+                            result.Add($"`{tiddler.title}` added with {(tags.Length > 1 ? "tags" : "tag")}: {tags.JoinTags()}");
+                        }
+                        // Additional exception handling
+                        catch (Exception e)
+                        {
+                            result.Add($"{e.Message.Replace('\r', ' ').Replace('\n', ' ')} - Error when importing `{tiddler.title}`");
+                        }
                     }
                 }
             }

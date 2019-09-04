@@ -32,6 +32,7 @@
         <!-- Inventory Commands -->
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
+        <CommandBinding Command="local:CustomCommands.Import" CanExecute="CommandImport_CanExecute" Executed="CommandImport_Executed"/>
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.GotoActiveItemEditContent" 
                         CanExecute="GotoActiveItemEditContentCommand_CanExecute" Executed="GotoActiveItemEditContentCommand_Executed"/>
@@ -203,8 +204,10 @@
                                     <!-- Actions Region -->
                                     <Border Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
                                         <DockPanel LastChildFill="True">
-                                            <Button Content="Advanced" DockPanel.Dock="Right" Foreground="{StaticResource Highlight3}"/>
-                                            <StackPanel>
+                                            <Button x:Name="AdvancedOperationsPanelToggleButton" Content="Advanced" DockPanel.Dock="Right" 
+                                                    Width="95" Height="80"
+                                                    Foreground="{StaticResource Highlight3}" Click="AdvancedOperationsPanelToggleButton_Click"/>
+                                            <StackPanel x:Name="BasicOperationsPanel" Visibility="Visible">
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="Add" Command="local:CustomCommands.Add" 
                                                         DataContext="{x:Static local:CustomCommands.Add}" ToolTip="{Binding Text}"/>
@@ -216,6 +219,14 @@
                                                         DataContext="{x:Static local:CustomCommands.New}" ToolTip="{Binding Text}"/>
                                                     <Button Content="Recent" Command="local:CustomCommands.Recent"
                                                         DataContext="{x:Static local:CustomCommands.Recent}" ToolTip="{Binding Text}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <StackPanel x:Name="AdvancedOperationsPanel" Visibility="Collapsed">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="Import" Command="local:CustomCommands.Import" 
+                                                        DataContext="{x:Static local:CustomCommands.Import}" ToolTip="{Binding Text}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
                                                 </StackPanel>
                                             </StackPanel>
                                         </DockPanel>

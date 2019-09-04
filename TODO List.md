@@ -140,6 +140,10 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 1. Wholeshare Era - An Explorable Novel
 	* (Sounds, notes, visuals, items, notes...)....
 
+[Code Organization]
+
+1. Function `GetRealFilename()` can be improved slightly: instead of going back and iterate we can use whatever current folder name has already saved when parsing file name
+
 [Utilities]
 
 1. Utilities (command line, may develop as separate program called SU): explode (automatically break all tags into words by spaces and underscores , show preview before action.

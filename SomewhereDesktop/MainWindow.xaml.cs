@@ -744,6 +744,34 @@ namespace SomewhereDesktop
                 }
             }
         }
+        private void CommandImport_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void CommandImport_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Go to inventory tab
+            TabHeader_MouseDown(InventoryTabLabel, null);
+            // Show add dialog
+            var dialog = GetHomeDirectoryFileDialog("Select file or folder to import", true, true);
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                int oldCount = AllItems.Count();
+                List<string> result = new List<string>();
+                foreach (string path in dialog.FileNames)
+                {
+                    result.Add($"Import result for `{path}`: \n\n");
+                    result.AddRange(Commands.Im(path).Select(r => $"* {r}\n"));
+                }
+                // Update panel
+                RefreshAllItems();
+                RefreshItems();
+                // Update info
+                InfoText = $"{dialog.FileNames.Count()} targets imported; {AllItems.Count() - oldCount} items are added.";
+                // Show report in dialog
+                StringBuilder text = new StringBuilder();
+                result.ForEach(r => text.AppendLine(r));
+                new DialogWindow(this, "Import result", text.ToString()).ShowDialog();
+            }
+        }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -940,6 +968,21 @@ namespace SomewhereDesktop
 
         #region Window Events
         private bool SortReverOrder = false;
+        private void AdvancedOperationsPanelToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if(BasicOperationsPanel.Visibility == Visibility.Visible)
+            {
+                BasicOperationsPanel.Visibility = Visibility.Collapsed;
+                AdvancedOperationsPanel.Visibility = Visibility.Visible;
+                AdvancedOperationsPanelToggleButton.Content = "Basic";
+            }
+            else
+            {
+                BasicOperationsPanel.Visibility = Visibility.Visible;
+                AdvancedOperationsPanel.Visibility = Visibility.Collapsed;
+                AdvancedOperationsPanelToggleButton.Content = "Advanced";
+            }
+        }
         private void ItemSortingReverseButton_Click(object sender, RoutedEventArgs e)
             => RefreshItems(SortReverOrder = !SortReverOrder);
         private void RemoveTagFilter_MouseDown(object sender, MouseButtonEventArgs e)
