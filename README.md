@@ -467,6 +467,8 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 3. Right click on file:
 4. Right click on home: 
 5. (Planned) Win32 on filename and new button for file and folder win33 context menu
+6. (Desktop, Feature) Allow going back history using **backspace** button (notice for mouse with 5 buttons, it's automatically supported to go back)
+7. (Desktop, Feature) Allow `Shift+LMB` when clicking hyperlinks in preview browser to create a "bookmark" note
 
 # Window
 
