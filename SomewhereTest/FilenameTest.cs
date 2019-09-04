@@ -21,6 +21,7 @@ namespace SomewhereTest
             Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("test.txt");
+            Commands.Add("test.txt");
             Commands.MV("test.txt", "folder1/folder2\\test*.txt");   // Name containing invalid characters
             // Clean up
             Commands.Dispose();
