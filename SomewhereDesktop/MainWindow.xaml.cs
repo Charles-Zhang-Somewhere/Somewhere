@@ -1378,7 +1378,7 @@ namespace SomewhereDesktop
         /// Whether item preview should skip autoplay
         /// </summary>
         public bool ShouldSkipAutoplay
-            => QuickSettings.Contains("npv");
+            => QuickSettings.Contains("nvp");
         private void ProcessPreviewCommand(string commandName, string[] arguments)
         {
             if (CommandNames.ContainsKey(commandName))
@@ -1464,7 +1464,7 @@ namespace SomewhereDesktop
         {
             if (args.Length == 0)
                 return new string[] { $"Available settings: " +
-                    $"npv - No Preview Video; " +
+                    $"nvp - No Video Preview; " +
                     $"Current settings: {string.Join(", ", QuickSettings.OrderBy(s => s))}" };
             else if (args.Length == 1)
             {
@@ -1481,7 +1481,7 @@ namespace SomewhereDesktop
         {
             if (args.Length == 0)
                 return new string[] { $"Available settings: " +
-                    $"npv - No Preview Video; " +
+                    $"nvp - No Video Preview; " +
                     $"Current settings: {string.Join(", ", QuickSettings.OrderBy(s => s))}" };
             else if (args.Length == 1)
             {
