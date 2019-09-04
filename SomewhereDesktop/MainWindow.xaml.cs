@@ -1563,7 +1563,7 @@ namespace SomewhereDesktop
                 return new string[] { $"Opening address {args[0]}." };
             }
             else
-                return new string[] { "A preview browser must be visible; Use `switch` to open preview browser." };
+                return new string[] { "A preview browser must be visible; Use `s web` to open preview browser." };
         }
         [Command("Pause or continue currenly playing video.")]
         public IEnumerable<string> Pause(params string[] args)
@@ -1584,7 +1584,10 @@ namespace SomewhereDesktop
             if (VLCControl != null)
             {
                 if (VLCControl.IsPlaying)
+                {
                     VLCControl.Pause();
+                    return new string[] { "Video is paused." };
+                }
                 else
                 {
                     // Play new media
@@ -1594,15 +1597,18 @@ namespace SomewhereDesktop
                         // Disable VLC input capture and handle it ourselves
                         VLCControl.Video.IsMouseInputEnabled = false;
                         VLCControl.Video.IsKeyInputEnabled = false;
+                        return new string[] { $"Playing {args[0]}." };
                     }
                     // Continue play old media
                     else
+                    {
                         VLCControl.Play();
+                        return new string[] { "Continue play." };
+                    }
                 }
-                return null;
             }
             else
-                return new string[] { "No preview source available. Open some video first." };
+                return new string[] { "No preview source available. Open some video first or use `s video` to open video preview." };
         }
         [Command("Set or Show available quick settings and current settings.")]
         [CommandArgument("setting", "the setting to set", optional: true)]
@@ -1637,6 +1643,24 @@ namespace SomewhereDesktop
             }
             else
                 return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
+        }
+        [Command("Switch to browser and optionally open some website.")]
+        [CommandArgument("address", "website to open", optional: true)]
+        public IEnumerable<string> SW(params string[] args)
+        {
+            var r = S("web");
+            if (args.Length == 1)
+                r = G(args[0]);
+            return r;
+        }
+        [Command("Switch to video and optionally play some video source.")]
+        [CommandArgument("path", "video to open", optional: true)]
+        public IEnumerable<string> SV(params string[] args)
+        {
+            var r = S("video");
+            if (args.Length == 1)
+                r = Play(args[0]);
+            return r;
         }
         [Command("Switch to a different preview type.")]
         [CommandArgument("type", "type of preview control to switch, must be either `video` or `web`")]

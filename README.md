@@ -55,6 +55,7 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 3. Run `somewhere` or `sw` to see help;
 4. Have fun tagging!
 5. Optionally, if you are using Somewhere Desktop, you can set default program for openning `Home.somewhere` files as the **SomewhereDesktop.exe**
+6. For Somewhere Desktop, [vc++2015](https://www.microsoft.com/en-ca/download/details.aspx?id=48145) redistributable is also needed.
 
 Optional Download: It's recommended for CLI to be used with [Cmder](https://cmder.net) (better for Unicode display, nicer colors and better overall experience); Notice Cmder is available on Windows only.
 
