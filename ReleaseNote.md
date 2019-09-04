@@ -1,5 +1,10 @@
 Implementation *change log* per **release**; Contents here should match that from [Release page](https://github.com/szinubuntu/Somewhere/releases) and serve as a text copy.
 
+In the future we shall formalize commit messages, and use directly commit details. Name can indicate major feature but just like detail format. Use square ebrackets for  program name; Use round brackets for category (e.g. bug fix), so change log is really thorough summary of all commits. Here are programms: 
+
+- Desktop, Standard/Core (Standard is a lot of typing than core) (Core API and SW is part of Standard), Test, Doc; 
+- Here are categories (Camel Style Cases): bug fix, issue fix, improvement (including improvements to command formats), feature, performance, core logics, code logic, UI, database, configuration, naming, code organization (including consistency and functiona calls conventions), output format (usually for Core CLI commands), library (e.g. sqliteextension and string helper)
+
 # V0.0.1 "CLI Functional Release"
 
 ## Summary
@@ -51,6 +56,8 @@ All details of changes from V0.0.5 are expected to be summarized in the formal r
 
 # V0.1.0 "The Real Thing"
 
+## Summary
+
 * \[Major Feature\] Journaling system!
 * \[Major Feature\] This release is not compatible with earlier releases! Upon executing this version, your home repository will be updated automatically and earlier versions is no longer usable.
 
@@ -61,9 +68,21 @@ The specific updates to the repository database are as follows:
 3. Set all existing entries' **Type** field's value to "**Log**";
 4. Update repository version to `V0.1.0`.
 
-## Summary
+## Key Features
 
-* \[Windows\] Add **Recent homes** history;
-* \[Standard\]
+1. Support preview of following digital contents: (Image)... (Audio).... (Video)....
+2. Support Remark for items
+3. Support importing from Tiddly Wiki
 
+## Core/Standard
 
+* API expansion
+
+## Desktop
+
+* Add **Recent homes** history;
+* Markdown editing shortcuts;
+
+## Test
+
+## Bug/Issue Fix

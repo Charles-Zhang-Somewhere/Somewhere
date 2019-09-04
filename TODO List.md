@@ -9,11 +9,18 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 	We need to fix this "Add" command;
 	See example trying to add reference to Wendy's photos in Project Nine repo
 
+Import/Export implementation
+Filename Tests
+Filename Commands check and implementation
+Doc update and standardization
+flatten: on current home and managed files only, flatten their path, add tags per path, rename appropriately, generate reports in a separate tagged file under "_report" and "_somewhere" (can be deleted by user) as note.
+
 Full journalling mplementation in Core
 Unit tests for jounaling opertaion - test simulated virual repository state
 GUI integration - all GUI operations especially notes
 
 Immediately work on Knowledge sybsystem, see new implementation ui note.
+Write knowledge subsystem in commandline.
 
 Work on define (very simply) filter syntax, implement for `find` and SD Notebook Tab search and MD hyperlink, refer to somewhere
 
@@ -21,6 +28,13 @@ im * flatten (for reference images) (non-home folder)
 im HomeFolder clean (default copy) - entires and files (first copy/cut all contents, second make a one-by-one item transition from original home, third double check everything exists, finally generate a report as a **file**; No need to delete original home folder)
 Move from SD by changing name (path) e.g. for files under a folder
 For MD shortcut, allow ALT key to unformat brackets.
+
+[Desktop]
+
+* Status command textbox: should remember previous entries (in a stack) and allow rolling back using Up arrow keys.
+* Video player add support for Note content that are HTTP address.
+* Provide a shortcut from NT to IT just like "edit content" but this time "preview content" and select note in items and focus on Remark area. Also provide a label for Remark textbox.
+* (SD IT - Inventory Tab) Add Convert action to Advanced and create dedicated window containing two regions and two combo box for preview before clicking Confirm button or close button on top right. Useful for (even incomplete is better) conversion from TW to MD.
 
 [Practical Tests and Usage]
 
@@ -41,6 +55,7 @@ For MD shortcut, allow ALT key to unformat brackets.
 [Marketing]
 
 1. Make some meaningful and informative screenshots and update to README and website
+2. (Landing Page Features List) Preview for image formats:... Preview for video formats:.... Preview for audio formats:.... (Achieved with libVLC)
 
 [Misc]
 
@@ -53,8 +68,7 @@ update file newtags: remove all old tags from a file and apply a new set of tags
 untag: When we do untag, remove empty tags
 For all operations that involve physical files, add filename translation (clipping), clip to a length of (including path)...  Keep `_delete` and file extension
 For Add *: check and add only if the file is not home database and is not already added.
-
-Item remark (in inventory panel)
+During purge operation, generate a structured CSV format report (just like File table), containing all details (including tags, just like `files` command), specifically, include full Meta contents (as a single string, so it's easier for people to parse, just like it is in the table).
 
 allow tagging external locations, like directly, using absolute path (this can be useful see in enterprise environment)
 (Advanced Feature; Usability; Non-crucial) Find action: allow 'zip' directly all found items into an archive (what about virtual notes?) and automatically add and tag the final archive, all items within the archive is still tagged individually (with a path referencing into the archive file).
@@ -73,6 +87,9 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 3. In-depth integration of NtfsReader and actions for NTFS search results;
 4. Notice FileSystemWatcher might break dependency and cause incompatible for Linux, pending verification; Maybe .Net Core has better support for FileSystemWatcher. Focus on Windows for now.
 5. Use rsync or some C# library for storing diff for revision
+6. Add importing internal folder without flattening it, i.e. import as-if;
+	* Notice to import items from an external folder, rather than the folder itself, currently the correct way to do that is to `add` first which will cut it, then do `im` to import and flatten it
+7. For remark, a special dictionary format is supported for single-line pair values which have special significance in Remark search (or filtering): `^(Key):(Value)$`
 
 [(Urgent) Issues and Bugs - Affects Usability]
 
@@ -84,6 +101,12 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 6. Bug: add command cannot add files under a folder in current dir
 7. Create note should not allow ending slashes to avoid confusion
 8. Unit test: add case when name collision actually happens during add/create
+9. Better find
+10. Physical path support, absolute path support, import and export with path configuration, unit tests for importing and exporting
+11. IT page Tags Textbox seems not support scrolling. Also we might want to make it wrapping stead of horizontal scrolling (but don't support return or newlines)
+12. (Issue, SD): Suppressed commands not generating any info, show "interactive commands not supported in GUI" or make it capable of being noninteractive (and forced). - maybe use that IsGenerateConsoleOutput variable. 
+13. Can only call DragMove when mouse button is down - when doing two finger gesture on UI. (Using a laptop?)
+14. (Desktop) (Error) When an items tags are updated (added or updated), tags list (if had filter tags selected) don't return to full (refresh will return it to full). How is duplicate tags handled in SD textbox?
 
 [Potential Design Flaws]
 
@@ -93,11 +116,16 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 
 1. Allow customized color definitions per repository in `ColorSettings` property
 2. Add browsing recent repositories (e.g. in a dialog window) - that information shall be saved along with executable folder's own database
+3. Better style that not less blazingly white horizontal scroll bar (or better, don't show it and use instead wrappable text block for file names)
+4. For binary contents, we can provide preview of first N bytes in Hex.
+5. (Desktop) Further Note content editing augmentation: 1) Simple auto bracketing like Sublime for bold, italic, brackets etc. when texts are selected. 2) Ctrl+I Selection pop-up insertion of "find" filter for file names link to file ID; 3) Update Textbox redo steps to infinity
 
 [Pending Documentation: Future Roadmap Features]
 
 1. Advanced action on folder: `flatten` and `import flatten`
 	* Allow **import flatten** with auto tagging of copied files and report of total file count (generate summary), the most basic way is to implement this by calling add command as underlying
+2. (Major Feature) Annotation using radius circle directly on picture (defined completely by name as note): `(#ID) Image name::Note name[Parameters]` - and supported preview for clicking or (even better) hover showing (markdown supported). Application cases: localized Pinterest images - studied. Give reference images more value. 
+    * Futher inspiration: develop this kind of meta-schemes for further utilizing existing systems, and focus on add meaning and convenience to things.
 
 [Big Plans]
 
@@ -111,6 +139,17 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 
 1. Wholeshare Era - An Explorable Novel
 	* (Sounds, notes, visuals, items, notes...)....
+
+[Utilities]
+
+1. Utilities (command line, may develop as separate program called SU): explode (automatically break all tags into words by spaces and underscores , show preview before action.
+
+[Packaging]
+
+1. Automate packaging and even publishing process (i.e. publish to github). 	Packaging Instructions:
+	* Package Linux .Net Core version and Windows version separately
+	* Don't package Cmder but provide link
+	* Package VLC separately for Windows version, or actually in the future this will become a required component when related features grow
 ```
 
 # Unidentified
@@ -121,3 +160,14 @@ Somethings that used to be an issue and is no longer identified:
 2. (Bug) There is a potential bug that during video preview when adding new videos it can cause a crash or take too long to respond especially on a networking environment - check how during such circumstances files are added and how it affect behavior of the program.
 3. (Issue) IT region type filter still too large on laptop.
 4. (Issue) There is an exception with DragMove() event on laptop when clicking on buttons and hold and move finger.
+5. (Issue) Inventory panel tags need sorting, filters don't need sorting.
+6. (Core, Command Behavior) `mv` command if old not exist and new already exist and new not exist in DB then we can automatically treat this as an explicit renaming and just update it. (No idea what that means)
+7. (Issue) Exception Error dialog seems to have a height larger than screen resolution, adjust MaxHeight property.
+
+# Don't Do
+
+Don't do following things with a reason, and seek alternatives.
+
+1. For recent working directories: add a task bar recent history implementation first.
+	* Don't do this. This cause tigher integration with Windows, which is OK but less ideal.
+	* Alternative: We implemented a popup dialog for history. This also has the benefit that history is managed by the application itself rather than Windows.

@@ -796,7 +796,8 @@ namespace Somewhere
         }
         [Command("Move Tags, renames specified tag.",
             "If source tag doesn't exist in database then will issue a warning instead of doing anything. " +
-            "If the target tag name already exist, then this action will merge the two tags.",
+            "If the target tag name already exist, then this action will merge the two tags. " +
+            "If more than one replacement tags are provided, the source tag will be split into multiple new ones, this operation is also called \"explosion\".",
             category: "Tagging")]
         [CommandArgument("sourcetag", "old name for the tag")]
         [CommandArgument("targettags", "new name(s) for the tag; if more than one is specified, the tag will be replaced with all of them")]

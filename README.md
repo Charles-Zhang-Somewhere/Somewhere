@@ -13,6 +13,7 @@ Welcome to **Somewhere**, a simple program that enables you to tag your files in
 7. (UI Design) Dark mode, B/W color scheme, custom color scheme configuration (will be available in the future);
 8. Comments are files!
 3. Journals: Active version control! Not super optimized yet, but it works!
+2. Exhaustive Functional Units: import Tiddly Wiki json and CSV exports.
 2. (Concept Design) **Item** based, **first-class tags**, (custom, attemptive) **theory backed**;
 	* Absolutely self contained;
 	* Long and expressive item names as you like - even something like this (notice each line is **real**):
@@ -31,7 +32,6 @@ This is /my file/ in Somewhere so I should be able to do <anything> I want with 
 ```
 
 However, names like that is *not really recommended* - you should name your file whatever way you wish but keep it **succinct and meaningful** so you can easily find it.
-
 
 **Who should use it**
 
@@ -122,6 +122,19 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 0. Repository/Home: each Somewhere home is a repository, managed by SQLite database
 1. (Observation) Non original、non personal item s are usually not worth and not need for very specialized organization, for instance Steam games installation folder - you don't really care how large it is and how many files are there because you don't interact with it directly anyway. Another example might be Audible book local audio files - simple folders suffice for the purpose of organizing those. However soon enough when we are dealing with **custom information**, originality comes into play, this includes custom categorization system which is in effect a Knowledge system even if we are dealing with items whose raw contents are not directly issued by us, for instance organizing news digest - even though we don't wrote news ourselves the organized structure represents our knskle. In this case a tag based system can help. I know this discussion is a bit abstract 
 2. Hierarchical Home Protocol (Multi-Home management)
+1. Indexed notes as homogeneous containers for a given subject matter (e.g. Project Hephaestus design and Project Nine design) instead of many separate items.
+2. The best way to use knowledge is like using Universal Diary, and tags.
+3. Why not clicking and dragging and autocompleting all that fancy stuff? Like Zapier or Elyse? I used TiddlyWiki, it too heavy and not efficient.
+4. Everything going on in our mind is called a thought, there are two kinds of thoughts in terms of utility: useless and useful ones. 
+    * An idea is a single stated thought in human language. An idea is useless.
+    * To turn an idea into a useful thought, it can either: get a name and become an information with a title (the same title which can also contain oteht information), get tags and become knowledge, or get a structure and become structired data measure. 
+    * Every note starts as idea, then it gradually grow and when it gets a title it becomes a complete note. Then it may become a title in its own regard.
+2. Knowledge system: offline wiki (that offline wiki app link from wikipedia) is not enough but a must. (Around 40Gb base knowledge local reference)
+
+## Questions
+
+1. What's wrong with Fiddly Wiki again? Tags not easy to manage (mostly due to slow?) Tags are first class tiddlers are very cool concepts.
+    * When tags gets some size (a few dozens), impossible to use tag manager, very inefficient. Not tag oriented workflow. But we'll supported. That's it.
 
 ## References
 
@@ -170,6 +183,8 @@ To avoid confusion, above convention is governed by following rules:
 3. Configuration keys prefixed with `<Anything you like>` + `.` (actually everything that has a any *special symbol* including space excluding colons in it will never be used as SW configuration keys) is reserved for personal use. You can exploit this to set arbitary custom repository level properties by using `cf` (configuration) command and create your own (configuration) properties: e.g. `cf My.Birthday 1995/03/05`, this will be saved in your repository and will not be touched by SW. There is no limit what you can save.
 4. (Markdown syntax shortcuts) When editing notes in Notebook Tab, you can select the texts you wish to apply formats then just type in Markdown format symbols to automatically apply brackets and bold and italic etc. Currently it supports: `` *_`'"([{ ``
 5. For time related notes, try tag it with date in this format: `yyyy-MM-dd` e.g. `2019-08-31`; Specialized sorting and related features might be implemented.
+6. Want to give a tag some more meaning? Create a note with the same name (spaces allowed) as tag, and write your story either in the content or remark for that note. This will also work with Knowledge system in the future, and is the preferred way to define relationships for tags - if any. For instance, at the stage if gathering ideas, one of the tag was called "ProjctHehastus", and a note with same name exists, I.e. "Project Hephaestus".
+7. Try add `_HomeBackground.png/jpg` and see what happens to your Home background. Better color adjustment is expected in *future release* (not a promise).
 
 ## Best Practices
 
@@ -183,6 +198,10 @@ To avoid confusion, above convention is governed by following rules:
 	* An item name shouldn't start like a root path, i.e. `C:` on windows, and `/` on linux, this applies no matter what OS you are using, e.g. `/My Note on Designing a New Cloth/` is not a good item name for notes; If you shall name your item like that, it will behave like a file in some part of the system, specifically....
 	* An item name shouldn't end like a folder path, i.e. `\` on windows, and `/` on linux, this applies no matter what OS you are using, e.g. `My Note on Environment Governing\` is not a good item name for notes; If you shall name your item like that, it will behave like a folder in some part of the system, specifically....
 	* An item CAN contain folder seperators however, e.g. `On the relation between man and nature/how bread is made out of wheet` is a good name for an article/note, and I will guarantee that even though it looks very suspicious to an actual file (e.g. `Writings/On the relation between man and nature/how bread is made out of wheet.pdf`), it is actually identified as a note
+1. Avoid using tags like this: `c#_snippet_wpf`, instead do it like this: `c#, snippet, wpf` - it's 2 spaces more typing but this is more generic and less confusing and better filtered.
+    * You might be temping to use "visual_studio_faq" and "marvelous_designer_faq"...
+    * However I will consider "software_library" a  solid tag because it differentiates from "library", but "c#_library" should really become "C#, software_library"
+2. Start with a knowledge, then either grow it into a note, or do something else. Don't keep everything scattered.
 
 ## Case Studies
 
@@ -305,6 +324,11 @@ MULTITUDE might never get a chance to continue development, so some of its goals
 5. SM: Somewhere Manager/Home Explorer (Pending a cute animal name)
 	* Find all files
 	* A path to **Hierarchical Home Protocol**
+1. Knowledge subsystem's function can be used just like IT tag filtering, but the dedicsted interface provides slight advantage for exploring and learning about existing homes rather than overwhelmed by the show-all tab list of IT. In that case, the tags in Knowledge subsystem have a different mechanism of presenting themselves, e.g. one clicks one, then gradually learns about more. In essence, this is also Topic Discovery for humans. We shall implement this feature much later though, when I get a decent setup of example repository.
+    * UI: The key to this UI is compactness - we want each knowledge to be as small as possible, with a focus on tags; We wish people to even abuse this aspect as it should be: anything small fragments gets recorded, and tagged, as it should be - the purpose is after all, to tag information items.
+        * The intention is that it feels just like Tiddly Wiki, but more focused and lightweight and database based - lightweight is necessary for efficiency, and it should contain as little information as possible - it cannot be a text file because that's too heavy, it cannot be a formatted text content because that's not efficient, it must be database based with each row representing one single information item so the significance is proper. 
+    * UI: On the left there will be a search tags area, Up region, current region and Down region. On the right there will be a tags textbox, a content textbox, a remark textbox, and a toggle button for preview mode, and a button for create new knowledge. There is also another button named "Promote" which opens a dialog window for adding names to knowledge with a quote string: "Everything starts as a simple knowledge, then it grows into a note, then it gets some tangible forms. In the end it's significant enough as its own subject and becomes a new repository."
+2. Knowledge Tab implementation: 1) Up region shows all tags only 2) down region shows all available tags and then all knowledge items 3) click on anything in down region will select and preview in current. Actually this function is exactly like what IT currently does with its type filter and tags, so let's remove this panel and instead work on IT and make sure its tag filtering works really well and make a note in Usage regarding this potential application and its theory.
 
 Notice to compile and link SomewhereStandard and SQLite we need to uncheck **Prefer 32-bit** for SomewhereDesktop project.
 
