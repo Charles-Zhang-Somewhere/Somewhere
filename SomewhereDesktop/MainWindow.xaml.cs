@@ -754,22 +754,31 @@ namespace SomewhereDesktop
             var dialog = GetHomeDirectoryFileDialog("Select file or folder to import", true, true);
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                int oldCount = AllItems.Count();
-                List<string> result = new List<string>();
-                foreach (string path in dialog.FileNames)
+                try
                 {
-                    result.Add($"Import result for `{path}`: \n\n");
-                    result.AddRange(Commands.Im(path).Select(r => $"* {r}\n"));
+                    int oldCount = AllItems.Count();
+                    List<string> result = new List<string>();
+                    foreach (string path in dialog.FileNames)
+                    {
+                        result.Add($"Import result for `{path}`: \n\n");
+                        result.AddRange(Commands.Im(path).Select(r => $"* {r}\n")); // Notice this line can 
+                        // throw exceptions so we need to catch it
+                    }
+                    // Update panel
+                    RefreshAllItems();
+                    RefreshItems();
+                    // Update info
+                    InfoText = $"{dialog.FileNames.Count()} targets imported; {AllItems.Count() - oldCount} items are added.";
+                    // Show report in dialog
+                    StringBuilder text = new StringBuilder();
+                    result.ForEach(r => text.AppendLine(r));
+                    new DialogWindow(this, "Import result", text.ToString()).ShowDialog();
                 }
-                // Update panel
-                RefreshAllItems();
-                RefreshItems();
-                // Update info
-                InfoText = $"{dialog.FileNames.Count()} targets imported; {AllItems.Count() - oldCount} items are added.";
-                // Show report in dialog
-                StringBuilder text = new StringBuilder();
-                result.ForEach(r => text.AppendLine(r));
-                new DialogWindow(this, "Import result", text.ToString()).ShowDialog();
+                catch (Exception error)
+                {
+                    new DialogWindow(this, "Error when importing", error.Message).ShowDialog();
+                    InfoText = "An error occured during importing.";
+                }
             }
         }
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)

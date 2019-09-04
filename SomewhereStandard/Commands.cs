@@ -630,6 +630,8 @@ namespace Somewhere
                 // Collect tiddler definitions
                 if (extension == ".csv")
                 {
+                    // Disable CSV importing fow now to avoid data corruption
+                    throw new ArgumentException("Csv importing is disabled at this moment.");
                     string content = File.ReadAllText(sourcePath);
                     var list = new List<Tiddler>();
                     // TODO: Currently "really simple csv" library is not reading correctly when last attribute is empty like this "",
