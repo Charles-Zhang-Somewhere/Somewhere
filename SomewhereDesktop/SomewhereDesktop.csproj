@@ -151,6 +151,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="CustomCommands.cs" />
+    <Compile Include="CustomMenuHandler.cs" />
     <Compile Include="DataConverters.cs" />
     <Compile Include="DialogWindow.xaml.cs">
       <DependentUpon>DialogWindow.xaml</DependentUpon>

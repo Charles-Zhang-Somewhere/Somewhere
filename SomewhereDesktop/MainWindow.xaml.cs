@@ -66,6 +66,8 @@ namespace SomewhereDesktop
 
             // Initialize Video Preview Control
             InitializeVLCControl();
+            // Initialize CefSharp Browser Control
+            PreviewBrowser.MenuHandler = new CustomMenuHandler();
             // Check new versions in background
             BackgroundCheckNewVersion();
         }
