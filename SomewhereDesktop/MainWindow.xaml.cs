@@ -1117,26 +1117,27 @@ namespace SomewhereDesktop
                 var oldWriteValue = Commands.WriteToConsoleEnabled;
                 Commands.ReadFromConsoleEnabled = false;
                 Commands.WriteToConsoleEnabled = false;
-                // Break a chord into notes, each key represent a seperate command
-                string[] chord = ConsoleInput.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
+                // Break a chord into notes, each note represent a seperate command
+                var chord = ConsoleInput.Split(new string[] { "\\n" /* Like, literally, `\n` */ }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.Trim());
                 StringBuilder result = new StringBuilder();
                 foreach (string chordNote in chord)
                 {
                     string[] positions = chordNote.BreakCommandLineArgumentPositions();
-                    string command = positions.GetCommandName().ToLower();
+                    string commandName = positions.GetCommandName().ToLower();
                     string[] arguments = positions.GetArguments();
-                    if (chord.Length > 1)
-                        result.AppendLine($"{command}:");
+                    if (chord.Count() > 1)
+                        result.AppendLine($"{commandName}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
                     string[] disabledCommands = new string[] { "purge", "x" };
-                    if (disabledCommands.Contains(command))
+                    if (disabledCommands.Contains(commandName))
                     {
-                        ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
+                        ConsoleResult = $"Command `{commandName}` is not supported here, please use a real console emulator instead.";
                         break;
                     }
                     else
                     {
-                        foreach (var line in Commands.ExecuteCommand(command, arguments))
+                        foreach (var line in Commands.ExecuteCommand(commandName, arguments))
                             result.AppendLine(line);
                     }
                 }
@@ -1154,11 +1155,17 @@ namespace SomewhereDesktop
         {
             if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(PreviewInput))
             {
+                // Break a chord into notes, each note represent a seperate command
+                var chord = PreviewInput.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.Trim());
                 // Handle commands (in lower case)
-                var positions = PreviewInput.BreakCommandLineArgumentPositions();
-                var commandName = positions.GetCommandName();
-                string[] arguments = positions.GetArguments();
-                ProcessPreviewCommand(commandName, arguments);
+                foreach (string chordNote in chord)
+                {
+                    string[] positions = chordNote.BreakCommandLineArgumentPositions();
+                    string commandName = positions.GetCommandName().ToLower();
+                    string[] arguments = positions.GetArguments();
+                    ProcessPreviewCommand(commandName, arguments);
+                }
                 PreviewInput = string.Empty;
                 e.Handled = true;
             }
@@ -1633,7 +1640,7 @@ namespace SomewhereDesktop
         }
         [Command("Switch to a different preview type.")]
         [CommandArgument("type", "type of preview control to switch, must be either `video` or `web`")]
-        public IEnumerable<string> SP(params string[] args)
+        public IEnumerable<string> S(params string[] args)
         {
             string[] validOptions = new string[] {"web", "video", "w", "v" };
             if(args.Length == 0 || !validOptions.Contains(args[0].ToLower()))
@@ -1668,7 +1675,7 @@ namespace SomewhereDesktop
             {
                 string availableCommands = string.Join(", ", CommandNames.Keys.OrderBy(k => k));
                 // Return single line
-                return new string[] { $"Available commands: {availableCommands}." };
+                return new string[] { $"Available commands: {availableCommands}. You can chain commands together using `|` symbol" };
             }
             // Show help of specific command in a single line
             else if (args.Length == 1)
