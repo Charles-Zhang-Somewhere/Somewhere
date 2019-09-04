@@ -150,6 +150,18 @@ namespace StringHelper
                 .Replace('"', '_'))
             .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
             ?? new string[] { };    // Return empty for null string
+        /// <summary>
+        /// Split a path as tags, lower cased
+        /// </summary>
+        public static IEnumerable<string> SplitDirectoryAsTags(this string path)
+            => path?.GetRealDirectoryPath().Split(new char[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(d => 
+                // Save as lower case
+                d.Trim().ToLower()
+                // Replace double quote (not allowed in Windows, allowed in Linux) with underscore
+                .Replace('"', '_'))
+            .Where(t => !string.IsNullOrEmpty(t))  // Skip empty or white space entries
+            ?? new string[] { };    // Return empty for null string
     }
 
     /// <summary>
@@ -165,6 +177,7 @@ namespace StringHelper
         /// </summary>
         public static string AppendSeparator(this string folderPath, char preferred = '/')
         {
+            if (string.IsNullOrWhiteSpace(folderPath)) return folderPath;
             char last = folderPath.Last();
             if (!last.IsSeparator() && last != ':')
                 return folderPath + (folderPath.First().IsSeparator() ? folderPath.First() : preferred);
@@ -243,7 +256,6 @@ namespace StringHelper
             }
             return root.AppendSeparator();
         }
-
         /// <summary>
         /// Get the protocol part of a path if it contains protocol, otherwise return null
         /// </summary>
@@ -304,6 +316,11 @@ namespace StringHelper
             else
                 return false;
         }
+        /// <summary>
+        /// Checks whether the path ends with a folder separator
+        /// </summary>
+        public static bool IsPathFolder(this string path)
+            => path.Last().IsSeparator();
         /// <summary>
         /// Get the path to directory without protocol and filename;
         /// This function works for both seperators;
@@ -383,7 +400,7 @@ namespace StringHelper
             // Enumerate
             int lastIndex = remaining.Length - 1;
             bool folderState = true;
-            int lastFolderEndingIndex = 0;
+            int lastFolderEndingIndex = -1;
             string lastFoldername = string.Empty;
             string realFilename = string.Empty;
             for (int i = 0; i < remaining.Length; i++)
