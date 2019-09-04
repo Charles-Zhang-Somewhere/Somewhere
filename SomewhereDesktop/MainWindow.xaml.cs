@@ -435,7 +435,9 @@ namespace SomewhereDesktop
                     Play(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
                 // Preview webpages
-                else if(extension == ".html")
+                else if(extension == ".html"
+                    // Preview pdf
+                    || extension == ".pdf")
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     PreviewBrowser.Address = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
