@@ -437,7 +437,10 @@ namespace SomewhereDesktop
                 // Preview webpages
                 else if(extension == ".html"
                     // Preview pdf
-                    || extension == ".pdf")
+                    || extension == ".pdf"
+                    // Preview gif
+                    || extension == ".webp"
+                    || extension == ".gif")
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     PreviewBrowser.Address = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
@@ -1645,6 +1648,20 @@ namespace SomewhereDesktop
             }
             else
                 return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
+        }
+        [Command("Perform Google search.",
+            "Entered arguments are simply joined together with space replace with + sign and " +
+            "then appended to `www.google.com/search?q=`.")]
+        [CommandArgument("keywords", "keywords to search; (special) no need to have quotes")]
+        public IEnumerable<string> Google(params string[] args)
+        {
+            if (args.Length == 0)
+                return new string[] { "Enter keywords to search." };
+            else
+            {
+                string searchPhrase = string.Join(" ", args);
+                return SW($"www.google.com/search?q={searchPhrase.Replace(' ', '+')}");
+            }
         }
         [Command("Switch to browser and optionally open some website.")]
         [CommandArgument("address", "website to open", optional: true)]
