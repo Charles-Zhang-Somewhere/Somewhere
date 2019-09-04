@@ -363,23 +363,19 @@ namespace SomewhereDesktop
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
-        private void UpdateItemPreview()
+        void ClearItemPreview()
         {
-            bool IsStringWebUrl(string text)
-            {
-                bool result = Uri.TryCreate(text, UriKind.Absolute, out Uri uriResult)
-                    && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-                return result /* may return null for Urls that doesn't start with http or https */ 
-                    || Uri.IsWellFormedUriString(text, UriKind.RelativeOrAbsolute);
-            }
-
-            // Clear previous
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
                 = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
                 = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
+        }
+        private void UpdateItemPreview()
+        {   
+            // Clear previous
+            ClearItemPreview();
             // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
@@ -1445,6 +1441,16 @@ namespace SomewhereDesktop
                 return null;
             }
         }
+        /// <summary>
+        /// Check whether a given string is valid url
+        /// </summary>
+        bool IsStringWebUrl(string text)
+        {
+            bool result = Uri.TryCreate(text, UriKind.Absolute, out Uri uriResult)
+                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            return result /* may return null for Urls that doesn't start with http or https */
+                || Uri.IsWellFormedUriString(text, UriKind.RelativeOrAbsolute);
+        }
         #endregion
 
         #region Data Binding
@@ -1538,6 +1544,20 @@ namespace SomewhereDesktop
             }
             return new string[] { $"Document generated at {Commands.GetPathInHomeHolder(documentation)}" };
         }
+        [Command("Goto a website.")]
+        [CommandArgument("adress", "url of the website, can also be physical local file path")]
+        public IEnumerable<string> G(params string[] args)
+        {
+            if (args.Length == 0 || !IsStringWebUrl(args[0]))
+                return new string[] { "A valid address must be passed." };
+            else if (PreviewBrowser.Visibility == Visibility.Visible)
+            {
+                PreviewBrowser.Address = args[0];
+                return new string[] { $"Opening address {args[0]}." };
+            }
+            else
+                return new string[] { "A preview browser must be visible; Use `switch` to open preview browser." };
+        }
         [Command("Pause or continue currenly playing video.")]
         public IEnumerable<string> Pause(params string[] args)
         {
@@ -1610,6 +1630,34 @@ namespace SomewhereDesktop
             }
             else
                 return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
+        }
+        [Command("Switch to a different preview type.")]
+        [CommandArgument("type", "type of preview control to switch, must be either `video` or `web`")]
+        public IEnumerable<string> SP(params string[] args)
+        {
+            string[] validOptions = new string[] {"web", "video", "w", "v" };
+            if(args.Length == 0 || !validOptions.Contains(args[0].ToLower()))
+                return new string[] { $"A valid type option must be passed: either {string.Join(" or ", validOptions)} is accepted." };
+            else
+            {
+                // Clear preview
+                ClearItemPreview();
+                string type = args[0].ToLower();
+                switch (type)
+                {
+                    case "w":
+                    case "web":
+                        PreviewBrowser.Visibility = Visibility.Visible;
+                        break;
+                    case "v":
+                    case "video":
+                        PreviewWindowsFormsHost.Visibility = Visibility.Visible;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unexpected preview type `{type}`");
+                }
+                return new string[] { $"Preview is changed to `{type}` type." };
+            }
         }
         [Command("Show available preview actions.")]
         [CommandArgument("command", "name of the command to show details", optional: true)]
