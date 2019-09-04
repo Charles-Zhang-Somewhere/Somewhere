@@ -519,19 +519,19 @@ In summary, those tables:
 1. **Tag**: ID (Always incremental, unique), Name (Tags are first-class objects)
 2. **File (item)**: ID (Always incremental, unique), Name (Name and or path; Nott-nullable), Content (Blob), Meta (YAML: Size, MD5, Remark), EntryDate - for physical file, physical folder, virtual file (note and resource)
 3. **FileTag**: FileID, TagID
-4. **Log**: DateTime, Event (include relevant IDs and all details) - server mosltly reference purpose
-3. **Configuration**: key, value
-4. (Future) Rule (A,B,C)
-5. (Future) Hierarchy (A/B/C)
+4. **Journal**: *DateTime*, *Event* (include relevant updated item IDs/Names and all details), *Type*; This table serves mosltly reference purpose and doesn't affect core functionality, but can be exploited.
+3. **Configuration**: *Key*, *Value*, *Type*, *Comment*
+4. (Future; Deprecated) Rule (A,B,C) - Deprecated, defined by internal referencing relationship as indicated by names and tags, per Knolwedge Subsystem, see design notes on knolwedge subsystem (or maybr article on it)
+5. (Future; Deprecated) Hierarchy (A/B/C) - Same as above, can be deduced directly from knowledge subsystem
 6. (Future) Revision: FileID, RevisionID, Content, RevisionTime
 
 # (Temporary) License
 
-Before Somewhere reach a stable release, i.e. release version V0.5.0 or 250 commits - whichever comes first, you are ONLY allowed to download, compile and read the code. Released binary files are always free to be used in anyway you see fit - except no redistribution of source and binary files are allowed until further notice.
+Before Somewhere reach a *stable release*, i.e. release version **V0.5.0** or **250** commits - whichever comes first, you are ONLY allowed to download, compile and read the code. Released binary files are always free to be used in anyway you see fit but you are responsible to be aware of any future changes - except no redistribution of source and binary files are allowed until further notice.
 
 When the concept and documentation for Somewhere is mature I will relax the license terms and provide a truly free license.
 
 # Trouble Shooting for Compilation
 
 1. Some unit test are "manual", this is intentional😉;
-2. You need to publish Somewhere, SomewhereStandard and SW projects to target platform (Portable won't work) before you can debug SomewhereDesktop
+2. You need to publish **Somewhere**, **SomewhereStandard** and **SW** projects to target platform (**Portable** configuration won't work) before you can debug **SomewhereDesktop**.

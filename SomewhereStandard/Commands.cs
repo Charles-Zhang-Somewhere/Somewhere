@@ -283,6 +283,11 @@ namespace Somewhere
         public string GetPhysicalPath(string itemname)
             => Path.Combine(HomeDirectory, GetPhysicalName(itemname));
         /// <summary>
+        /// Get physical path for a name/path that potentially exist in a folder
+        /// </summary>
+        public string GetPhysicalPathForFilesThatCanBeInsideFolder(string relativePath)
+            => Path.Combine(HomeDirectory, GetPhysicalNameForFilesThatCanBeInsideFolder(relativePath));
+        /// <summary>
         /// Get physical path for a new file
         /// </summary>
         public string GetNewPhysicalPath(string itemname, int itemID, string oldPhysicalName)
@@ -985,7 +990,7 @@ namespace Somewhere
             {
                 List<string> result = new List<string>();
                 result.Add($"(`{itemname}` is not managed)");
-                result.AddRange(ReadPhysicalFile(itemname));
+                result.AddRange(ReadPhysicalFile(GetPhysicalPathForFilesThatCanBeInsideFolder(itemname)));
                 return result;
             }
             // Managed file
@@ -1003,7 +1008,7 @@ namespace Somewhere
                 if (!FileExistsAtHomeFolder(path))
                     return new string[] { $"Item name `{itemname}` with path `{path}` doesn't exist at home folder." };
                 else
-                    return ReadPhysicalFile(path);
+                    return ReadPhysicalFile(GetPathInHomeHolder(path));
             }
         }
         [Command("Remove a file from Home directory, deletes the file both physically and from database.",
