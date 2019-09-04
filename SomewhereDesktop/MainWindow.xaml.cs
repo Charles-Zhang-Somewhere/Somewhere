@@ -365,11 +365,20 @@ namespace SomewhereDesktop
         }
         private void UpdateItemPreview()
         {
+            bool IsStringWebUrl(string text)
+            {
+                bool result = Uri.TryCreate(text, UriKind.Absolute, out Uri uriResult)
+                    && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+                return result /* may return null for Urls that doesn't start with http or https */ 
+                    || Uri.IsWellFormedUriString(text, UriKind.RelativeOrAbsolute);
+            }
+
             // Clear previous
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
                 = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
+                = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
             // Return early in case of items refresh
             if (ActiveItem == null)
@@ -377,8 +386,20 @@ namespace SomewhereDesktop
             // Preview knowledge and note (default as markdown)
             if (ActiveItem.Content != null || ActiveItem.Name == null)
             {
-                PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                PreviewMarkdown = ActiveItem.Content;
+                // Preview web link
+                if (ActiveItem.Content != null /* Make sure it is a note */
+                    && ActiveItem.Content.IndexOfAny(new char[] { '\r', '\n' }) == -1   /* Make sure it contains only a single line */
+                    && IsStringWebUrl(ActiveItem.Content) /* Make sure it's a url */)
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    PreviewBrowser.Address = ActiveItem.Content;
+                }
+                // Preview markdown
+                else
+                {
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    PreviewMarkdown = ActiveItem.Content;
+                }
             }
             // Preview folder
             else if (ActiveItem.Name.EndsWith("/") || ActiveItem.Name.EndsWith("\\"))
@@ -416,6 +437,12 @@ namespace SomewhereDesktop
                 {
                     PreviewWindowsFormsHost.Visibility = Visibility.Visible;
                     Play(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                }
+                // Preview webpages
+                else if(extension == ".html")
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    PreviewBrowser.Address = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
                 }
                 else
                 {
