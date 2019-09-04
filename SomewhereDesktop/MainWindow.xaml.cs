@@ -390,7 +390,7 @@ namespace SomewhereDesktop
                     && IsStringWebUrl(ActiveItem.Content) /* Make sure it's a url */)
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    PreviewBrowser.Address = ActiveItem.Content;
+                    PreviewAddress = ActiveItem.Content;
                 }
                 // Preview markdown
                 else
@@ -445,7 +445,7 @@ namespace SomewhereDesktop
                     || extension == ".gif")
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    PreviewBrowser.Address = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
+                    PreviewAddress = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
                 }
                 else
                 {
@@ -540,6 +540,20 @@ namespace SomewhereDesktop
         public string PreviewStatus { get => _PreviewStatus; set => SetField(ref _PreviewStatus, value); }
         private string _PreviewImage;
         public string PreviewImage { get => _PreviewImage; set => SetField(ref _PreviewImage, value); }
+        private string _PreviewAddress;
+        private Stack<string> BrowseHistory = new Stack<string>();
+        private bool StepingBack = false;
+        public string PreviewAddress
+        {
+            get => _PreviewAddress;
+            set
+            {
+                if(!StepingBack)
+                    BrowseHistory.Push(value);
+                StepingBack = false;
+                SetField(ref _PreviewAddress, value);
+            }
+        }
         public string _PreviewInput;
         public string PreviewInput { get => _PreviewInput; set => SetField(ref _PreviewInput, value); }
         private FileItemObjectModel _ActiveItem;
@@ -1156,6 +1170,20 @@ namespace SomewhereDesktop
             }
         }
         /// <summary>
+        /// Provide support for jumping back
+        /// </summary>
+        private void PreviewBrowser_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Back && BrowseHistory.Count() != 0)
+            {
+                BrowseHistory.Pop();    // Pop current
+                // Go back one step
+                StepingBack = true;
+                PreviewAddress = BrowseHistory.Pop();
+                e.Handled = true;
+            }
+        }
+        /// <summary>
         /// Simple action command handling interface for previewed content
         /// </summary>
         private void PreviewActionInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -1566,7 +1594,7 @@ namespace SomewhereDesktop
                 return new string[] { "A valid address must be passed." };
             else if (PreviewBrowser.Visibility == Visibility.Visible)
             {
-                PreviewBrowser.Address = args[0];
+                PreviewAddress = args[0];
                 return new string[] { $"Opening address {args[0]}." };
             }
             else
