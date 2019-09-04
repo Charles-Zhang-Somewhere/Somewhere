@@ -256,17 +256,22 @@ namespace Somewhere
         /// Get new physical name for a path, rather than just an itemname, this is a more robust version of GetPhysicalName()
         /// </summary>
         private string GetNewPhysicalNameForFilesThatCanBeInsideFolder(string itempath, int id, string oldPhysicalName)
-            => Path.Combine(itempath.GetRealDirectoryPath(), GetNewPhysicalName(itempath.GetRealFilename(), id, oldPhysicalName));
+        {
+            string realPath = itempath.GetRealDirectoryPath();
+            return Path.Combine(realPath, GetNewPhysicalName(itempath.GetRealFilename(), id, oldPhysicalName, realPath));
+        }
         /// <summary>
         /// Get physical name for a new file
         /// </summary>
-        public string GetNewPhysicalName(string newItemname, int itemID, string oldPhysicalName, int pathLengthLimit = 256)
+        public string GetNewPhysicalName(string newItemname, int itemID, string oldPhysicalName, string parentFolder = null, int pathLengthLimit = 256)
         {
             string physicalName = GetPhysicalName(newItemname, out string escapedNameWithoutExtension, out string extension, out int availableNameLength, pathLengthLimit);
             // Get file ID string
             string idString = $"#{itemID}";
             // Validate existence
-            if (physicalName != oldPhysicalName && FileExistsAtHomeFolder(physicalName))
+            if (physicalName != oldPhysicalName && (parentFolder != null 
+                ? File.Exists(Path.Combine(parentFolder.IsPathRooted() ? parentFolder : Path.Combine(HomeDirectory, parentFolder), physicalName))
+                : FileExistsAtHomeFolder(physicalName)))
             {
                 // Get a supposedly unique name
                 string uniqueName = escapedNameWithoutExtension.Limit(availableNameLength, "..", $"{idString}{extension}" /* Notic extension already contains a dot*/);
@@ -512,8 +517,7 @@ namespace Somewhere
             string dateFilter = args.Length >= 2 ? args[2] : null;  // TODO: This feature is not implemented yet
             // Get tags along with file count
             List<QueryRows.FileDetail> fileDetails = GetFileDetails();
-            InteractiveFileRows(fileDetails, pageItemCount);
-            return new string[] { }; // Return nothing instead
+            return InteractiveFileRows(fileDetails, pageItemCount);
         }
         [Command("Find with (or without) action.",
             "Find with filename, tags and extra information, and optionally perform an action with find results.",
@@ -539,16 +543,13 @@ namespace Somewhere
             }
             // Perform actions
             string action = "show";
-            List<string> result = new List<string>();
             if (args.Length == 3)
                 action = args[2].ToLower();
             switch (action)
             {
                 case "show":
                     // Interactive display
-                    InteractiveFileRows(fileRows);
-                    // Return empty results
-                    return result;
+                    return InteractiveFileRows(fileRows);
                 default:
                     throw new ArgumentException($"Unrecognized action: `{action}`");
             }
@@ -1042,7 +1043,7 @@ namespace Somewhere
                     {
                         string oldPhysicalName = GetPhysicalNameForFilesThatCanBeInsideFolder(itemname);
                         MoveFileInHomeFolder(oldPhysicalName, 
-                            GetNewPhysicalNameForFilesThatCanBeInsideFolder(itemname, id.Value, oldPhysicalName) + "_deleted");
+                            GetNewPhysicalNameForFilesThatCanBeInsideFolder(itemname + "_deleted", id.Value, oldPhysicalName));
                         result = new string[] { $"File `{itemname}` is marked as \"_deleted\"." };
                     }
                 }
@@ -1410,7 +1411,7 @@ group by FileTagDetails.ID",
 	max(Revision.RevisionTime) as RevisionTime, max(Revision.RevisionID) as RevisionCount
 from 
 	(select File.ID, File.EntryDate, File.Name, group_concat(FileTags.Name, ', ') as Tags, File.Meta
-	from File,
+	from File left join
 		(select FileTag.FileID, Tag.ID as TagID, Tag.Name
 		from Tag, FileTag
 		where FileTag.TagID = Tag.ID) as FileTags
@@ -2089,34 +2090,46 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Show interactive scrollable file rows
         /// </summary>
-        private void InteractiveFileRows(IEnumerable<QueryRows.FileDetail> fileRows, int pageItemCount = 20)
+        private IEnumerable<string> InteractiveFileRows(IEnumerable<QueryRows.FileDetail> fileRows, int pageItemCount = 20)
         {
+            List<string> results = new List<string>();
+            void OutputDependingOnWwitch(string line)
+            {
+                if (WriteToConsoleEnabled)
+                    Console.WriteLine(line);
+                else
+                    results.Add(line);
+            }
+            
             string headerLine = $"{"ID",-8}{"Add Date",-12}{"Name (Alphabetical order)",-40}{"Rev. Time",-18}{"Rev. Cnt",8}"; // Tags and Remarks are shown in seperate line
-            Console.WriteLine(headerLine);
-            Console.WriteLine(new string('-', headerLine.Length));
+            OutputDependingOnWwitch(headerLine);
+            OutputDependingOnWwitch(new string('-', headerLine.Length));
             int itemCount = 0, pageCount = 1;
             foreach (QueryRows.FileDetail item in fileRows.OrderBy(t => t.Name))
             {
-                Console.WriteLine($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
+                OutputDependingOnWwitch($"{$"({item.ID})",-8}{item.EntryDate.ToString("yyyy-MM-dd"),-12}{item.Name.Limit(40),-40}" +
                     $"{item.RevisionTime?.ToString("yyyy-MM-dd HH:mm") ?? "",-18}{(item.RevisionCount != 0 ? $"x{item.RevisionCount}" : ""),8}");
                 if (!string.IsNullOrEmpty(item.Tags))
-                    Console.WriteLine($"{"Tags: ",20}{item.Tags,-60}");
+                    OutputDependingOnWwitch($"{"Tags: ",20}{item.Tags,-60}");
                 if (!string.IsNullOrEmpty(item.Meta))
                 {
                     RemarkMeta meta = ExtractRemarkMeta(item.Meta);
                     if (!string.IsNullOrEmpty(meta.Remark))
-                        Console.WriteLine($"{"Remark: ",20}{meta.Remark,-60}");
+                        OutputDependingOnWwitch($"{"Remark: ",20}{meta.Remark,-60}");
                 }
                 itemCount++;
                 // Pagination
                 if (itemCount == pageItemCount)
                 {
-                    Console.WriteLine($"Page {pageCount}/{(fileRows.Count() + pageItemCount - 1) / pageItemCount} (Press q to quit)");
-                    var keyInfo = Console.ReadKey();  // Wait for continue
-                    if (keyInfo.Key == ConsoleKey.Q)
+                    if(ReadFromConsoleEnabled)
                     {
-                        Console.WriteLine();
-                        break;
+                        Console.WriteLine($"Page {pageCount}/{(fileRows.Count() + pageItemCount - 1) / pageItemCount} (Press q to quit)");
+                        var keyInfo = Console.ReadKey();  // Wait for continue
+                        if (keyInfo.Key == ConsoleKey.Q)
+                        {
+                            Console.WriteLine();
+                            break;
+                        }
                     }
                     itemCount = 0;
                     pageCount++;
@@ -2124,7 +2137,8 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
             }
             // Show total only if we are at last page page
             if (pageCount == (fileRows.Count() + pageItemCount - 1) / pageItemCount)    // (Get ceiling)
-                Console.WriteLine($"Total: {fileRows.Count()}");
+                OutputDependingOnWwitch($"Total: {fileRows.Count()}");
+            return results;
         }
         /// <summary>
         /// Try to make a commit journal entry if commiting is enabled

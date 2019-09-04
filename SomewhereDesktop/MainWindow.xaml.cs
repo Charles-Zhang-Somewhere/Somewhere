@@ -397,25 +397,25 @@ namespace SomewhereDesktop
                 if (ImageFileExtensions.Contains(extension))
                 {
                     PreviewImageSource.Visibility = Visibility.Visible;
-                    PreviewImage = Commands.GetPhysicalPath(ActiveItem.Name);
+                    PreviewImage = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
                 }
                 // Preview markdown
                 else if (extension == ".md")
                 {
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                    PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
+                    PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
                 // Preview text
                 else if (extension == ".txt")
                 {
                     PreviewTextBox.Visibility = Visibility.Visible;
-                    PreviewText = File.ReadAllText(Commands.GetPhysicalPath(ActiveItem.Name));
+                    PreviewText = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
                 // Preview videos and audios
                 else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
                 {
                     PreviewWindowsFormsHost.Visibility = Visibility.Visible;
-                    Play(Commands.GetPhysicalPath(ActiveItem.Name));
+                    Play(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
                 else
                 {
@@ -532,6 +532,7 @@ namespace SomewhereDesktop
             get => (ActiveItem != null && ActiveItem.Meta != null) ? Commands.ExtractRemarkMeta(ActiveItem.Meta).Remark : null;
             set
             {
+                if (ActiveItem == null) return;
                 string newMeta = Commands.ReplaceOrInitializeMetaAttribute(ActiveItem.Meta, "Remark", value);
                 if(ActiveItem.Meta != newMeta)
                 {
@@ -552,9 +553,38 @@ namespace SomewhereDesktop
             get => ActiveItem?.Name;
             set
             {
-                if(ActiveItem?.Name != value)
+                if (ActiveItem == null) return;
+                if (ActiveItem?.Name != value)
                 {
-                    ActiveItem.Name = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteName");
+                    // Update old value and save new value
+                    string oldName = ActiveItem.Name;
+                    ActiveItem.Name = value;
+                    // In addition, if item is file, update file
+                    bool deleted = false;
+                    if (ActiveItem.Content == null && oldName != null && !oldName.Last().IsSeparator())
+                    {
+                        // Emptying the name will delete item
+                        if (string.IsNullOrWhiteSpace(ActiveItem.Name))
+                        {
+                            Commands.RM(oldName);
+                            deleted = true;
+                        }
+                        // Rename item properly
+                        else
+                            Commands.MV(oldName, ActiveItem.Name);
+                    }
+                    else
+                        CommitActiveItemChange();
+                    // Data binding update
+                    NotifyPropertyChanged();
+                    ActiveItem.BroadcastPropertyChange();
+                    RefreshTypeFilters();
+                    // In addition, update active note if it's also selected
+                    if (ActiveItem == ActiveNote)
+                        NotifyPropertyChanged("ActiveNoteName");
+                    // Delete from view
+                    if (deleted)
+                        ActiveItem = null;
                 }
             }
         }
@@ -563,7 +593,8 @@ namespace SomewhereDesktop
             get => ActiveItem?.Tags;
             set
             {
-                if(ActiveItem?.Tags != value)
+                if (ActiveItem == null) return;
+                if (ActiveItem?.Tags != value)
                 {
                     ActiveItem.Tags = value; NotifyPropertyChanged(); CommitActiveItemChange(); ActiveItem.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveItem == ActiveNote) NotifyPropertyChanged("ActiveNoteTags");
                 }
@@ -619,7 +650,8 @@ namespace SomewhereDesktop
             get => ActiveNote?.Name;
             set
             {
-                if(ActiveNote?.Name != value)
+                if (ActiveNote == null) return;
+                if (ActiveNote?.Name != value)
                 {
                     ActiveNote.Name = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTypeFilters(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemName");
                 }
@@ -630,7 +662,8 @@ namespace SomewhereDesktop
             get => ActiveNote?.Tags;
             set
             {
-                if(ActiveNote.Tags != value)
+                if (ActiveNote == null) return;
+                if (ActiveNote.Tags != value)
                 {
                     ActiveNote.Tags = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); RefreshTags(); FilterItems(); if (ActiveNote == ActiveItem) NotifyPropertyChanged("ActiveItemTags");
                 }
@@ -641,7 +674,8 @@ namespace SomewhereDesktop
             get => ActiveNote?.Content;
             set
             {
-                if(ActiveNote?.Content != value)
+                if (ActiveNote == null) return;
+                if (ActiveNote?.Content != value)
                 {
                     ActiveNote.Content = value; NotifyPropertyChanged(); CommitActiveNoteChange(); ActiveNote.BroadcastPropertyChange(); if (ActiveNote == ActiveItem) UpdateItemPreview();
                 }
@@ -1004,6 +1038,10 @@ namespace SomewhereDesktop
         {
             if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
             {
+                var oldReadValue = Commands.ReadFromConsoleEnabled;
+                var oldWriteValue = Commands.WriteToConsoleEnabled;
+                Commands.ReadFromConsoleEnabled = false;
+                Commands.WriteToConsoleEnabled = false;
                 // Break a chord into notes, each key represent a seperate command
                 string[] chord = ConsoleInput.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
                 StringBuilder result = new StringBuilder();
@@ -1015,7 +1053,7 @@ namespace SomewhereDesktop
                     if (chord.Length > 1)
                         result.AppendLine($"{command}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
-                    string[] disabledCommands = new string[] { "files", "find", "purge", "x" };
+                    string[] disabledCommands = new string[] { "purge", "x" };
                     if (disabledCommands.Contains(command))
                     {
                         ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
@@ -1029,6 +1067,8 @@ namespace SomewhereDesktop
                 }
                 ConsoleResult = result.ToString();
                 ConsoleInput = string.Empty;
+                Commands.ReadFromConsoleEnabled = oldReadValue;
+                Commands.WriteToConsoleEnabled = oldWriteValue;
                 e.Handled = true;
             }
         }
