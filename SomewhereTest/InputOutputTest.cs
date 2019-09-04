@@ -28,7 +28,7 @@ namespace SomewhereTest
             var info = new ProcessStartInfo()
             {
                 FileName = "somewhere", // Notice this unit test require PATH is set so this executable can be found
-                WorkingDirectory = Helper.GetFolderPath(),
+                WorkingDirectory = Helper.GetTestFolderPath(),
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,

@@ -172,23 +172,42 @@ namespace Somewhere
         /// </summary>
         public int KnowledgeCount
             => Connection.ExecuteQuery("select count(*) from File where Name is null").Single<int>();
+        /// <summary>
+        /// Check whether a file exists and it exists at home directory
+        /// </summary>
+        /// <param name="filename">Actual (Physical) filename</param>
         public bool FileExistsAtHomeFolder(string filename)
-            => File.Exists(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
+            => // Check absolute path
+            (filename.Contains(HomeDirectory) && File.Exists(filename))
+            // Check relative path
+            || (!Path.IsPathRooted(filename) && File.Exists(Path.Combine(HomeDirectory, filename)));
+        /// <summary>
+        /// Check whether a directory exists and it exists at home directory
+        /// </summary>
         public bool DirectoryExistsAtHomeFolder(string directoryName)
-            => Directory.Exists(Path.Combine(HomeDirectory, directoryName));
+            => // Check absolute path
+            (directoryName.Contains(HomeDirectory) && Directory.Exists(directoryName))
+            // Check relative path
+            || (!Path.IsPathRooted(directoryName) && Directory.Exists(Path.Combine(HomeDirectory, directoryName)));
         public string GetPathInHomeHolder(string homeRelativePath)
             => Path.Combine(HomeDirectory, homeRelativePath);
+        /// <param name="filename">Actual (Physical) filename</param>
         public void DeleteFileFromHomeFolder(string filename)
-            => File.Delete(Path.Combine(HomeDirectory, GetPhysicalName(filename)));
+            => File.Delete(Path.Combine(HomeDirectory, filename));
         /// <summary>
-        /// Renames a file, also handles name escape and validation
+        /// Renames a file, assuming input paths are physical and valid;
+        /// Automatically creates folders for target location if not already exist
         /// </summary>
-        public void MoveFileInHomeFolder(int itemID, string itemname, string newItemname)
+        /// <param name="itemname">Actual (Physical) filename</param>
+        public void MoveFileInHomeFolder(string itemname, string newItemname)
         {
+            void CreateDirectoriesForFileIfNotAlreadyExist(string targetFolder)
+                => Directory.CreateDirectory(targetFolder); // Yes, CreateDirectory() handles it properly
             if (itemname == newItemname)
                 return;
-            File.Move(Path.Combine(HomeDirectory, GetPhysicalName(itemname)),
-                Path.Combine(HomeDirectory, GetNewPhysicalName(newItemname, itemID)));
+            CreateDirectoriesForFileIfNotAlreadyExist(Path.Combine(HomeDirectory, newItemname).GetRealDirectoryPath());
+            File.Move(Path.Combine(HomeDirectory, itemname),
+                Path.Combine(HomeDirectory, newItemname));
         }
         /// <summary>
         /// Get physical name with additional information for further processsing
@@ -229,15 +248,25 @@ namespace Somewhere
         public string GetPhysicalName(string itemName)
             => GetPhysicalName(itemName, out _, out _, out _);
         /// <summary>
+        /// Get physical name for a path that potentially exist in a folder
+        /// </summary>
+        public string GetPhysicalNameForFilesThatCanBeInsideFolder(string itemPath)
+            => Path.Combine(itemPath.GetRealDirectoryPath(), GetPhysicalName(itemPath.GetRealFilename(), out _, out _, out _));
+        /// <summary>
+        /// Get new physical name for a path, rather than just an itemname, this is a more robust version of GetPhysicalName()
+        /// </summary>
+        private string GetNewPhysicalNameForFilesThatCanBeInsideFolder(string itempath, int id, string oldPhysicalName)
+            => Path.Combine(itempath.GetRealDirectoryPath(), GetNewPhysicalName(itempath.GetRealFilename(), id, oldPhysicalName));
+        /// <summary>
         /// Get physical name for a new file
         /// </summary>
-        public string GetNewPhysicalName(string newItemname, int itemID, int pathLengthLimit = 256)
+        public string GetNewPhysicalName(string newItemname, int itemID, string oldPhysicalName, int pathLengthLimit = 256)
         {
             string physicalName = GetPhysicalName(newItemname, out string escapedNameWithoutExtension, out string extension, out int availableNameLength, pathLengthLimit);
             // Get file ID string
             string idString = $"#{itemID}";
             // Validate existence
-            if (FileExistsAtHomeFolder(physicalName))
+            if (physicalName != oldPhysicalName && FileExistsAtHomeFolder(physicalName))
             {
                 // Get a supposedly unique name
                 string uniqueName = escapedNameWithoutExtension.Limit(availableNameLength, "..", $"{idString}{extension}" /* Notic extension already contains a dot*/);
@@ -256,8 +285,8 @@ namespace Somewhere
         /// <summary>
         /// Get physical path for a new file
         /// </summary>
-        public string GetNewPhysicalPath(string itemname, int itemID)
-            => Path.Combine(HomeDirectory, GetNewPhysicalName(itemname, itemID));
+        public string GetNewPhysicalPath(string itemname, int itemID, string oldPhysicalName)
+            => Path.Combine(HomeDirectory, GetNewPhysicalName(itemname, itemID, oldPhysicalName));
         #endregion
 
         #region Configuration Shortcuts
@@ -271,8 +300,10 @@ namespace Somewhere
         #endregion
 
         #region Commands (Public Interface as Library)
-        [Command("Add an item to home.", category: "File")]
-        [CommandArgument("itemname", "name of item; use * to add all items in current directory; " +
+        [Command("Add an item to home.",
+            "Notice for folders inside Home this command will add the folder itself - to import and flatten the folder, use `im` command.", 
+            category: "File")]
+        [CommandArgument("itemname", "name of item; use * to add all items in current directory (will not add subdirectories or items in subdirectory); " +
             "if given path is outside Home directory - for files they will be copied, for folders they will be cut and paste inside Home")]
         [CommandArgument("tags", "tags for the item", optional: true)]
         public IEnumerable<string> Add(params string[] args)
@@ -294,8 +325,13 @@ namespace Somewhere
                     else if (existAsFile)
                     {
                         string name = Path.GetFileName(path);
-                        File.Copy(path, GetPathInHomeHolder(name));
-                        itemname = name;
+                        if (File.Exists(GetPathInHomeHolder(name)))
+                            throw new ArgumentException($"Specified path `{path}` contains itemname `{name}` that already exist in home directory.");
+                        else
+                        {
+                            File.Copy(path, GetPathInHomeHolder(name));
+                            itemname = name;
+                        }
                     }
                     // For foreign directories, cut it
                     else
@@ -310,7 +346,8 @@ namespace Somewhere
                 {
                     itemname = GetRelative(args[0]);    // Convert absoluate path to relative
                     // Handle non-existing path
-                    bool existAsFile = FileExistsAtHomeFolder(itemname), existAsFolder = DirectoryExistsAtHomeFolder(itemname);
+                    bool existAsFile = FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)), 
+                        existAsFolder = DirectoryExistsAtHomeFolder(itemname);
                     if (!existAsFile && !existAsFolder)
                         throw new ArgumentException($"Specified item `{path}` doesn't exist in Home folder ({HomeDirectory}); Notice current working directory is `{Directory.GetCurrentDirectory()}`. " +
                             $"Use an absolute path instead to avoid potential confusion.");
@@ -332,7 +369,7 @@ namespace Somewhere
                     return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
                 }
             }
-            // Add all files (don't add directories by default)
+            // Add all files (don't add directories and skip subdirectories by default)
             else
             {
                 string[] newFiles = Directory.EnumerateFiles(HomeDirectory)
@@ -356,7 +393,7 @@ namespace Somewhere
                     }
                     result.Add($"[Added] `{filename}`");
                 }
-                result.Add($"Total: {FileCount} {(FileCount > 1 ? "files" : "file")} in database.");
+                result.Add($"Total: {FileCount} {(FileCount > 1 ? "items" : "item")} in database.");
                 return result;
             }
         }
@@ -630,8 +667,45 @@ namespace Somewhere
                     }
                 }
             }
+            // Import a folder
+            else if (Directory.Exists(sourcePath))
+            {
+                // For internal folders, flatten it by cutting; Don't delete folder afterwards - some files might have name collision and thus not moved
+                // Notice for files that are already managed they are moved properly instead
+                if (DirectoryExistsAtHomeFolder(sourcePath))
+                    EnumerateAllFilesInDirectory(sourcePath, file =>
+                    {
+                        // Move Old
+                        if (IsFileInDatabase(GetRelative(file)))
+                            MV(GetRelative(file), Path.GetFileName(file));
+                        // Add New
+                        else
+                        {
+                            string cutFile = Path.Combine(HomeDirectory, Path.GetFileName(file));
+                            // Cut
+                            File.Move(file, cutFile);
+                            // Add
+                            try
+                            {
+                                result.AddRange(Add(cutFile, file.SplitDirectoryAsTags().JoinTags()));
+                            }
+                            catch (Exception e){ result.Add(e.Message); }
+                            
+                        }
+                    });
+                // For external folders, import each file individually by copying and store at home in a flattened fasshion with tags as directory names
+                else
+                    EnumerateAllFilesInDirectory(sourcePath, file => 
+                    {
+                        try
+                        {
+                            result.AddRange(Add(file, file.SplitDirectoryAsTags().JoinTags()));
+                        }
+                        catch (Exception e) { result.Add(e.Message); }
+                    });
+            }
             else
-                result.Add($"Format for `{sourcePath}` is not supported yet.");
+                result.Add($"Format for `{sourcePath}` is not supported yet or it doesn't exist.");
             // Return result outputs
             return result;
         }
@@ -647,16 +721,18 @@ namespace Somewhere
             string newFilename = args[1];
             if (itemname == newFilename)
                 return new string[] { $"Filename `{itemname}` is the same as new filename: `{newFilename}`." };
+            string oldPhysicalName = GetPhysicalNameForFilesThatCanBeInsideFolder(itemname);
             int? id = GetFileID(itemname);
             if (id == null)
                 throw new InvalidOperationException($"Specified item `{itemname}` is not managed in database.");
-            if (FileExistsAtHomeFolder(newFilename) || IsFileInDatabase(newFilename))
+            if (FileExistsAtHomeFolder(GetNewPhysicalNameForFilesThatCanBeInsideFolder(newFilename, id.Value, oldPhysicalName)) 
+                || IsFileInDatabase(newFilename))
                 throw new ArgumentException($"Itemname `{newFilename}` is already used.");
             // Move in filesystem (if it's a physical file rather than a virtual file)
             string[] result = null;
-            if (FileExistsAtHomeFolder(itemname))
+            if (FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)))
             {
-                MoveFileInHomeFolder(id.Value, itemname, newFilename);
+                MoveFileInHomeFolder(oldPhysicalName, GetNewPhysicalNameForFilesThatCanBeInsideFolder(newFilename, id.Value, oldPhysicalName));
                 result = new string[] { $"File (Physical) `{itemname}` has been renamed to `{newFilename}`." };
             }
             else
@@ -682,7 +758,7 @@ namespace Somewhere
             int? id = GetFileID(itemname);
             if (id == null)
             {
-                if (FileExistsAtHomeFolder(itemname))
+                if (FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)))
                     throw new ArgumentException($"Specified item `{itemname}` does not exist, i.e. it is not managed.");
                 else
                     throw new ArgumentException($"Specified item `{itemname}` is not managed and it doesn't exist in Home folder.");
@@ -830,15 +906,11 @@ namespace Somewhere
             // A routine to search in a given folder and its subfolders for deleted files
             void SearchDirectoryForDeleted(string dir, List<string> resultList)
             {
-                // Enumerate sub directories
-                foreach (string d in Directory.GetDirectories(dir).OrderBy(d => d))
-                    SearchDirectoryForDeleted(d, resultList);
-                // Enumerate files
-                foreach (string f in Directory.GetFiles(dir).OrderBy(f => f))
+                EnumerateAllFilesInDirectory(dir, file =>
                 {
-                    if (Path.GetFileName(f).EndsWith("_deleted"))
-                        resultList.Add(f);
-                }
+                    if (Path.GetFileName(file).EndsWith("_deleted"))
+                        resultList.Add(file);
+                });
             }
 
             ValidateArgs(args);
@@ -950,19 +1022,21 @@ namespace Somewhere
             if (GetFileDetail(id.Value).Content == null)
             {
                 // Check file existence
-                if (!FileExistsAtHomeFolder(GetPhysicalName(itemname)))
+                if (!FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)))
                     throw new ArgumentException($"Specified item `{itemname}` doesn't exist on disk.");
                 else
                 {
                     // Delete from filesystem
                     if (args.Length == 2 && args[1] == "-f")
                     {
-                        DeleteFileFromHomeFolder(itemname);
+                        DeleteFileFromHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname));
                         result = new string[] { $"File `{itemname}` is forever gone (deleted)." };
                     }
                     else
                     {
-                        MoveFileInHomeFolder(id.Value, itemname, itemname + "_deleted");
+                        string oldPhysicalName = GetPhysicalNameForFilesThatCanBeInsideFolder(itemname);
+                        MoveFileInHomeFolder(oldPhysicalName, 
+                            GetNewPhysicalNameForFilesThatCanBeInsideFolder(itemname, id.Value, oldPhysicalName) + "_deleted");
                         result = new string[] { $"File `{itemname}` is marked as \"_deleted\"." };
                     }
                 }
@@ -1940,6 +2014,21 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                     return _Connection;
                 else throw new InvalidOperationException($"Cannot connect to database, not in a Home directory. Use `new` command to initialize a Home repository at current folder.");
             }
+        }
+        /// <summary>
+        /// Enumerate all files in a directory including subfolders in a sorted manner and perform given action:
+        ///     - Subfolders first
+        ///     - Alphabetically
+        /// Assume given starting directory exists
+        /// </summary>
+        private void EnumerateAllFilesInDirectory(string startingDirectory, Action<string> action)
+        {
+            // Enumerate sub directories
+            foreach (string d in Directory.GetDirectories(startingDirectory).OrderBy(d => d))
+                EnumerateAllFilesInDirectory(d, action);
+            // Enumerate files and perform action
+            foreach (string f in Directory.GetFiles(startingDirectory).OrderBy(f => f))
+                action(f);
         }
         /// <summary>
         /// Validate argument (count) for a given command; 

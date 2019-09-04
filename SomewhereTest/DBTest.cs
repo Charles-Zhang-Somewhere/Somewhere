@@ -27,6 +27,7 @@ namespace SomewhereTest
         [Fact]
         public void AddFileShoudWorkWithFilesInsideSubfolders()
         {
+            // Add files should be able to add paths that are inside subfolders of Home directory
             throw new NotImplementedException();
         }
         [Fact]
@@ -304,7 +305,7 @@ namespace SomewhereTest
             Commands.New();
             Commands.Doc("File.txt");
             Commands.Add("File.txt");
-            string longItemName = @"This is /my file/ in Somewhere 
+            string longItemName = @"This is folder /my folder/ In Somewhere 
 so I should be able to do <anything> I want with it \\including ""!!!!????**********""
 This is /my file/ in Somewhere 
 so I should be able to do <anything> I want with it \\including ""!!!!????**********""
@@ -324,9 +325,9 @@ This is /my file/ in Somewhere
 so I should be able to do <anything> I want with it \\including ""!!!!????**********""
 This is /my file/ in Somewhere 
 so I should be able to do <anything> I want with it \\including ""!!!!????**********"".txt";
-            Commands.MoveFileInHomeFolder(Commands.GetFileID("File.txt").Value, "File.txt", longItemName);
+            Commands.MV("File.txt", longItemName);
             string escapedName = // A simple very specific logic for expected properly formatted name string
-                longItemName.Substring(0, 260 - 1 /* Trailing null */ - Directory.GetCurrentDirectory().Length)
+                longItemName.Substring(27 /*Skip folder part*/, 260 - 1 /* Trailing null */ - Directory.GetCurrentDirectory().Length)
                 .Replace('/', '_')
                 .Replace('<', '_')
                 .Replace('>', '_')
@@ -336,8 +337,8 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
                 .Replace('*', '_')
                 .Replace('\r', '_')
                 .Replace('\n', '_');
-            string escaped = Commands.GetPhysicalName(longItemName);
-            Assert.True(escapedName.IndexOf(escaped.Substring(0, escaped.Length - "...txt".Length)) == 0);
+            string escaped = Commands.GetPhysicalNameForFilesThatCanBeInsideFolder(longItemName);
+            Assert.True(("This is folder /my folder/ " + escapedName).IndexOf(escaped.Substring(0, escaped.Length - "...txt".Length)) == 0);
             Assert.True(Helper.TestFileExists(escaped));
             // Clean up
             Commands.Dispose();
@@ -352,7 +353,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.New();
             Commands.Doc("File.txt");
             Commands.Doc("File_.txt");
-            Assert.Equal("File_#1.txt", Commands.GetNewPhysicalName("File*.txt", 1));
+            Assert.Equal("File_#1.txt", Commands.GetNewPhysicalName("File*.txt", 1, null));
             // Clean up
             Commands.Dispose();
             Helper.CleanTestFolderRemoveAllFiles();
@@ -375,15 +376,15 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Helper.CleanTestFolderRemoveAllFiles();
         }
         [Fact]
-        public void MoveFileInHomeFolderShouldHandleInvalidCharacterEscape()
+        public void MoveFileShouldHandleInvalidCharacterEscape()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
             Commands.New();
             Commands.Doc("test.txt");
             Commands.Add("test.txt");
-            Commands.MoveFileInHomeFolder(1 /* Expected ID for new DB */, "test.txt", "test*.txt");
-            Commands.MoveFileInHomeFolder(1, "test*.txt", "test*//WOW.");
+            Commands.MV("test.txt", "test*.txt");
+            Commands.MV("test*.txt", "test*//WOW.");
             Assert.True(Helper.TestFileExists("test___WOW"));  // Notice this is not user level detail but is documented and standardized
             // Clean up
             Commands.Dispose();
@@ -402,7 +403,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Helper.CleanTestFolderRemoveAllFiles();
         }
         [Fact]
-        public void MoveFileInHomeFolderShouldHandleNameCollisionGracefully()
+        public void MoveFileShouldHandleNameCollisionGracefully()
         {
             Helper.CleanOrCreateTestFolderRemoveAllFiles();
             Commands Commands = Helper.CreateNewCommands();
@@ -410,7 +411,7 @@ so I should be able to do <anything> I want with it \\including ""!!!!????******
             Commands.Doc("test.txt");
             Commands.Add("test.txt");
             Commands.Doc("test_.txt"); // Represent a manually added, non-managed file which can collide with managed file later
-            Commands.MoveFileInHomeFolder(Commands.GetFileID("test.txt").Value, "test.txt", "test*.txt");
+            Commands.MV("test.txt", "test*.txt");
             Assert.True(Helper.TestFileExists("test_#1.txt"));  // Notice this is not user level detail but is documented and standardized
             // Clean up
             Commands.Dispose();

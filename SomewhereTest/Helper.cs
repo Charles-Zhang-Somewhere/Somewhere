@@ -54,12 +54,15 @@ namespace SomewhereTest
         /// </summary>
         public static string GetFilePath(string fileName, [CallerMemberName] string unitTestFolderName = null)
             => Path.Combine(unitTestFolderName, fileName);
+        /// <summary>
+        /// Get actual path for a folder relative to the unit test
+        /// </summary>
         public static string GetFolderPath(string folderName, [CallerMemberName] string unitTestFolderName = null)
             => GetFilePath(folderName, unitTestFolderName);
         /// <summary>
         /// Get full path to unit test folder
         /// </summary>
-        public static string GetFolderPath([CallerMemberName] string unitTestFolderName = null)
+        public static string GetTestFolderPath([CallerMemberName] string unitTestFolderName = null)
             => Path.GetFullPath(unitTestFolderName);
         public static void CreateEmptyFile(string fileName, [CallerMemberName] string unitTestFolderName = null)
             => File.Create(Path.Combine(unitTestFolderName, fileName)).Dispose();
