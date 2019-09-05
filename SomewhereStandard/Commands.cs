@@ -1,4 +1,5 @@
 ﻿using Csv;
+using MoonSharp.Interpreter;
 using Newtonsoft.Json;
 using SQLiteExtension;
 using StringHelper;
@@ -1100,6 +1101,37 @@ namespace Somewhere
                 return new string[] { $"Tags `{realTags.Select(t => t .Name).JoinTags()}` " +
                     $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
             }            
+        }
+        [Command("Evaluate a Lua script.")]
+        [CommandArgument("script", "either plain script string or name of the script file (can be either managed or not managed)")]
+        public IEnumerable<string> Run(params string[] args)
+        {
+            string BuildFromLines(IEnumerable<string> lines)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var line in lines)
+                    builder.AppendLine(line);
+                return builder.ToString();
+            }
+
+            ValidateArgs(args);
+            string script = args[0];
+            // Evaluate script file
+            int suffixLocation = script.ToLower().LastIndexOf(".lua");
+            if (suffixLocation != -1 && suffixLocation == script.Length - 4)
+            {
+                // File can be managed, so use Read to get lines
+                var lines = Read();
+                // Build and evaluate script
+                DynValue res = Script.RunString(BuildFromLines(lines));
+                return new string[] { res.String };
+            }
+            // Evaluate script itself
+            else
+            {
+                DynValue res = Script.RunString(script);
+                return new string[] { res.String };
+            }
         }
         [Command("Displays the state of the Home directory and the staging area.",
             "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
