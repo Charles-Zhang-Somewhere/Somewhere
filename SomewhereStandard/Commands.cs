@@ -1124,13 +1124,13 @@ namespace Somewhere
                 var lines = Read();
                 // Build and evaluate script
                 DynValue res = Script.RunString(BuildFromLines(lines));
-                return new string[] { res.String };
+                return new string[] { res.ToString() };
             }
             // Evaluate script itself
             else
             {
                 DynValue res = Script.RunString(script);
-                return new string[] { res.String };
+                return new string[] { res.ToString() };
             }
         }
         [Command("Displays the state of the Home directory and the staging area.",
