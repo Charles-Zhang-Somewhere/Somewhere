@@ -116,6 +116,7 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 12. (Issue, SD): Suppressed commands not generating any info, show "interactive commands not supported in GUI" or make it capable of being noninteractive (and forced). - maybe use that IsGenerateConsoleOutput variable. 
 13. Can only call DragMove when mouse button is down - when doing two finger gesture on UI. (Using a laptop?)
 14. (Desktop) (Error) When an items tags are updated (added or updated), tags list (if had filter tags selected) don't return to full (refresh will return it to full). How is duplicate tags handled in SD textbox?
+15. There is still one major issue with physicla filename: what if let's say a file after collision resolutoin gets a new name `test_#2.txt` yet the originally conflicting file `test.txt` was deleted, then when the program tries to find the file it looks for name `test.txt`? We'd better add a meta attribute "CurrentFilename" to the file to aid in this case.
 
 [Potential Design Flaws]
 
@@ -184,3 +185,7 @@ Don't do following things with a reason, and seek alternatives.
 1. For recent working directories: add a task bar recent history implementation first.
 	* Don't do this. This cause tigher integration with Windows, which is OK but less ideal.
 	* Alternative: We implemented a popup dialog for history. This also has the benefit that history is managed by the application itself rather than Windows.
+
+# Logic Review
+
+1. When people remove tags in SD for active item what will happen if the tag is no longer referenced by any other files - will it be deleted automatically from database (as should happen) or hang there (if we haven't made a check to see whether anyone else still referenc the tag)
