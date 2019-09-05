@@ -386,6 +386,7 @@ namespace SomewhereDesktop
             {
                 // Preview web link
                 if (ActiveItem.Content != null /* Make sure it is a note */
+                    && !string.IsNullOrWhiteSpace(ActiveItem.Content) /* Make sure it's not empty - if it's empty then it will pass test as url and cause showing browser */
                     && ActiveItem.Content.IndexOfAny(new char[] { '\r', '\n' }) == -1   /* Make sure it contains only a single line */
                     && IsStringWebUrl(ActiveItem.Content) /* Make sure it's a url */)
                 {
@@ -1229,14 +1230,22 @@ namespace SomewhereDesktop
         /// </summary>
         private void PreviewBrowser_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // Disabled because it currently has issue with when user is doing typing
+            return;
             if(e.Key == Key.Back && BrowseHistory.Count() != 0)
             {
-                BrowseHistory.Pop();    // Pop current
-                // Go back one step
-                StepingBack = true;
-                PreviewAddress = BrowseHistory.Pop();
+                BrowseBackHistory();
                 e.Handled = true;
             }
+        }
+        private string BrowseBackHistory()
+        {
+            BrowseHistory.Pop();    // Pop current
+
+            // Go back one step
+            StepingBack = true;
+            PreviewAddress = BrowseHistory.Pop();
+            return PreviewAddress;
         }
         /// <summary>
         /// Simple action command handling interface for previewed content
@@ -1636,6 +1645,14 @@ namespace SomewhereDesktop
                 catch (Exception e) { InfoText = $"{e.InnerException.Message}"; }
             }
             else InfoText = $"Specified command `{commandName}` doesn't exist. Try again.";
+        }
+        [Command("Navigates back browser history.")]
+        public IEnumerable<string> B(params string[] args)
+        {
+            if (PreviewBrowser.Visibility == Visibility.Visible)
+                return new string[] { BrowseBackHistory() };
+            else
+                return new string[] { "No preview browser is available." };
         }
         [Command("Output all available commands into a text file.")]
         [CommandArgument("filename", "name of the file to dump details", optional: true)]
