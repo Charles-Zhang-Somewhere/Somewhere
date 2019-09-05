@@ -386,6 +386,7 @@ namespace SomewhereDesktop
             {
                 // Preview web link
                 if (ActiveItem.Content != null /* Make sure it is a note */
+                    && !string.IsNullOrWhiteSpace(ActiveItem.Content) /* Make sure it's not empty - if it's empty then it will pass test as url and cause showing browser */
                     && ActiveItem.Content.IndexOfAny(new char[] { '\r', '\n' }) == -1   /* Make sure it contains only a single line */
                     && IsStringWebUrl(ActiveItem.Content) /* Make sure it's a url */)
                 {
