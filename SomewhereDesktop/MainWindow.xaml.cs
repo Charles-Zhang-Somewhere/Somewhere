@@ -1142,10 +1142,44 @@ namespace SomewhereDesktop
             StatusText = builder.ToString();
             StatusPanel.Visibility = Visibility.Visible;
         }
+        /// <summary>
+        /// A list of command history that can dynamically update itself including order
+        /// </summary>
+        private List<string> CommandHistory = new List<string>();
+        /// <summary>
+        /// Index for current command history navigation
+        /// </summary>
+        private int CurrentCommandHistoryIndex = 0;
         private void ConsoleCommandInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            void AddCommandToHistory(string input)
+            {
+                // Add
+                CommandHistory.Add(input);
+                // Distinct
+                CommandHistory = CommandHistory.Distinct().ToList();
+                // Update index
+                CurrentCommandHistoryIndex = CommandHistory.Count - 1;
+            }
+            string NavigateBackHistory()
+            {
+                // Get current
+                string current = CommandHistory[CurrentCommandHistoryIndex];
+                // Decrement
+                CurrentCommandHistoryIndex--;
+                // Roll back
+                if (CurrentCommandHistoryIndex < 0)
+                    CurrentCommandHistoryIndex = CommandHistory.Count - 1;
+                // Return selection
+                return current;
+            }
+
+            // Execute command
             if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(ConsoleInput))
             {
+                // Add to history
+                AddCommandToHistory(ConsoleInput);
+                // Evaluate
                 var oldReadValue = Commands.ReadFromConsoleEnabled;
                 var oldWriteValue = Commands.WriteToConsoleEnabled;
                 Commands.ReadFromConsoleEnabled = false;
@@ -1178,6 +1212,15 @@ namespace SomewhereDesktop
                 ConsoleInput = string.Empty;
                 Commands.ReadFromConsoleEnabled = oldReadValue;
                 Commands.WriteToConsoleEnabled = oldWriteValue;
+                e.Handled = true;
+            }
+            // Roll back history (without deleting)
+            else if(e.Key == Key.Up)
+            {
+                // Update
+                ConsoleInput = NavigateBackHistory();
+                // Select
+                ConsoleInputTextBox.SelectAll();
                 e.Handled = true;
             }
         }
