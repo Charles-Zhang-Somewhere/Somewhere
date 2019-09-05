@@ -36,6 +36,12 @@ For MD shortcut, allow ALT key to unformat brackets.
 * Provide a shortcut from NT to IT just like "edit content" but this time "preview content" and select note in items and focus on Remark area. Also provide a label for Remark textbox.
 * (SD IT - Inventory Tab) Add Convert action to Advanced and create dedicated window containing two regions and two combo box for preview before clicking Confirm button or close button on top right. Useful for (even incomplete is better) conversion from TW to MD.
 
+[Core, Commands]
+
+* `read`: allow reading notes
+* `mat`: materialize a note
+* `vr`: virtualize a text file
+
 [Practical Tests and Usage]
 
 1. university folder test; Finish organizing using Somewhere for one actual folder to see how well it works.
@@ -90,6 +96,7 @@ Currently GetPhysicalName cannot get names for those conflicted files  consider 
 6. Add importing internal folder without flattening it, i.e. import as-if;
 	* Notice to import items from an external folder, rather than the folder itself, currently the correct way to do that is to `add` first which will cut it, then do `im` to import and flatten it
 7. For remark, a special dictionary format is supported for single-line pair values which have special significance in Remark search (or filtering): `^(Key):(Value)$`
+8. (Advanced) Allow interactive session directly inside Status Tab interacting with process and input outptu redirection, this can enable direct command line interface with external programs like Python (pending evaluation) or other utilities that we are going to develop - though do notice currently with CMD we can run the process seperately, there is no direct to read outptu from those programs
 
 [(Urgent) Issues and Bugs - Affects Usability]
 
