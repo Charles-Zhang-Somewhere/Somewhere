@@ -477,6 +477,7 @@ The list of shortcuts are also available using `F12` button inside Somewhere Des
 * `F12`  Show Shortcuts
 * `` Ctrl+\` ``: Hide Somewhere Desktop window 
 * `ESC`:  Hide Somewhere Desktop window (same as `` Ctrl+\` ``)
+* `Up` arrow key: In Status Tab command input box can summon previous entered commands
 
 # Notes
 
