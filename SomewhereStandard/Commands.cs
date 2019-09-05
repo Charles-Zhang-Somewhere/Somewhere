@@ -470,7 +470,7 @@ namespace Somewhere
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Dump historical versions of repository.", category: "Misc.")]
+        [Command("Dump historical versions of repository.", category: "Mgmt.")]
         [CommandArgument("outputPath", "path of output; contains Format of output, available extensions: .csv (lists with content), " +
             ".log (commit journal), .html (report), .sqlite (database)")]
         [CommandArgument("targetItemname", "name of an item to track history of changes; supported by `csv` format", optional: true)]
@@ -500,6 +500,11 @@ namespace Somewhere
             }
             catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
         }
+        [Command("Evaluate a Lua expression.",
+            "Like `run` command, but automatically prepends \"return \" and thus cannot be used to run script files.", category: "Advanced")]
+        [CommandArgument("expression", "a simple lua expression")]
+        public IEnumerable<string> Eval(params string[] args)
+            => Run($"return {args[0]}");
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
         {
@@ -915,7 +920,7 @@ namespace Somewhere
             }
             catch (InvalidOperationException) { throw; }
         }
-        [Command("Permanantly delete all the files that are marked as \"_deleted\"")]
+        [Command("Permanantly delete all the files that are marked as \"_deleted\"", category: "Mgmt.")]
         [CommandArgument("-f", "force purging and purge without warning", optional: true)]
         public IEnumerable<string> Purge(params string[] args)
         {
@@ -1102,7 +1107,7 @@ namespace Somewhere
                     $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
             }            
         }
-        [Command("Evaluate a Lua script.")]
+        [Command("Evaluate a Lua script.", category: "Advanced")]
         [CommandArgument("script", "either plain script string or name of the script file (can be either managed or not managed)")]
         public IEnumerable<string> Run(params string[] args)
         {
