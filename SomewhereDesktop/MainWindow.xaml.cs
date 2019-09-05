@@ -66,6 +66,8 @@ namespace SomewhereDesktop
 
             // Initialize Video Preview Control
             InitializeVLCControl();
+            // Initialize CefSharp Browser Control
+            PreviewBrowser.MenuHandler = new CustomMenuHandler();
             // Check new versions in background
             BackgroundCheckNewVersion();
         }
@@ -363,22 +365,39 @@ namespace SomewhereDesktop
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
-        private void UpdateItemPreview()
+        void ClearItemPreview()
         {
-            // Clear previous
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
                 = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
+                = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
+        }
+        private void UpdateItemPreview()
+        {   
+            // Clear previous
+            ClearItemPreview();
             // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
             // Preview knowledge and note (default as markdown)
             if (ActiveItem.Content != null || ActiveItem.Name == null)
             {
-                PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                PreviewMarkdown = ActiveItem.Content;
+                // Preview web link
+                if (ActiveItem.Content != null /* Make sure it is a note */
+                    && ActiveItem.Content.IndexOfAny(new char[] { '\r', '\n' }) == -1   /* Make sure it contains only a single line */
+                    && IsStringWebUrl(ActiveItem.Content) /* Make sure it's a url */)
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    PreviewAddress = ActiveItem.Content;
+                }
+                // Preview markdown
+                else
+                {
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    PreviewMarkdown = ActiveItem.Content;
+                }
             }
             // Preview folder
             else if (ActiveItem.Name.EndsWith("/") || ActiveItem.Name.EndsWith("\\"))
@@ -415,7 +434,19 @@ namespace SomewhereDesktop
                 else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
                 {
                     PreviewWindowsFormsHost.Visibility = Visibility.Visible;
-                    Play(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                    CurrentVideoUrl = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
+                    Play(CurrentVideoUrl);
+                }
+                // Preview webpages
+                else if(extension == ".html"
+                    // Preview pdf
+                    || extension == ".pdf"
+                    // Preview gif
+                    || extension == ".webp"
+                    || extension == ".gif")
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    PreviewAddress = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
                 }
                 else
                 {
@@ -510,6 +541,29 @@ namespace SomewhereDesktop
         public string PreviewStatus { get => _PreviewStatus; set => SetField(ref _PreviewStatus, value); }
         private string _PreviewImage;
         public string PreviewImage { get => _PreviewImage; set => SetField(ref _PreviewImage, value); }
+        private string _PreviewAddress;
+        private Stack<string> BrowseHistory = new Stack<string>();
+        private bool StepingBack = false;
+        public string PreviewAddress
+        {
+            get => _PreviewAddress;
+            set
+            {
+                // Save current address as a note
+                if (Keyboard.IsKeyDown(Key.LeftShift)
+                    || Keyboard.IsKeyDown(Key.RightShift))
+                    CreateNewNote(PreviewBrowser.Title, value);
+                else
+                {
+                    // If we are stepping back, then don't save this address changing value
+                    if (!StepingBack)
+                        BrowseHistory.Push(value);
+                    // Set value for the browser control
+                    StepingBack = false;
+                    SetField(ref _PreviewAddress, value);
+                }
+            }
+        }
         public string _PreviewInput;
         public string PreviewInput { get => _PreviewInput; set => SetField(ref _PreviewInput, value); }
         private FileItemObjectModel _ActiveItem;
@@ -851,13 +905,13 @@ namespace SomewhereDesktop
         }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
-        private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void CreateNewNote(string title, string content)
         {
             // Save old note by forcing update
             NoteNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
             NoteContentTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
             // Add to database
-            int id = Commands.AddFile(null, string.Empty);  // Give some default empty content so it's not considered a binary file
+            int id = Commands.AddFile(title, content);
             // Add to view collection
             var item = new FileItemObjectModel(Commands.GetFileDetail(id));
             // Add to items cache
@@ -865,13 +919,15 @@ namespace SomewhereDesktop
             RefreshItems();
             // Update note collection
             RefreshNotes();
-            // Set activeadd
+            // Set activead
             ActiveNote = item;
             // Show note panel and focus on editing textbox
             TabHeader_MouseDown(NotebookTabLabel, null);
             NoteNameTextBox.Focus();
             NoteNameTextBox.SelectAll();
         }
+        private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => CreateNewNote(null, string.Empty);  // Give some default empty content (i.e. not null) so it's not considered a binary file
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         /// <summary>
@@ -1094,26 +1150,27 @@ namespace SomewhereDesktop
                 var oldWriteValue = Commands.WriteToConsoleEnabled;
                 Commands.ReadFromConsoleEnabled = false;
                 Commands.WriteToConsoleEnabled = false;
-                // Break a chord into notes, each key represent a seperate command
-                string[] chord = ConsoleInput.Split(new string[] { "\\n" }, StringSplitOptions.RemoveEmptyEntries);
+                // Break a chord into notes, each note represent a seperate command
+                var chord = ConsoleInput.Split(new string[] { "\\n" /* Like, literally, `\n` */ }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.Trim());
                 StringBuilder result = new StringBuilder();
                 foreach (string chordNote in chord)
                 {
                     string[] positions = chordNote.BreakCommandLineArgumentPositions();
-                    string command = positions.GetCommandName().ToLower();
+                    string commandName = positions.GetCommandName().ToLower();
                     string[] arguments = positions.GetArguments();
-                    if (chord.Length > 1)
-                        result.AppendLine($"{command}:");
+                    if (chord.Count() > 1)
+                        result.AppendLine($"{commandName}:");
                     // Disabled unsupported commands (i.e. those commands that have console input)
                     string[] disabledCommands = new string[] { "purge", "x" };
-                    if (disabledCommands.Contains(command))
+                    if (disabledCommands.Contains(commandName))
                     {
-                        ConsoleResult = $"Command `{command}` is not supported here, please use a real console emulator instead.";
+                        ConsoleResult = $"Command `{commandName}` is not supported here, please use a real console emulator instead.";
                         break;
                     }
                     else
                     {
-                        foreach (var line in Commands.ExecuteCommand(command, arguments))
+                        foreach (var line in Commands.ExecuteCommand(commandName, arguments))
                             result.AppendLine(line);
                     }
                 }
@@ -1125,18 +1182,54 @@ namespace SomewhereDesktop
             }
         }
         /// <summary>
+        /// Provide support for jumping back
+        /// </summary>
+        private void PreviewBrowser_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Back && BrowseHistory.Count() != 0)
+            {
+                BrowseHistory.Pop();    // Pop current
+                // Go back one step
+                StepingBack = true;
+                PreviewAddress = BrowseHistory.Pop();
+                e.Handled = true;
+            }
+        }
+        /// <summary>
         /// Simple action command handling interface for previewed content
         /// </summary>
         private void PreviewActionInputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            void GetCurrentPreviewInformation()
+            {
+                // Shows title and address
+                if (PreviewBrowser.Visibility == Visibility.Visible)
+                    PreviewInput = $"Title: {PreviewBrowser.Title}; Address: {PreviewBrowser.Address}";
+                else if(PreviewWindowsFormsHost.Visibility == Visibility.Visible)
+                    PreviewInput = $"Path: {CurrentVideoUrl}";
+            }
+
             if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(PreviewInput))
             {
-                // Handle commands (in lower case)
-                var positions = PreviewInput.BreakCommandLineArgumentPositions();
-                var commandName = positions.GetCommandName();
-                string[] arguments = positions.GetArguments();
-                ProcessPreviewCommand(commandName, arguments);
-                PreviewInput = string.Empty;
+                // Shows current browsing or video address
+                if (PreviewInput.ToLower() == "current")
+                    GetCurrentPreviewInformation();
+                // Process and normal command
+                else
+                {
+                    // Break a chord into notes, each note represent a seperate command
+                    var chord = PreviewInput.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(c => c.Trim());
+                    // Handle commands (in lower case)
+                    foreach (string chordNote in chord)
+                    {
+                        string[] positions = chordNote.BreakCommandLineArgumentPositions();
+                        string commandName = positions.GetCommandName().ToLower();
+                        string[] arguments = positions.GetArguments();
+                        ProcessPreviewCommand(commandName, arguments);
+                    }
+                    PreviewInput = string.Empty;
+                }
                 e.Handled = true;
             }
         }
@@ -1418,6 +1511,16 @@ namespace SomewhereDesktop
                 return null;
             }
         }
+        /// <summary>
+        /// Check whether a given string is valid url
+        /// </summary>
+        bool IsStringWebUrl(string text)
+        {
+            bool result = Uri.TryCreate(text, UriKind.Absolute, out Uri uriResult)
+                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            return result /* may return null for Urls that doesn't start with http or https */
+                || Uri.IsWellFormedUriString(text, UriKind.RelativeOrAbsolute);
+        }
         #endregion
 
         #region Data Binding
@@ -1511,6 +1614,20 @@ namespace SomewhereDesktop
             }
             return new string[] { $"Document generated at {Commands.GetPathInHomeHolder(documentation)}" };
         }
+        [Command("Goto a website.")]
+        [CommandArgument("adress", "url of the website, can also be physical local file path")]
+        public IEnumerable<string> G(params string[] args)
+        {
+            if (args.Length == 0 || !IsStringWebUrl(args[0]))
+                return new string[] { "A valid address must be passed." };
+            else if (PreviewBrowser.Visibility == Visibility.Visible)
+            {
+                PreviewAddress = args[0];
+                return new string[] { $"Opening address {args[0]}." };
+            }
+            else
+                return new string[] { "A preview browser must be visible; Use `s web` to open preview browser." };
+        }
         [Command("Pause or continue currenly playing video.")]
         public IEnumerable<string> Pause(params string[] args)
         {
@@ -1523,6 +1640,7 @@ namespace SomewhereDesktop
             }
             return null;
         }
+        private string CurrentVideoUrl = null;
         [Command("Play a new or continue play/pause a video.")]
         [CommandArgument("url", "an url to play", optional: true)]
         public IEnumerable<string> Play(params string[] args)
@@ -1530,25 +1648,32 @@ namespace SomewhereDesktop
             if (VLCControl != null)
             {
                 if (VLCControl.IsPlaying)
+                {
                     VLCControl.Pause();
+                    return new string[] { "Video is paused." };
+                }
                 else
                 {
                     // Play new media
                     if (args.Length == 1)
                     {
-                        VLCControl.Play(new Uri(args[0]));
+                        CurrentVideoUrl = args[0];
+                        VLCControl.Play(new Uri(CurrentVideoUrl));
                         // Disable VLC input capture and handle it ourselves
                         VLCControl.Video.IsMouseInputEnabled = false;
                         VLCControl.Video.IsKeyInputEnabled = false;
+                        return new string[] { $"Playing {args[0]}." };
                     }
                     // Continue play old media
                     else
+                    {
                         VLCControl.Play();
+                        return new string[] { "Continue play." };
+                    }
                 }
-                return null;
             }
             else
-                return new string[] { "No preview source available. Open some video first." };
+                return new string[] { "No preview source available. Open some video first or use `s video` to open video preview." };
         }
         [Command("Set or Show available quick settings and current settings.")]
         [CommandArgument("setting", "the setting to set", optional: true)]
@@ -1584,6 +1709,69 @@ namespace SomewhereDesktop
             else
                 return new string[] { $"Invalid number of arguments: {args.Length} is given, one or none is expected." };
         }
+        [Command("Perform Google search.",
+            "Entered arguments are simply joined together with space replace with + sign and " +
+            "then appended to `www.google.com/search?q=`.")]
+        [CommandArgument("keywords", "keywords to search; (special) no need to have quotes")]
+        public IEnumerable<string> Google(params string[] args)
+        {
+            if (args.Length == 0)
+                return new string[] { "Enter keywords to search." };
+            else
+            {
+                string searchPhrase = string.Join(" ", args);
+                return SW($"www.google.com/search?q={searchPhrase.Replace(' ', '+')}");
+            }
+        }
+        [Command("Switch to browser and optionally open some website.")]
+        [CommandArgument("address", "website to open", optional: true)]
+        public IEnumerable<string> SW(params string[] args)
+        {
+            var r = S("web");
+            if (args.Length == 1)
+                r = G(args[0]);
+            return r;
+        }
+        [Command("Switch to video and optionally play some video source.")]
+        [CommandArgument("path", "video to open", optional: true)]
+        public IEnumerable<string> SV(params string[] args)
+        {
+            var r = S("video");
+            if (args.Length == 1)
+            {
+                CurrentVideoUrl = args[0];
+                r = Play(CurrentVideoUrl);
+            }
+            return r;
+        }
+        [Command("Switch to a different preview type.")]
+        [CommandArgument("type", "type of preview control to switch, must be either `video` or `web`")]
+        public IEnumerable<string> S(params string[] args)
+        {
+            string[] validOptions = new string[] {"web", "video", "w", "v" };
+            if(args.Length == 0 || !validOptions.Contains(args[0].ToLower()))
+                return new string[] { $"A valid type option must be passed: either {string.Join(" or ", validOptions)} is accepted." };
+            else
+            {
+                // Clear preview
+                ClearItemPreview();
+                string type = args[0].ToLower();
+                switch (type)
+                {
+                    case "w":
+                    case "web":
+                        PreviewBrowser.Visibility = Visibility.Visible;
+                        break;
+                    case "v":
+                    case "video":
+                        PreviewWindowsFormsHost.Visibility = Visibility.Visible;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unexpected preview type `{type}`");
+                }
+                return new string[] { $"Preview is changed to `{type}` type." };
+            }
+        }
         [Command("Show available preview actions.")]
         [CommandArgument("command", "name of the command to show details", optional: true)]
         public IEnumerable<string> Help(params string[] args)
@@ -1593,7 +1781,7 @@ namespace SomewhereDesktop
             {
                 string availableCommands = string.Join(", ", CommandNames.Keys.OrderBy(k => k));
                 // Return single line
-                return new string[] { $"Available commands: {availableCommands}." };
+                return new string[] { $"Available commands: {availableCommands}. You can chain commands together using `|` symbol; Use `current` to get current preview information." };
             }
             // Show help of specific command in a single line
             else if (args.Length == 1)

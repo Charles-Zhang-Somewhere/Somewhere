@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SomewhereDesktop"
         xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
+        xmlns:cefSharp="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
         mc:Ignorable="d"
         Title="Somewhere Desktop"
         WindowState="Normal" WindowStyle="None" AllowsTransparency="False"
@@ -253,6 +254,8 @@
                                                     <TextBlock x:Name="PreviewTextBlock" Text="{Binding PreviewStatus}" Visibility="Collapsed"/>
                                                     <md:MarkdownViewer x:Name="PreviewMarkdownViewer" Markdown="{Binding PreviewMarkdown}" Visibility="Collapsed"/>
                                                     <WindowsFormsHost x:Name="PreviewWindowsFormsHost" Visibility="Collapsed"/>
+                                                    <cefSharp:ChromiumWebBrowser x:Name="PreviewBrowser" Visibility="Collapsed" Address="{Binding PreviewAddress, Mode=TwoWay}"
+                                                                                 PreviewKeyDown="PreviewBrowser_PreviewKeyDown"/>
                                                 </Grid>
                                             </DockPanel>
                                         </Border>

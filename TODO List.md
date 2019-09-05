@@ -15,6 +15,8 @@ Filename Commands check and implementation
 Doc update and standardization
 flatten: on current home and managed files only, flatten their path, add tags per path, rename appropriately, generate reports in a separate tagged file under "_report" and "_somewhere" (can be deleted by user) as note.
 
+Urgent: Define standard for filter and add SD Markdown preview link handling formats
+
 Full journalling mplementation in Core
 Unit tests for jounaling opertaion - test simulated virual repository state
 GUI integration - all GUI operations especially notes
