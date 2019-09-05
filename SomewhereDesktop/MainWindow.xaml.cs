@@ -552,7 +552,7 @@ namespace SomewhereDesktop
                 // Save current address as a note
                 if (Keyboard.IsKeyDown(Key.LeftShift)
                     || Keyboard.IsKeyDown(Key.RightShift))
-                    CreateNewNote(PreviewBrowser.Title, PreviewBrowser.Address);
+                    CreateNewNote(PreviewBrowser.Title, value);
                 else
                 {
                     // If we are stepping back, then don't save this address changing value
