@@ -71,8 +71,9 @@ Optional Download: It's recommended for CLI to be used with [Cmder](https://cmde
 1. (Object) **Item**: Anything that contains information or data, this corresponds to a **"File"** entry in the `File` table, however in practice, and as in most operating system, "Files" can also denote "Folders", so "item" is used to avoid confusion.
 	* Folders are names (path) with trailing seperator;
 	* Files are just files;
-	* Knowledge doesn't have a name;
+	* Knowledge are notes doesn't have a name;
 	* Notes have Contents
+	* Bookmark are notes that contains an url address
 2. (Object) Physical Folder: a folder is a file.... and item...
 3. (Object) Virtual Note:
 4. (File Meta) Remark: 
