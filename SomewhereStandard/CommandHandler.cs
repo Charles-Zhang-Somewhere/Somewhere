@@ -35,7 +35,9 @@ namespace Somewhere
                     }
 
                     // Log the command
-                    if (attribute.Logged)
+                    if (attribute.Logged 
+                        // For some logged commands e.g. `run` we still wish to run it when home is not initialized
+                        && Commands.IsHomePresent)
                         Commands.AddLog(new LogEvent { Command = commandName, Arguments = arguments, Result = builder.ToString() });
                 }
                 catch (Exception e) { Console.WriteLine($"{e.InnerException.Message}"); }

@@ -1,4 +1,5 @@
 ﻿using Csv;
+using MoonSharp.Interpreter;
 using Newtonsoft.Json;
 using SQLiteExtension;
 using StringHelper;
@@ -469,7 +470,7 @@ namespace Somewhere
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Dump historical versions of repository.", category: "Misc.")]
+        [Command("Dump historical versions of repository.", category: "Mgmt.")]
         [CommandArgument("outputPath", "path of output; contains Format of output, available extensions: .csv (lists with content), " +
             ".log (commit journal), .html (report), .sqlite (database)")]
         [CommandArgument("targetItemname", "name of an item to track history of changes; supported by `csv` format", optional: true)]
@@ -499,6 +500,11 @@ namespace Somewhere
             }
             catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
         }
+        [Command("Evaluate a Lua expression.",
+            "Like `run` command, but automatically prepends \"return \" and thus cannot be used to run script files.", category: "Advanced")]
+        [CommandArgument("expression", "a simple lua expression")]
+        public IEnumerable<string> Eval(params string[] args)
+            => Run($"return {args[0]}");
         [Command("Export files, folders, notes and knowledge. Placeholder, not implemented yet, coming soon.", category: "Mgmt.")]
         public IEnumerable<string> Export(params string[] args)
         {
@@ -914,7 +920,7 @@ namespace Somewhere
             }
             catch (InvalidOperationException) { throw; }
         }
-        [Command("Permanantly delete all the files that are marked as \"_deleted\"")]
+        [Command("Permanantly delete all the files that are marked as \"_deleted\"", category: "Mgmt.")]
         [CommandArgument("-f", "force purging and purge without warning", optional: true)]
         public IEnumerable<string> Purge(params string[] args)
         {
@@ -1100,6 +1106,37 @@ namespace Somewhere
                 return new string[] { $"Tags `{realTags.Select(t => t .Name).JoinTags()}` " +
                     $"{(realTags.Count > 1 ? "have" : "has")} been deleted." };
             }            
+        }
+        [Command("Evaluate a Lua script.", category: "Advanced")]
+        [CommandArgument("script", "either plain script string or name of the script file (can be either managed or not managed)")]
+        public IEnumerable<string> Run(params string[] args)
+        {
+            string BuildFromLines(IEnumerable<string> lines)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var line in lines)
+                    builder.AppendLine(line);
+                return builder.ToString();
+            }
+
+            ValidateArgs(args);
+            string script = args[0];
+            // Evaluate script file
+            int suffixLocation = script.ToLower().LastIndexOf(".lua");
+            if (suffixLocation != -1 && suffixLocation == script.Length - 4)
+            {
+                // File can be managed, so use Read to get lines
+                var lines = Read();
+                // Build and evaluate script
+                DynValue res = Script.RunString(BuildFromLines(lines));
+                return new string[] { res.ToString() };
+            }
+            // Evaluate script itself
+            else
+            {
+                DynValue res = Script.RunString(script);
+                return new string[] { res.ToString() };
+            }
         }
         [Command("Displays the state of the Home directory and the staging area.",
             "Shows which files have been staged, which haven't, and which files aren't being tracked by Somewhere. " +
