@@ -1372,7 +1372,7 @@ namespace SomewhereDesktop
                 ActiveItem != null 
                 // Make sure the selection is not an "Knowledge" item
                 && ActiveItem.Name != null)
-                System.Diagnostics.Process.Start(Commands.GetPhysicalPath(ActiveItem.Name));
+                System.Diagnostics.Process.Start(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
             => this.DragMove();
