@@ -79,7 +79,14 @@ namespace SomewhereDesktop
                 "Recent homes", "Double click on a path to open Home repository.", options);
             dialog.ShowDialog();
             if (dialog.Selection == null)
-                this.Close();
+            {
+                // Otherwise if we have not already opened a home, close the application (e.g. during startup)
+                if (Commands == null || !Commands.IsHomePresent)
+                    this.Close();
+                // Just return if no action is selected
+                else 
+                    return;
+            }
             else if (dialog.Selection == "Clear History")
             {
                 CleanRecentHomePaths();
