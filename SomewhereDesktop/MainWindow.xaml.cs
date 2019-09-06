@@ -1370,8 +1370,8 @@ namespace SomewhereDesktop
         {
             if ( // Make sure we have some selection
                 ActiveItem != null 
-                // Make sure the selection is not an "Knowledge" item
-                && ActiveItem.Name != null)
+                // Make sure the selection is not an "Note" item
+                && ActiveItem.Content == null && ActiveItem.Name != null)
                 System.Diagnostics.Process.Start(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
