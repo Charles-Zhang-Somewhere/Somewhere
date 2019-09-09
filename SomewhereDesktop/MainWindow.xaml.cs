@@ -1462,11 +1462,11 @@ namespace SomewhereDesktop
                 try
                 {
                     // Commit Name and Content change
-                    Commands.ChangeFileName(ActiveItem.ID, ActiveItem.Name);
+                    Commands.ChangeFileName(ActiveItem.ID, string.IsNullOrWhiteSpace(ActiveItem.Name) ? null : ActiveItem.Name);
                     // Commit Tag change
                     Commands.ChangeFileTags(ActiveItem.ID, ActiveItem.TagsList);
                     // Update log and info display
-                    Commands.AddLog("Update Item", $"Item #{ActiveItem.ID} `{ActiveItem.Name}` is updated in SD (Somewhere Desktop).");
+                    Commands.AddLog("Update Item", $"Item #{ActiveItem.ID} {(string.IsNullOrWhiteSpace(ActiveItem.Name) ? "(Knowledge)" : $"`{ActiveItem.Name}`")} is updated in SD (Somewhere Desktop).");
                     InfoText = $"Item `{ActiveItem.DisplayName.Limit(150)}` (#{ActiveItem.ID}) saved.";
                     // Update meta
                     Commands.SetMeta(ActiveItem.ID, ActiveItem.Meta);
