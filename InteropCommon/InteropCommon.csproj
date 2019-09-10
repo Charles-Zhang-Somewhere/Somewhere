@@ -8,7 +8,7 @@
     <Copyright>Charles Zhang ©Copyright 2019</Copyright>
     <PackageProjectUrl>https://totalimagine.com</PackageProjectUrl>
     <Description>A library containing routine functions for YamlDotNet, System.Data.SQLite and String related routines, mostly for CLI applications that deals with interoperable data types and SQLite.</Description>
-    <Version>0.5.0</Version>
+    <Version>1.0.0</Version>
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 

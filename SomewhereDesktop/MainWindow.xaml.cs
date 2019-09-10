@@ -24,6 +24,7 @@ using System.Windows.Threading;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Somewhere;
 using StringHelper;
+using InteropCommon;
 using Vlc.DotNet.Forms;
 
 namespace SomewhereDesktop
