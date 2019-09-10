@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using YamlDotNet.Serialization;
 
-namespace Somewhere
+namespace InteropCommon
 {
     /// <summary>
     /// A representation of loosely typed yaml deserialization result:

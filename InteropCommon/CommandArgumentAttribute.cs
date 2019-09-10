@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Somewhere
+namespace InteropCommon
 {
     /// <summary>
     /// A custom attribute denoting an argument for the command

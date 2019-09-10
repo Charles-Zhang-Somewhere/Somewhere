@@ -2,49 +2,42 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Somewhere</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Company>TotalImagine Group</Company>
+    <Authors>Charles Zhang</Authors>
+    <Copyright>Charles Zhang ©Copyright 2019</Copyright>
+    <PackageProjectUrl>https://totalimagine.com</PackageProjectUrl>
+    <Description>A library containing routine functions for YamlDotNet, System.Data.SQLite and String related routines, mostly for CLI applications that deals with interoperable data types and SQLite.</Description>
+    <Version>0.5.0</Version>
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>../BinaryOutput</OutputPath>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <OutputPath>../BinaryOutput</OutputPath>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutputPath>../BinaryOutput</OutputPath>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>../BinaryOutput</OutputPath>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <OutputPath>../BinaryOutput</OutputPath>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutputPath>../BinaryOutput</OutputPath>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>../NuGet</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Commands.cs~RF2410c3f3.TMP" />
-    <None Remove="Commands.cs~RF361182c.TMP" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Csv" Version="1.0.52" />
-    <PackageReference Include="InteropCommon" Version="1.0.0" />
-    <PackageReference Include="MoonSharp" Version="2.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.111" />
-    <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
     <PackageReference Include="YamlDotNet" Version="6.1.2" />
   </ItemGroup>
 

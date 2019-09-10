@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Somewhere
+namespace InteropCommon
 {
     /// <summary>
     /// A custom attribute indicating a function is a command for the program;
