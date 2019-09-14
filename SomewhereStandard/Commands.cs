@@ -843,10 +843,10 @@ namespace Somewhere
             List<string> results = new List<string>();
             if (!IsTagInDatabase(sourceTag))
                 throw new InvalidOperationException($"Specified tag `{sourceTag}` does not exist in database.");
-            // Commit (already in a transaction)
-            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, args[1]);
-            // Perform actions in a transaction for efficiency
+            // Perform actions in a transaction for efficiency and atomity
             SQLiteTransaction transaction = Connection.BeginTransaction();  // Create and dispose manually to avoid changing too many lines in git
+            // Commit
+            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, args[1], transaction);
             // Get files with old tag
             List<int> sourceFileIDs = FilterByTags(new string[] { sourceTag }, transaction).Select(f => f.ID).ToList();
             List<TagRow> tagIDs = GetTagRows(targetTags.Union(new string[] { sourceTag })); // Including all mentioned tags that exist
@@ -876,16 +876,18 @@ namespace Somewhere
                 AddFileTags(sourceFileIDs, targetTagID, transaction);
             }
             // Rename source tag and add new multiple new tags
+            try
+            {
             for (int i = 0; i < targetTags.Length; i++)
             {
                 var targetTag = targetTags[i];
                 // Handle same
-                if(sourceTag == targetTag)
+                if (sourceTag == targetTag)
                 {
                     results.Add($"Tag `{targetTag}` is the same as source tag, skipped.");
                     continue;
                 }
-                // For first new tag, old one still exists, so just rename or merge it
+                // For first new tag, old one (source tag) still exists, so just rename or merge it (source tag) (into new tag, if new tag already exist)
                 if (i == 0)
                 {
                     if (!IsTagInDatabase(targetTag, transaction)) // If target doesn't exist yet just rename source
@@ -917,8 +919,12 @@ namespace Somewhere
                 }
             }
             transaction.Commit();
+            }
+            catch (Exception e) { return new string[] { $"An error happended during renaming tags: {e.Message}; " +
+                $"Rest assured - all changes are reverted, nothing is affected. Notice it's known that currently we are " +
+                $"having issue renaming a tag for items that already contains target tag as their tag." }; }
             transaction.Dispose();
-            
+
             return results;
         }
         [Command("Create a new Somewhere home at current home directory.")]
@@ -2202,10 +2208,13 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Try to make a commit journal entry if commiting is enabled
         /// </summary>
-        private void TryRecordCommit(JournalEvent.CommitOperation operation, string itemname, string value)
+        private void TryRecordCommit(JournalEvent.CommitOperation operation, string itemname, string value, SQLiteTransaction transaction = null)
         {
+            // Whether the transaction object is created within this function of passed from outside
+            bool shouldManageTransaction = (transaction == null);
             // Check whether we have enabled committing and record new journal entry in one single line instead of calling ShouldRecordCommits and AddJournal()
-            using(SQLiteTransaction transaction = Connection.BeginTransaction())
+            if (shouldManageTransaction)
+                transaction = Connection.BeginTransaction();
             {
                 bool shouldRecordCommit = Connection.ExecuteQuery(transaction,
                     @"select Value from Configuration where Key=@key", new { key = "RegisterCommits" })
@@ -2224,7 +2233,11 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                                 }),
                             type = JournalType.Commit.ToString()
                         });
-                    transaction.Commit();
+                    if(shouldManageTransaction)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
                 }
             }
         }
