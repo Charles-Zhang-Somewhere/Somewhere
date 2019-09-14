@@ -625,8 +625,21 @@ namespace Somewhere
             "must be supported by the format", optional: true)]
         public IEnumerable<string> Im(params string[] args)
         {
+            string GetAbsPath(string path)
+            {
+                // Convert relative path to absolute path
+                // Notice for a relative path we can't just assume it's relative to "Current Working Directory"
+                if (!path.IsPathRooted())
+                {
+                    if (DirectoryExistsAtHomeFolder(path))
+                        return GetPathInHomeHolder(path);
+                    return Path.Combine(Directory.GetCurrentDirectory(), path);
+                }
+                else return path;
+            }
+
             ValidateArgs(args);
-            string sourcePath = args[0];
+            string sourcePath = GetAbsPath(args[0]);
             // Import Tiddly Wiki format csv as notes
             List<string> result = new List<string>();
             string extension = Path.GetExtension(sourcePath).ToLower();

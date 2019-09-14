@@ -9,6 +9,10 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 	We need to fix this "Add" command;
 	See example trying to add reference to Wendy's photos in Project Nine repo
 
+Allow foreign reference (absolute path) implementation.
+
+(Bug) If we are at Notebook tab tags field and press F2, tags edit will not be saved
+
 Import/Export implementation
 Filename Tests
 Filename Commands check and implementation
@@ -30,6 +34,12 @@ im * flatten (for reference images) (non-home folder)
 im HomeFolder clean (default copy) - entires and files (first copy/cut all contents, second make a one-by-one item transition from original home, third double check everything exists, finally generate a report as a **file**; No need to delete original home folder)
 Move from SD by changing name (path) e.g. for files under a folder
 For MD shortcut, allow ALT key to unformat brackets.
+
+[Bugs]
+
+1. (SD) Rename in item's name won't cause item name update in items list untill explicitly pressing F5 to refresh
+	* Even if F5 refresh updated item's name in item's list, actual file name is not updated
+	* This happens for image files, probably because the image file is currently being previewed and renaming in this case will raise an exception and silently ignored by SD
 
 [Desktop]
 
