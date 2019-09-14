@@ -378,7 +378,7 @@ namespace Somewhere
                         var tags = AddTagsToFile(itemname, args[1].SplitTags());
                         TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, itemname, tags.JoinTags());
                     }
-                    return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
+                    return new string[] { $"Item `{itemname}` added to database with a total of {ItemCount} {(ItemCount > 1 ? "items" : "item")}." };
                 }
             }
             // Add all files (don't add directories and skip subdirectories by default)
