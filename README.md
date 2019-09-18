@@ -206,6 +206,8 @@ To avoid confusion, above convention is governed by following rules:
     * You might be temping to use "visual_studio_faq" and "marvelous_designer_faq"...
     * However I will consider "software_library" a  solid tag because it differentiates from "library", but "c#_library" should really become "C#, software_library"
 2. Start with a knowledge, then either grow it into a note, or do something else. Don't keep everything scattered.
+3. A repository, during consolidation, should be used only for one type of files (e.g. pdf); During creation, it can be subject based. (Pending further definition)
+	* Thus we have: pure note repositories; Instead of mixing things together (even if we can). THis can aid in problems like University/Textbook delima.
 
 ## Case Studies
 

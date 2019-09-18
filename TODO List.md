@@ -10,6 +10,7 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 	See example trying to add reference to Wendy's photos in Project Nine repo
 
 Allow foreign reference (absolute path) implementation.
+Desktop change window title so it's more identifiable on Windows task bar for specific repository (just keep the last folder name)
 
 (Bug) If we are at Notebook tab tags field and press F2, tags edit will not be saved
 (Bug) Currently for `mvt` command if the target tag is already one of the tags in the items that are tagged with source tag there will be an UNIQUE constraint failture during `mvt` process because we are trying to add the target tag again to the item. This will be fixed inside the logic for updating item tags.
