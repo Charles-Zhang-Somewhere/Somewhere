@@ -82,7 +82,10 @@ namespace SomewhereDesktop
             this.Close();
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-            => this.DragMove();
+        {
+            if (e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
         private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
             => this.Close();
         #endregion

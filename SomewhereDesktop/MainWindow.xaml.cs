@@ -1380,7 +1380,10 @@ namespace SomewhereDesktop
                 System.Diagnostics.Process.Start(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-            => this.DragMove();
+        {
+            if(e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // In case things are not saved, commit change for safety and avoid data loss
