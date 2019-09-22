@@ -471,35 +471,70 @@ namespace Somewhere
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Dump historical versions of repository.", category: "Mgmt.")]
+        [Command("Dump repository.",
+            "Can dump historical version of whole repository, historical version or a single file, " +
+            "or all notes (ordinary files is already available so not dumped).", category: "Mgmt.")]
         [CommandArgument("outputPath", "path of output; contains Format of output, available extensions: .csv (lists with content), " +
-            ".log (commit journal), .html (report), .sqlite (database)")]
+            ".log (commit journal), .html (report), .sqlite (database); If not given, then dump all notes into `Dump` folder, use `all` to dump notes and files")]
         [CommandArgument("targetItemname", "name of an item to track history of changes; supported by `csv` format", optional: true)]
         public IEnumerable<string> Dump(params string[] args)
         {
-            ValidateArgs(args);
-            string outputPath = args[0];
-            if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
-            string format = Path.GetExtension(outputPath).TrimStart('.');
-            string targetName = args.Length == 2 ? args[1] : null;
-            format = format.ToUpper();
-            // Get history and pass through it
-            var repoState = new VirtualRepository();
-            if(targetName != null)
-                repoState.PassThrough(GetAllCommits(), targetName);
-            else
-                repoState.PassThrough(GetAllCommits());
-            try
+            // Dump all files into "Dump" folder
+            if(args.Length == 0 || args[0].ToLower() == "all")
             {
-                VirtualRepository.DumpFormat dumpFormat = (VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format);
+                bool dumpAll = args.Length == 1 && args[0].ToLower() == "all";
+                string dumpDirectory = Path.Combine(HomeDirectory, "Dump"); // Abs path
+                if(!Directory.Exists(dumpDirectory))
+                    Directory.CreateDirectory(dumpDirectory);
+                List<QueryRows.FileDetail> fileDetails = GetFileDetails();
+                int noteCount = 0;
+                int fileCount = 0;
+                foreach (var file in fileDetails)
+                {
+                    // Knowledge and note
+                    if (file.Content != null)
+                        noteCount++;
+                    // File
+                    else if (dumpAll)
+                        fileCount++;
+                    // Skip files
+                    else continue;
+
+                    string filePath = Path.Combine(dumpDirectory, file.ID.ToString());
+                    File.WriteAllText(filePath, new Serializer().Serialize(file));
+                }
+                if(dumpAll)
+                    return new string[] { $"{fileDetails.Count} {(fileDetails.Count > 1 ? "items are" : "item is")} dumped ( Note: x{noteCount}; File: x{fileCount})." };
+                else
+                    return new string[] { $"{fileDetails.Count} {(fileDetails.Count > 1 ? "notes are" : "note is")} dumped." };
+            }
+            // Dump historical versions
+            else
+            {
+                ValidateArgs(args);
+                string outputPath = args[0];
+                if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
+                string format = Path.GetExtension(outputPath).TrimStart('.');
+                string targetName = args.Length == 2 ? args[1] : null;
+                format = format.ToUpper();
+                // Get history and pass through it
+                var repoState = new VirtualRepository();
+                if (targetName != null)
+                    repoState.PassThrough(GetAllCommits(), targetName);
+                else
+                    repoState.PassThrough(GetAllCommits());
                 try
                 {
-                    repoState.Dump(dumpFormat, outputPath);
-                    return new string[] { $"Repository state is dumped into {outputPath}" };
+                    VirtualRepository.DumpFormat dumpFormat = (VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format);
+                    try
+                    {
+                        repoState.Dump(dumpFormat, outputPath);
+                        return new string[] { $"Repository state is dumped into {outputPath}" };
+                    }
+                    catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }
                 }
-                catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }
+                catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
             }
-            catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
         }
         [Command("Evaluate a Lua expression.",
             "Like `run` command, but automatically prepends \"return \" and thus cannot be used to run script files.", category: "Advanced")]
@@ -940,7 +975,7 @@ namespace Somewhere
             }
             catch (InvalidOperationException) { throw; }
         }
-        [Command("Permanantly delete all the files that are marked as \"_deleted\"", category: "Mgmt.")]
+        [Command("Permanantly delete all the files that are marked as \"_deleted\".", category: "Mgmt.")]
         [CommandArgument("-f", "force purging and purge without warning", optional: true)]
         public IEnumerable<string> Purge(params string[] args)
         {

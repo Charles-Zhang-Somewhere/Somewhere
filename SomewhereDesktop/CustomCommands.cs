@@ -16,6 +16,7 @@ namespace SomewhereDesktop
         public static readonly RoutedUICommand Open = new RoutedUICommand("Open Home", "Open", typeof(CustomCommands));
         public static readonly RoutedUICommand Find = new RoutedUICommand("Find items", "Find", typeof(CustomCommands));
         public static readonly RoutedUICommand Import = new RoutedUICommand("Import items", "Import", typeof(CustomCommands));
+        public static readonly RoutedUICommand DumpAll = new RoutedUICommand("Dump all notes and files", "DumpAll", typeof(CustomCommands));
         #endregion
 
         #region UI Commands

@@ -811,6 +811,23 @@ namespace SomewhereDesktop
                 }
             }
         }
+        private void CommandDumpAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void CommandDumpAll_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Go to inventory tab
+            TabHeader_MouseDown(InventoryTabLabel, null);
+            // Dump all and output
+            try
+            {
+                InfoText = Commands.Dump("all").Single();
+            }
+            catch (Exception error)
+            {
+                new DialogWindow(this, "Error when dumping", error.Message).ShowDialog();
+                InfoText = "An error occured during importing.";
+            }
+        }
         private void CommandImport_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CommandImport_Executed(object sender, ExecutedRoutedEventArgs e)
