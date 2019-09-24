@@ -378,7 +378,7 @@ namespace Somewhere
                         var tags = AddTagsToFile(itemname, args[1].SplitTags());
                         TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, itemname, tags.JoinTags());
                     }
-                    return new string[] { $"Item `{itemname}` added to database with a total of {FileCount} {(FileCount > 1 ? "files" : "file")}." };
+                    return new string[] { $"Item `{itemname}` added to database with a total of {ItemCount} {(ItemCount > 1 ? "items" : "item")}." };
                 }
             }
             // Add all files (don't add directories and skip subdirectories by default)
@@ -471,35 +471,70 @@ namespace Somewhere
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
-        [Command("Dump historical versions of repository.", category: "Mgmt.")]
+        [Command("Dump repository.",
+            "Can dump historical version of whole repository, historical version or a single file, " +
+            "or all notes (ordinary files is already available so not dumped).", category: "Mgmt.")]
         [CommandArgument("outputPath", "path of output; contains Format of output, available extensions: .csv (lists with content), " +
-            ".log (commit journal), .html (report), .sqlite (database)")]
+            ".log (commit journal), .html (report), .sqlite (database); If not given, then dump all notes into `Dump` folder, use `all` to dump notes and files")]
         [CommandArgument("targetItemname", "name of an item to track history of changes; supported by `csv` format", optional: true)]
         public IEnumerable<string> Dump(params string[] args)
         {
-            ValidateArgs(args);
-            string outputPath = args[0];
-            if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
-            string format = Path.GetExtension(outputPath).TrimStart('.');
-            string targetName = args.Length == 2 ? args[1] : null;
-            format = format.ToUpper();
-            // Get history and pass through it
-            var repoState = new VirtualRepository();
-            if(targetName != null)
-                repoState.PassThrough(GetAllCommits(), targetName);
-            else
-                repoState.PassThrough(GetAllCommits());
-            try
+            // Dump all files into "Dump" folder
+            if(args.Length == 0 || args[0].ToLower() == "all")
             {
-                VirtualRepository.DumpFormat dumpFormat = (VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format);
+                bool dumpAll = args.Length == 1 && args[0].ToLower() == "all";
+                string dumpDirectory = Path.Combine(HomeDirectory, "Dump"); // Abs path
+                if(!Directory.Exists(dumpDirectory))
+                    Directory.CreateDirectory(dumpDirectory);
+                List<QueryRows.FileDetail> fileDetails = GetFileDetails();
+                int noteCount = 0;
+                int fileCount = 0;
+                foreach (var file in fileDetails)
+                {
+                    // Knowledge and note
+                    if (file.Content != null)
+                        noteCount++;
+                    // File
+                    else if (dumpAll)
+                        fileCount++;
+                    // Skip files
+                    else continue;
+
+                    string filePath = Path.Combine(dumpDirectory, file.ID.ToString());
+                    File.WriteAllText(filePath, new Serializer().Serialize(file));
+                }
+                if(dumpAll)
+                    return new string[] { $"{fileDetails.Count} {(fileDetails.Count > 1 ? "items are" : "item is")} dumped ( Note: x{noteCount}; File: x{fileCount})." };
+                else
+                    return new string[] { $"{fileDetails.Count} {(fileDetails.Count > 1 ? "notes are" : "note is")} dumped." };
+            }
+            // Dump historical versions
+            else
+            {
+                ValidateArgs(args);
+                string outputPath = args[0];
+                if (!Path.IsPathRooted(outputPath)) outputPath = GetPathInHomeHolder(outputPath);
+                string format = Path.GetExtension(outputPath).TrimStart('.');
+                string targetName = args.Length == 2 ? args[1] : null;
+                format = format.ToUpper();
+                // Get history and pass through it
+                var repoState = new VirtualRepository();
+                if (targetName != null)
+                    repoState.PassThrough(GetAllCommits(), targetName);
+                else
+                    repoState.PassThrough(GetAllCommits());
                 try
                 {
-                    repoState.Dump(dumpFormat, outputPath);
-                    return new string[] { $"Repository state is dumped into {outputPath}" };
+                    VirtualRepository.DumpFormat dumpFormat = (VirtualRepository.DumpFormat)Enum.Parse(typeof(VirtualRepository.DumpFormat), format);
+                    try
+                    {
+                        repoState.Dump(dumpFormat, outputPath);
+                        return new string[] { $"Repository state is dumped into {outputPath}" };
+                    }
+                    catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }
                 }
-                catch (Exception e) { return new string[] { $"[Error] Failed to dump: {e.Message}" }; }
+                catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
             }
-            catch (Exception) { return new string[] { $"Invalid output format `{format}`." }; }
         }
         [Command("Evaluate a Lua expression.",
             "Like `run` command, but automatically prepends \"return \" and thus cannot be used to run script files.", category: "Advanced")]
@@ -625,8 +660,21 @@ namespace Somewhere
             "must be supported by the format", optional: true)]
         public IEnumerable<string> Im(params string[] args)
         {
+            string GetAbsPath(string path)
+            {
+                // Convert relative path to absolute path
+                // Notice for a relative path we can't just assume it's relative to "Current Working Directory"
+                if (!path.IsPathRooted())
+                {
+                    if (DirectoryExistsAtHomeFolder(path))
+                        return GetPathInHomeHolder(path);
+                    return Path.Combine(Directory.GetCurrentDirectory(), path);
+                }
+                else return path;
+            }
+
             ValidateArgs(args);
-            string sourcePath = args[0];
+            string sourcePath = GetAbsPath(args[0]);
             // Import Tiddly Wiki format csv as notes
             List<string> result = new List<string>();
             string extension = Path.GetExtension(sourcePath).ToLower();
@@ -830,10 +878,10 @@ namespace Somewhere
             List<string> results = new List<string>();
             if (!IsTagInDatabase(sourceTag))
                 throw new InvalidOperationException($"Specified tag `{sourceTag}` does not exist in database.");
-            // Commit (already in a transaction)
-            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, args[1]);
-            // Perform actions in a transaction for efficiency
+            // Perform actions in a transaction for efficiency and atomity
             SQLiteTransaction transaction = Connection.BeginTransaction();  // Create and dispose manually to avoid changing too many lines in git
+            // Commit
+            TryRecordCommit(JournalEvent.CommitOperation.RenameTag, sourceTag, args[1], transaction);
             // Get files with old tag
             List<int> sourceFileIDs = FilterByTags(new string[] { sourceTag }, transaction).Select(f => f.ID).ToList();
             List<TagRow> tagIDs = GetTagRows(targetTags.Union(new string[] { sourceTag })); // Including all mentioned tags that exist
@@ -863,16 +911,18 @@ namespace Somewhere
                 AddFileTags(sourceFileIDs, targetTagID, transaction);
             }
             // Rename source tag and add new multiple new tags
+            try
+            {
             for (int i = 0; i < targetTags.Length; i++)
             {
                 var targetTag = targetTags[i];
                 // Handle same
-                if(sourceTag == targetTag)
+                if (sourceTag == targetTag)
                 {
                     results.Add($"Tag `{targetTag}` is the same as source tag, skipped.");
                     continue;
                 }
-                // For first new tag, old one still exists, so just rename or merge it
+                // For first new tag, old one (source tag) still exists, so just rename or merge it (source tag) (into new tag, if new tag already exist)
                 if (i == 0)
                 {
                     if (!IsTagInDatabase(targetTag, transaction)) // If target doesn't exist yet just rename source
@@ -904,8 +954,12 @@ namespace Somewhere
                 }
             }
             transaction.Commit();
+            }
+            catch (Exception e) { return new string[] { $"An error happended during renaming tags: {e.Message}; " +
+                $"Rest assured - all changes are reverted, nothing is affected. Notice it's known that currently we are " +
+                $"having issue renaming a tag for items that already contains target tag as their tag." }; }
             transaction.Dispose();
-            
+
             return results;
         }
         [Command("Create a new Somewhere home at current home directory.")]
@@ -921,7 +975,7 @@ namespace Somewhere
             }
             catch (InvalidOperationException) { throw; }
         }
-        [Command("Permanantly delete all the files that are marked as \"_deleted\"", category: "Mgmt.")]
+        [Command("Permanantly delete all the files that are marked as \"_deleted\".", category: "Mgmt.")]
         [CommandArgument("-f", "force purging and purge without warning", optional: true)]
         public IEnumerable<string> Purge(params string[] args)
         {
@@ -2189,10 +2243,13 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
         /// <summary>
         /// Try to make a commit journal entry if commiting is enabled
         /// </summary>
-        private void TryRecordCommit(JournalEvent.CommitOperation operation, string itemname, string value)
+        private void TryRecordCommit(JournalEvent.CommitOperation operation, string itemname, string value, SQLiteTransaction transaction = null)
         {
+            // Whether the transaction object is created within this function of passed from outside
+            bool shouldManageTransaction = (transaction == null);
             // Check whether we have enabled committing and record new journal entry in one single line instead of calling ShouldRecordCommits and AddJournal()
-            using(SQLiteTransaction transaction = Connection.BeginTransaction())
+            if (shouldManageTransaction)
+                transaction = Connection.BeginTransaction();
             {
                 bool shouldRecordCommit = Connection.ExecuteQuery(transaction,
                     @"select Value from Configuration where Key=@key", new { key = "RegisterCommits" })
@@ -2211,7 +2268,11 @@ group by FileTagDetails.ID").Unwrap<QueryRows.FileDetail>();
                                 }),
                             type = JournalType.Commit.ToString()
                         });
-                    transaction.Commit();
+                    if(shouldManageTransaction)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
                 }
             }
         }

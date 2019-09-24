@@ -279,22 +279,26 @@ namespace SomewhereDesktop
         {
             // Get available types from current items
             TypeFilters = new ObservableCollection<string>(AllItems
-                .Select(i => GetItemExtensionType(i.Name)).Distinct().OrderBy(f => f));
+                .Select(i => GetItemExtensionType(i)).Distinct().OrderBy(f => f));
             TypeFilters.Insert(0, "");    // Empty filter cleans filtering
         }
-        private string GetItemExtensionType(string name)
+        private string GetItemExtensionType(FileItemObjectModel item)
         {
             // Knowledge
-            if (name == null)
+            if (item.Name == null)
                 return "Knowledge";
             // Folder
-            else if (name.EndsWith("/") || name.EndsWith("\\"))
+            else if (item.Name.EndsWith("/") || item.Name.EndsWith("\\"))
                 return "Folder";
-            else
+            // Note exclude knowledge
+            else if (item.Content != null && item.Name != null)
+                return "Note";
+            // Ordinary files
+            else // item.Content == null
             {
-                string extension = System.IO.Path.GetExtension(name);
+                string extension = System.IO.Path.GetExtension(Commands.GetPhysicalNameForFilesThatCanBeInsideFolder(item.Name));
                 if (string.IsNullOrEmpty(extension))
-                    return "None";  // Can be either virtual note or file without extension
+                    return "None";  // File without extension
                 else
                     return extension;
             }
@@ -367,7 +371,7 @@ namespace SomewhereDesktop
             // Filter by type
             if (!string.IsNullOrEmpty(_SelectedTypeFilter))
                 Items = new ObservableCollection<FileItemObjectModel>(
-                    Items.Where(i => GetItemExtensionType(i.Name) == _SelectedTypeFilter));
+                    Items.Where(i => GetItemExtensionType(i) == _SelectedTypeFilter));
             // Filter by tags
             if (TagFilters.Count != 0)
                 Items = new ObservableCollection<FileItemObjectModel>(
@@ -464,7 +468,7 @@ namespace SomewhereDesktop
                 }
             }
         }
-        private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".bmp" };
+        private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".jpeg", ".bmp" };
         private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm", ".m4a" };
         private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
         #endregion
@@ -805,6 +809,23 @@ namespace SomewhereDesktop
                     if (InventoryPanel.Visibility == Visibility.Visible)
                         ActiveItem = Items.OrderBy(i => i.EntryDate).LastOrDefault() ?? ActiveItem;
                 }
+            }
+        }
+        private void CommandDumpAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void CommandDumpAll_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Go to inventory tab
+            TabHeader_MouseDown(InventoryTabLabel, null);
+            // Dump all and output
+            try
+            {
+                InfoText = Commands.Dump("all").Single();
+            }
+            catch (Exception error)
+            {
+                new DialogWindow(this, "Error when dumping", error.Message).ShowDialog();
+                InfoText = "An error occured during importing.";
             }
         }
         private void CommandImport_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1376,7 +1397,10 @@ namespace SomewhereDesktop
                 System.Diagnostics.Process.Start(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-            => this.DragMove();
+        {
+            if(e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // In case things are not saved, commit change for safety and avoid data loss

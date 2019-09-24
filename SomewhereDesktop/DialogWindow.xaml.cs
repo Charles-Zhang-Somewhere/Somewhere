@@ -76,9 +76,16 @@ namespace SomewhereDesktop
         private void CloseWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         private void CloseWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => this.Close();
+        {
+            // Cancel selection if any
+            Selection = null;
+            this.Close();
+        }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-            => this.DragMove();
+        {
+            if (e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
         private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
             => this.Close();
         #endregion

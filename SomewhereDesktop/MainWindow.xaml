@@ -34,6 +34,7 @@
         <CommandBinding Command="local:CustomCommands.Find" CanExecute="SearchCommand_CanExecute" Executed="SearchCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Add" CanExecute="CommandAdd_CanExecute" Executed="CommandAdd_Executed"/>
         <CommandBinding Command="local:CustomCommands.Import" CanExecute="CommandImport_CanExecute" Executed="CommandImport_Executed"/>
+        <CommandBinding Command="local:CustomCommands.DumpAll" CanExecute="CommandDumpAll_CanExecute" Executed="CommandDumpAll_Executed"/>
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.GotoActiveItemEditContent" 
                         CanExecute="GotoActiveItemEditContentCommand_CanExecute" Executed="GotoActiveItemEditContentCommand_Executed"/>
@@ -226,6 +227,8 @@
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="Import" Command="local:CustomCommands.Import" 
                                                         DataContext="{x:Static local:CustomCommands.Import}" ToolTip="{Binding Text}"/>
+                                                    <Button Content="Dump All" Command="local:CustomCommands.DumpAll" 
+                                                        DataContext="{x:Static local:CustomCommands.DumpAll}" ToolTip="{Binding Text}"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                 </StackPanel>
