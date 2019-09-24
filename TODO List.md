@@ -9,6 +9,8 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 	We need to fix this "Add" command;
 	See example trying to add reference to Wendy's photos in Project Nine repo
 
+For note editor: when multiple lines are selected and first cursor is beginning of line, allow using `tab` to add tabs, and use `shift+tab` to remove tabs
+
 Import/Export implementation
 Filename Tests
 Filename Commands check and implementation
