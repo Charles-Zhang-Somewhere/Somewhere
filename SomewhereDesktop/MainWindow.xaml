@@ -171,6 +171,7 @@
                                 <!-- Tag Search Region -->
                                 <Border Style="{StaticResource Panel}" DockPanel.Dock="Top">
                                     <StackPanel>
+                                        <!-- Tag Filters -->
                                         <StackPanel Orientation="Horizontal">
                                             <Label Content="Tag Filters"/>
                                             <ListView ItemsSource="{Binding TagFilters}" Style="{StaticResource WrapList}">
@@ -183,11 +184,13 @@
                                                 </ListView.ItemTemplate>
                                             </ListView>
                                         </StackPanel>
+                                        <!-- Tag search input -->
                                         <DockPanel LastChildFill="True">
                                             <Label Content="Search Tag"/>
                                             <TextBox Text="{Binding SearchTagKeyword, UpdateSourceTrigger=PropertyChanged}"/>
                                         </DockPanel>
-                                        <DockPanel>
+                                        <!-- Tag list -->
+                                        <DockPanel MaxHeight="300">
                                             <Label Content="Tags" Style="{StaticResource Header}"/>
                                             <ListView ItemsSource="{Binding SearchTags}" Style="{StaticResource WrapList}">
                                                 <ListView.ItemTemplate>
