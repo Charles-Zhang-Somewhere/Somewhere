@@ -235,10 +235,17 @@ namespace SomewhereDesktop
                             ShowLatestVersionNotificationDialog(newVersion, currentVersion, latestReleaseUrl);
                         }));
                 else
-                    await Dispatcher.BeginInvoke(DispatcherPriority.Background,
+                {
+                    // Put in an try-catch to handle situation like pre-mature program exit e.g. during home selection dialog
+                    try
+                    {
+                        await Dispatcher.BeginInvoke(DispatcherPriority.Background,
                         new Action(() => {
                             InfoText = "Current version is up-to-date.";
                         }));
+                    }
+                    catch (Exception){ }
+                }
                 // Dispose worker
                 worker.Dispose();
             }
