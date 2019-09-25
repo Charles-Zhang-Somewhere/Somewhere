@@ -115,5 +115,21 @@ Prop2: 25";
             Assert.Null(obj.UpdateValue);
             Assert.Equal(JournalEvent.UpdateValueFormat.Full, obj.ValueFormat);
         }
+
+        [Fact]
+        public void YamlSerializationShouldNotCreateExtraNewlines()
+        {
+            QueryRows.FileDetail file = new QueryRows.FileDetail()
+            {
+                Content = "multi\r\nline"
+            };
+            string content = "multi\r\nline";
+            string serializedLiteral = new Serializer().Serialize(file);
+            string serializedNormal = new Serializer().Serialize(content);
+            Assert.NotEqual(serializedLiteral, serializedNormal);
+            var deserialized = new Deserializer().Deserialize<QueryRows.FileDetail>(serializedLiteral).Content;
+            Assert.NotEqual(file.Content, deserialized); // Deserialization will not preseve "\r\n"
+            Assert.DoesNotContain("\n\r", deserialized);
+        }
     }
 }

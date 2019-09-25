@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 namespace Somewhere
@@ -22,6 +23,7 @@ namespace Somewhere
     {
         public string Command { get; set; }
         public string[] Arguments { get; set; }
+        [YamlMember(ScalarStyle = ScalarStyle.Literal)]
         public string Result { get; set; }
     }
 
