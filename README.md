@@ -156,6 +156,8 @@ To get the latest nightly build for **Win_x64** (which contains commits from all
 11. Everything (voidtools): inspired the name for Somewhere.
 12. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 13. [Additional Markdown features](https://github.com/Kryptos-FR/markdig.wpf)
+14. [Using Hierarchical Folders and Tags for File Management](https://pdfs.semanticscholar.org/2214/c72fc6bdc42f435eb29240e9fc6930133539.pdf)
+15. Also this article though less specific, is informative: https://zapier.com/blog/how-to-use-tags-and-labels/
 
 # Usage Guide
 
