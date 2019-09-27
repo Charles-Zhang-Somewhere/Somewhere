@@ -1456,7 +1456,7 @@ namespace SomewhereDesktop
             {
                 TextBox textBox = sender as TextBox;
                 int caret = textBox.CaretIndex;
-                string lastLineWhiteSpaces = Regex.Match(SplitToLines(textBox.Text.Substring(0, caret)).Last(), 
+                string lastLineWhiteSpaces = Regex.Match(SplitToLines(textBox.Text.Substring(0, caret)).LastOrDefault() ?? string.Empty, 
                     "^[ \\t]*").Value;
                 string insertion = Environment.NewLine + lastLineWhiteSpaces;
                 textBox.Text = textBox.Text.Insert(caret, insertion);
