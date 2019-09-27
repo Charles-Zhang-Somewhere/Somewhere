@@ -38,6 +38,12 @@ namespace SomewhereDesktop
         #region Constructor
         public MainWindow()
         {
+            // Initialize Cef
+            CefSharp.Cef.Initialize(new CefSharp.Wpf.CefSettings()
+            {
+                RemoteDebuggingPort = 8088
+            });
+
             InitializeComponent();
 
             // Create popup resource
@@ -423,11 +429,58 @@ namespace SomewhereDesktop
                     PreviewAddress = ActiveItem.Content;
                 }
                 // Preview as HTML
-                else if (ActiveItem.Name.ToLower().EndsWith(".html"))
+                else if (ActiveItem.Content.StartsWith("<!DOCTYPE html>"))
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = System.IO.Path.GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, ActiveItem.Content);
+                    PreviewAddress = TempFile;
+                }
+                // Preview as HTML using Processing JS
+                else if(ActiveItem.Content.StartsWith("// Processing.js"))
+                {
+                    string GenerateHtmlTemplateForProcessingJS(string script)
+                        => "<!DOCTYPE html>" +
+                        "<html>" +
+                        "<head>" +
+                        "<title>Sketch - Processing.js</title>" +
+                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/processing.js/1.6.6/processing.min.js\"></script>" + 
+                        "</head>" +
+                        "<body>" +
+                        "<h3>Sketch with Processing.js</h3>" +
+                        "<script type=\"application/processing\" data-processing-target=\"pjs\">" +
+                        script + 
+                        "</script>" +
+                        "<canvas id=\"pjs\"> </canvas>" +
+                        "</body>" +
+                        "</html>";
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
+                    PreviewAddress = TempFile;
+                }
+                // Preview as HTML using P5 JS
+                else if (ActiveItem.Content.StartsWith("// P5.js"))
+                {
+                    string GenerateHtmlTemplateForProcessingJS(string script)
+                        => "<!DOCTYPE html>" +
+                        "<html>" +
+                        "<head>" +
+                        "<title>Sketch - P5.js</title>" +
+                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js\"></script>" +
+                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js\"></script>" +
+                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js\"></script>" +
+                        "</head>" +
+                        "<body>" +
+                        "<h3>Sketch with Processing.js</h3>" +
+                        "<script>" +
+                        script +
+                        "</script>" +
+                        "</body>" +
+                        "</html>";
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
                 // Preview markdown
