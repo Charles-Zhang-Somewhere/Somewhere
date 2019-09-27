@@ -588,8 +588,8 @@ namespace SomewhereDesktop
             set
             {
                 // Save current address as a note
-                if (Keyboard.IsKeyDown(Key.LeftShift)
-                    || Keyboard.IsKeyDown(Key.RightShift))
+                if (!Keyboard.IsKeyDown(Key.Tab) && 
+                    (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
                     CreateNewNote(PreviewBrowser.Title, value);
                 else
                 {
