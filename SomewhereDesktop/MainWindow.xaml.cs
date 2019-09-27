@@ -26,6 +26,7 @@ using Somewhere;
 using StringHelper;
 using InteropCommon;
 using Vlc.DotNet.Forms;
+using System.Text.RegularExpressions;
 
 namespace SomewhereDesktop
 {
@@ -1356,10 +1357,39 @@ namespace SomewhereDesktop
         /// </summary>
         private void NoteContentTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Tab && Keyboard.IsKeyDown(Key.LeftShift))
+            IEnumerable<string> SplitToLines(string input)
+                => input.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if(e.Key == Key.Tab)
             {
+                TextBox textBox = sender as TextBox;
+                if(!string.IsNullOrEmpty(textBox.SelectedText))
+                {
+                    // Remove indentation
+                    if (Keyboard.IsKeyDown(Key.LeftShift))
+                        textBox.SelectedText = string.Join(Environment.NewLine, SplitToLines(textBox.SelectedText).Select(r => Regex.Replace(r, "^\\t", "")));
+                    // Add indentation to whole section of text
+                    else
+                        textBox.SelectedText = string.Join(Environment.NewLine, SplitToLines(textBox.SelectedText).Select(r => r.Insert(0, "\t")));
+                    e.Handled = true;
+                }
+                // Focus on tags field
+                else if(Keyboard.IsKeyDown(Key.LeftShift))
+                {
+                    e.Handled = true;
+                    NoteTagsTextBox.Focus();
+                }
+            }
+            else if (e.Key == Key.Enter)
+            {
+                TextBox textBox = sender as TextBox;
+                int caret = textBox.CaretIndex;
+                string lastLineWhiteSpaces = Regex.Match(SplitToLines(textBox.Text.Substring(0, caret)).Last(), 
+                    "^[ \\t]*").Value;
+                string insertion = Environment.NewLine + lastLineWhiteSpaces;
+                textBox.Text = textBox.Text.Insert(caret, insertion);
+                textBox.CaretIndex = caret + insertion.Length;
                 e.Handled = true;
-                NoteTagsTextBox.Focus();
             }
         }
         /// <summary>
@@ -1368,9 +1398,9 @@ namespace SomewhereDesktop
         private void NoteContentTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             TextBox textBox = sender as TextBox;
-            if(textBox.SelectionLength != 0)
+            if (textBox.SelectionLength != 0)
             {
-                if(e.Text == "*")
+                if (e.Text == "*")
                 {
                     textBox.SelectedText = $"*{textBox.SelectedText}*";
                     e.Handled = true;
