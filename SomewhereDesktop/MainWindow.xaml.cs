@@ -69,6 +69,9 @@ namespace SomewhereDesktop
             InitializeVLCControl();
             // Initialize CefSharp Browser Control
             PreviewBrowser.MenuHandler = new CustomMenuHandler();
+            uint ColorToUInt(Color color)
+                => (uint)((color.A << 24) | (color.R << 16) | (color.G << 8) | (color.B << 0));
+            PreviewBrowser.BrowserSettings.BackgroundColor = ColorToUInt(Color.FromArgb(255, 255, 255, 255));
             // Check new versions in background
             BackgroundCheckNewVersion();
         }
@@ -393,10 +396,16 @@ namespace SomewhereDesktop
                 = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
         }
+        private string TempFile = null;
         private void UpdateItemPreview()
         {   
             // Clear previous
             ClearItemPreview();
+            if(TempFile != null)
+            {
+                System.IO.File.Delete(TempFile);
+                TempFile = null;
+            }
             // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
@@ -411,6 +420,14 @@ namespace SomewhereDesktop
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     PreviewAddress = ActiveItem.Content;
+                }
+                // Preview as HTML
+                else if (ActiveItem.Name.ToLower().EndsWith(".html"))
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, ActiveItem.Content);
+                    PreviewAddress = TempFile;
                 }
                 // Preview markdown
                 else
@@ -432,7 +449,7 @@ namespace SomewhereDesktop
             else
             {
                 // Preview image
-                string extension = System.IO.Path.GetExtension(ActiveItem.Name).ToLower();
+                string extension = System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower();
                 if (ImageFileExtensions.Contains(extension))
                 {
                     PreviewImageSource.Visibility = Visibility.Visible;
