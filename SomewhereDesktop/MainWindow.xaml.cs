@@ -436,6 +436,25 @@ namespace SomewhereDesktop
                     File.WriteAllText(TempFile, ActiveItem.Content);
                     PreviewAddress = TempFile;
                 }
+                // Preview as HTML using SVG
+                else if (ActiveItem.Content.StartsWith("<!-- svg -->"))
+                {
+                    string GenerateHtmlTemplateForSVG(string svg)
+                        => "<!DOCTYPE html>" +
+                        "<html>" +
+                        "<head>" +
+                        "<title>Sketch - svg</title>" +
+                        "</head>" +
+                        "<body>" +
+                        "<h3>Sketch with svg</h3>" +
+                        svg.Replace("@xmlns", "xmlns=\"http://www.w3.org/2000/svg\"") +
+                        "</body>" +
+                        "</html>";
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, GenerateHtmlTemplateForSVG(ActiveItem.Content));
+                    PreviewAddress = TempFile;
+                }
                 // Preview as HTML using Processing JS
                 else if(ActiveItem.Content.StartsWith("// Processing.js"))
                 {
@@ -462,7 +481,7 @@ namespace SomewhereDesktop
                 // Preview as HTML using P5 JS
                 else if (ActiveItem.Content.StartsWith("// P5.js"))
                 {
-                    string GenerateHtmlTemplateForProcessingJS(string script)
+                    string GenerateHtmlTemplateForP5JS(string script)
                         => "<!DOCTYPE html>" +
                         "<html>" +
                         "<head>" +
@@ -480,7 +499,7 @@ namespace SomewhereDesktop
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = System.IO.Path.GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
+                    File.WriteAllText(TempFile, GenerateHtmlTemplateForP5JS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
                 // Preview markdown
