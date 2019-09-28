@@ -43,6 +43,7 @@
         <!-- Notebook Commands -->
         <CommandBinding Command="local:CustomCommands.Create" CanExecute="CreateNoteCommand_CanExecute" Executed="CreateNoteCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Save" CanExecute="SaveCommand_CanExecute" Executed="SaveCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.PreviewNote" CanExecute="PreviewNote_CanExecute" Executed="PreviewNote_CanExecute"/>
         <!-- Markdown -->
         <CommandBinding Command="{x:Static md:Commands.Hyperlink}" Executed="OpenHyperlink_Executed" />
     </Window.CommandBindings>
@@ -71,6 +72,7 @@
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="local:CustomCommands.Save"/>
+        <KeyBinding Key="D1" Modifiers="Ctrl+Shift" Command="local:CustomCommands.PreviewNote"/>
     </Window.InputBindings>
     <Window.Resources>
         <!-- Value Converters -->
@@ -368,6 +370,8 @@
                                             <TextBox x:Name="NoteTagsTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                         </DockPanel>
+                                        <Button Content="Preview Note" HorizontalAlignment="Stretch" Height="35" DockPanel.Dock="Bottom" Command="local:CustomCommands.PreviewNote"
+                                                DataContext="{x:Static local:CustomCommands.PreviewNote}" ToolTip="{Binding Text}"/>
                                         <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
                                              Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}" PreviewTextInput="NoteContentTextBox_PreviewTextInput" PreviewKeyDown="NoteContentTextBox_PreviewKeyDown"/>
                                     </DockPanel>

@@ -71,7 +71,10 @@ namespace SomewhereDesktop
             else
                 OpenRepository(Directory.GetCurrentDirectory());
             if (Commands == null || !Commands.IsHomePresent)
+            {
                 Close();
+                return;
+            }
 
             // Initialize Video Preview Control
             InitializeVLCControl();
@@ -408,6 +411,45 @@ namespace SomewhereDesktop
                 = Visibility.Collapsed;
         }
         private string TempFile = null;
+        private string ExtractValueAfterSymbol(string inputText, string lineSymbol, string template)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var line in SplitToLines(inputText))
+            {
+                if (line.StartsWith(lineSymbol))
+                    builder.AppendLine(string.Format(template, line.Substring(lineSymbol.Length)));
+            }
+            return builder.ToString();
+        }
+        private const string CSSSymbol = "@css ";
+        private const string LibSymbol = "@lib ";
+        /// <summary>
+        /// Extract and form a string containing CSS links
+        /// </summary>
+        private string ExtractCSSLinks(string script)
+            => ExtractValueAfterSymbol(script, CSSSymbol, "<link rel=\"stylesheet\" href=\"{0}\" >");
+        /// <summary>
+        /// Extract and form a string containing Javascript libraries
+        /// </summary>
+        private string ExtractLibraries(string script)
+            => ExtractValueAfterSymbol(script, LibSymbol, "<script src=\"{0}\"></script>");
+        /// <summary>
+        /// Extract lines that doesn't start with symbol
+        /// </summary>
+        private string ExtractNormalScript(string script)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var line in SplitToLines(script))
+            {
+                if (line.StartsWith(CSSSymbol))
+                    continue;
+                else if (line.StartsWith(LibSymbol))
+                    continue;
+                else
+                    builder.AppendLine(line);
+            }
+            return builder.ToString();
+        }
         private void UpdateItemPreview()
         {
             // Create and return full path for a temp file (file not created yet)
@@ -415,39 +457,6 @@ namespace SomewhereDesktop
             {
                 string name =  System.IO.Path.Combine(Commands.HomeDirectory, Guid.NewGuid().ToString());   // Use a local file path instead of System.IO.GetTempFileName() for referencing local files
                 return name;
-            }
-            string ExtractValueAfterSymbol(string inputText, string lineSymbol, string template)
-            {
-                StringBuilder builder = new StringBuilder();
-                foreach (var line in SplitToLines(inputText))
-                {
-                    if (line.StartsWith(lineSymbol))
-                        builder.AppendLine(string.Format(template, line.Substring(lineSymbol.Length)));
-                }
-                return builder.ToString();
-            }
-            string cssSymbol = "@css ";
-            string libSymbol = "@lib ";
-            // Extract and form a string containing CSS links
-            string ExtractCSSLinks(string script)
-                => ExtractValueAfterSymbol(script, cssSymbol, "<link rel=\"stylesheet\" href=\"{0}\" >");
-            // Extract and form a string containing Javascript libraries
-            string ExtractLibraries(string script)
-                => ExtractValueAfterSymbol(script, libSymbol, "<script src=\"{0}\"></script>");
-            // Extract lines that doesn't start with symbol
-            string ExtractNormalScript(string script)
-            {
-                StringBuilder builder = new StringBuilder();
-                foreach (var line in SplitToLines(script))
-                {
-                    if (line.StartsWith(cssSymbol))
-                        continue;
-                    else if (line.StartsWith(libSymbol))
-                        continue;
-                    else
-                        builder.AppendLine(line);
-                }
-                return builder.ToString();
             }
 
             // Clear previous
@@ -631,6 +640,14 @@ namespace SomewhereDesktop
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForP5JS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
+                // Preview as HTML Javascript Notebook
+                else if(ActiveItem.Content.Contains("```jsx"))
+                {
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, GenerateJavascriptNotebook(ActiveItem.Content));
+                    PreviewAddress = TempFile;
+                }
                 // Preview markdown
                 else
                 {
@@ -789,8 +806,9 @@ namespace SomewhereDesktop
             set
             {
                 // Save current address as a note
-                if (!Keyboard.IsKeyDown(Key.Tab) && 
-                    (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+                if (!Keyboard.IsKeyDown(Key.Tab) // Avoid the case when we are merely update notes and go to tags field of note
+                    && !(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))// Avoid the case when we are merely use PreviewNote command to preview note
+                    && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
                     CreateNewNote(PreviewBrowser.Title, value);
                 else
                 {
@@ -1285,6 +1303,14 @@ namespace SomewhereDesktop
         {
             TabHeader_MouseDown(StatusTabLabel, null);
             ConsoleInputTextBox.Focus();
+        }
+        private void PreviewNote_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = ActiveNote != null && NotebookPanel.Visibility == Visibility.Visible;
+        private void PreviewNote_CanExecute(object sender, ExecutedRoutedEventArgs e)
+        {
+            ActiveItem = ActiveNote;
+            SaveCommand_Executed(null, null);   // Force saving and updating
+            TabHeader_MouseDown(InventoryTabLabel, null);
         }
         #endregion
 
@@ -1817,6 +1843,50 @@ namespace SomewhereDesktop
                 // Each line represents one location
                 return SplitToLines(File.ReadAllText(RecentFile));
             else return new string[] { };
+        }
+        /// <summary>
+        /// Read content of an embedded resource
+        /// </summary>
+        private string GetEmbeddedResource(string name)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            string GetResourceName(string input)
+                => assembly.GetManifestResourceNames()
+                .Single(str => str.EndsWith(name));
+
+            var resourceName = GetResourceName(name);
+
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+        /// <summary>
+        /// Generate an HTML page for given Javascript Notebook
+        /// </summary>
+        private string GenerateJavascriptNotebook(string text)
+        {
+            string template = GetEmbeddedResource("notebook-template.html");
+            string library = GetEmbeddedResource("notebook-library.js");
+            string parser = GetEmbeddedResource("notebook-parser.js");
+            string escapedString = ExtractNormalScript(text)
+                // Replace all jsx code section with actual javascript code section for syntax highlighting
+                .Replace("```jsx", "```javascript")
+                // Replace javascript string literals
+                .Replace("\\", "\\\\")    // Escape backslash
+                .Replace("\"", "\\\"")  // Escape double quote
+                .Replace("'", "\\'")    // Escape single quote
+                .Replace("\t", "\\t")       // Escape tab
+                // Replace new line character
+                .Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\\n");
+            string html = template
+                .Replace("@css", ExtractCSSLinks(text))
+                .Replace("@lib", ExtractLibraries(text))
+                .Replace("@core", library)
+                .Replace("@parser", parser)
+                .Replace("@data", $"'{escapedString}'");
+            return html;
         }
         /// <summary>
         /// Save to recently opened home paths
