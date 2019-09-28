@@ -1011,6 +1011,7 @@ namespace SomewhereDesktop
             RefreshAllItems();
             RefreshItems();
             RefreshTags();
+            RefreshNotes();
             InfoText = $"{AllItems.Count()} items discovered.";
         }
         private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
