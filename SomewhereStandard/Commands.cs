@@ -471,6 +471,27 @@ namespace Somewhere
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
             return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
         }
+        [Command("Generate documentation of Somewhere program.", logged: false, category: "Misc.")]
+        [CommandArgument("path", "path for the generated file; relative to home folder")]
+        public IEnumerable<string> Doc(params string[] args)
+        {
+            string documentation = "SomewhereDoc.txt";
+            if (args.Length != 0)
+                documentation = args[0];
+            using (FileStream file = new FileStream(GetPathInHomeHolder(documentation), FileMode.Create))
+            using (StreamWriter writer = new StreamWriter(file))
+            {
+                foreach (string line in Help())
+                    writer.WriteLine(line);
+                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
+                {
+                    writer.WriteLine(); // Add empty line
+                    foreach (string line in Help(new string[] { commandName }))
+                        writer.WriteLine(line);
+                }
+            }
+            return new string[] { $"Document generated at {GetPathInHomeHolder(documentation)}" };
+        }
         [Command("Dump repository.",
             "Can dump historical version of whole repository, historical version or a single file, " +
             "or all notes (ordinary files is already available so not dumped).", category: "Mgmt.")]
@@ -596,27 +617,7 @@ namespace Somewhere
                     throw new ArgumentException($"Unrecognized action: `{action}`");
             }
         }
-        [Command("Generate documentation of Somewhere program.", logged: false, category: "Misc.")]
-        [CommandArgument("path", "path for the generated file; relative to home folder")]
-        public IEnumerable<string> Doc(params string[] args)
-        {
-            string documentation = "SomewhereDoc.txt";
-            if (args.Length != 0)
-                documentation = args[0];
-            using (FileStream file = new FileStream(GetPathInHomeHolder(documentation), FileMode.Create))
-            using (StreamWriter writer = new StreamWriter(file))
-            {
-                foreach (string line in Help())
-                    writer.WriteLine(line);
-                foreach (string commandName in CommandNames.Keys.OrderBy(k => k))
-                {
-                    writer.WriteLine(); // Add empty line
-                    foreach (string line in Help(new string[] { commandName }))
-                        writer.WriteLine(line);
-                }
-            }
-            return new string[] { $"Document generated at {GetPathInHomeHolder(documentation)}" };
-        }
+        
         [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false, category: "Misc.")]
         [CommandArgument("commandname", "name of command", optional: true)]
         public IEnumerable<string> Help(params string[] args)
