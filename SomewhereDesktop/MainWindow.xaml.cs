@@ -36,13 +36,14 @@ namespace SomewhereDesktop
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         #region Constructor
+        private readonly CefSharp.Wpf.CefSettings CefSettings = new CefSharp.Wpf.CefSettings()
+        {
+            RemoteDebuggingPort = 8088
+        };
         public MainWindow()
         {
             // Initialize Cef
-            CefSharp.Cef.Initialize(new CefSharp.Wpf.CefSettings()
-            {
-                RemoteDebuggingPort = 8088
-            });
+            CefSharp.Cef.Initialize(CefSettings);
 
             InitializeComponent();
 
@@ -415,6 +416,39 @@ namespace SomewhereDesktop
                 string name =  System.IO.Path.Combine(Commands.HomeDirectory, Guid.NewGuid().ToString());   // Use a local file path instead of System.IO.GetTempFileName() for referencing local files
                 return name;
             }
+            string ExtractValueAfterSymbol(string inputText, string lineSymbol, string template)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var line in SplitToLines(inputText))
+                {
+                    if (line.StartsWith(lineSymbol))
+                        builder.AppendLine(string.Format(template, line.Substring(lineSymbol.Length)));
+                }
+                return builder.ToString();
+            }
+            string cssSymbol = "@css ";
+            string libSymbol = "@lib ";
+            // Extract and form a string containing CSS links
+            string ExtractCSSLinks(string script)
+                => ExtractValueAfterSymbol(script, cssSymbol, "<link rel=\"stylesheet\" href=\"{0}\" >");
+            // Extract and form a string containing Javascript libraries
+            string ExtractLibraries(string script)
+                => ExtractValueAfterSymbol(script, libSymbol, "<script src=\"{0}\"></script>");
+            // Extract lines that doesn't start with symbol
+            string ExtractNormalScript(string script)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (var line in SplitToLines(script))
+                {
+                    if (line.StartsWith(cssSymbol))
+                        continue;
+                    else if (line.StartsWith(libSymbol))
+                        continue;
+                    else
+                        builder.AppendLine(line);
+                }
+                return builder.ToString();
+            }
 
             // Clear previous
             ClearItemPreview();
@@ -450,15 +484,16 @@ namespace SomewhereDesktop
                 else if (ActiveItem.Content.StartsWith("<!-- svg -->"))
                 {
                     string GenerateHtmlTemplateForSVG(string svg)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "<title>Sketch - svg</title>" +
-                        "</head>" +
-                        "<body>" +
-                        "<h3>Sketch with svg</h3>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "   <title>Sketch - svg</title>\n" +
+                        "   <meta charset=\"utf-8\">\n" +
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3>Sketch with svg</h3>\n" +
                         svg.Replace("@xmlns", "xmlns=\"http://www.w3.org/2000/svg\"") +
-                        "</body>" +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -469,24 +504,26 @@ namespace SomewhereDesktop
                 else if(ActiveItem.Content.StartsWith("// Three.js"))
                 {
                     string GenerateHtmlTemplateForThreeJS(string script)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "   <meta charset=\"utf-8\">" +
-                        "   <title>Sketch - Three.js</title>" +
-                        "   <style>" +
-                        "       body { margin: 0; background: black; }" +   // For Three.js, use default black background
-                        "       canvas { width: 100%; height: 100% }" +
-                        "   </style>" +
-                        "</head>" +
-                        "<body>" +
-                        "   <h3 style=\"color: white;\">Sketch with Three.js</h3>" +
-                        "   <script src=\"https://threejs.org/build/three.js\"></script>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "   <meta charset=\"utf-8\">\n" +
+                        "   <title>Sketch - Three.js</title>\n" +
+                        "   <style>\n" +
+                        "       body { margin: 0; background: black; }\n" +   // For Three.js, use default black background
+                        "       canvas { width: 100%; height: 100% }\n" +
+                        "   </style>\n" +
+                        ExtractCSSLinks(script) +
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3 style=\"color: white;\">Sketch with Three.js</h3>\n" +
+                        "   <script src=\"https://threejs.org/build/three.js\"></script>\n" +
+                        ExtractLibraries(script) + 
                         // If the script contains explicit script tag, i.e. it may contain other explicit items, then we just include it
-                        (script.Contains("</script>") ? script
+                        (script.Contains("</script>") ? ExtractNormalScript(script)
                         // Otherwise it's pure JS and we create a script tag for it
-                        : ("<script>" + script + "</script>")) +
-                        "</body>" +
+                        : ("<script>" + ExtractNormalScript(script) + "</script>")) +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -497,16 +534,18 @@ namespace SomewhereDesktop
                 else if (ActiveItem.Content.StartsWith("<!-- Plotly.js -->"))
                 {
                     string GenerateHtmlTemplateForPlotlyJS(string script)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "<title>Sketch - Plotly.js</title>" +
-                        "<script src=\"https://cdn.plot.ly/plotly-latest.min.js\"></script>" +
-                        "</head>" +
-                        "<body>" +
-                        "<h3>Sketch with Plotly.js</h3>" +
-                        script +
-                        "</body>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "   <title>Sketch - Plotly.js</title>\n" +
+                        ExtractCSSLinks(script) + 
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3>Sketch with Plotly.js</h3>\n" +
+                        "   <script src=\"https://cdn.plot.ly/plotly-latest.min.js\"></script>\n" +
+                        ExtractLibraries(script) + 
+                        ExtractNormalScript(script) +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -518,21 +557,23 @@ namespace SomewhereDesktop
                     || ActiveItem.Content.StartsWith("<!-- JQuery.js -->"))
                 {
                     string GenerateHtmlTemplateForBootstrap(string script)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "<title>Sketch - Boostrap (JQuery)</title>" +
-                        "<meta charset=\"utf-8\">" +
-                        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">" +
-                        "<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\" integrity=\"sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T\" crossorigin=\"anonymous\">" +
-                        "</head>" +
-                        "<body>" +
-                        "<h3>Sketch with Boostrap and JQuery.js</h3>" +
-                        "<script src=\"https://code.jquery.com/jquery-3.3.1.slim.min.js\" integrity=\"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo\" crossorigin=\"anonymous\"></script>" +
-                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js\" integrity=\"sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1\" crossorigin=\"anonymous\"></script>" +
-                        "<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js\" integrity=\"sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM\" crossorigin=\"anonymous\"></script>" +
-                        script +
-                        "</body>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "<title>Sketch - Boostrap (JQuery)</title>\n" +
+                        "   <meta charset=\"utf-8\">\n" +
+                        "   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n" +
+                        "   <link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\" integrity=\"sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T\" crossorigin=\"anonymous\">\n" +
+                        ExtractCSSLinks(script) + 
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3>Sketch with Boostrap and JQuery.js</h3>" +
+                        "   <script src=\"https://code.jquery.com/jquery-3.3.1.slim.min.js\" integrity=\"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo\" crossorigin=\"anonymous\"></script>" +
+                        "   <script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js\" integrity=\"sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1\" crossorigin=\"anonymous\"></script>" +
+                        "   <script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js\" integrity=\"sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM\" crossorigin=\"anonymous\"></script>" +
+                        ExtractLibraries(script) + 
+                        ExtractNormalScript(script) +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -543,19 +584,21 @@ namespace SomewhereDesktop
                 else if(ActiveItem.Content.StartsWith("// Processing.js"))
                 {
                     string GenerateHtmlTemplateForProcessingJS(string script)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "<title>Sketch - Processing.js</title>" +
-                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/processing.js/1.6.6/processing.min.js\"></script>" + 
-                        "</head>" +
-                        "<body>" +
-                        "<h3>Sketch with Processing.js</h3>" +
-                        "<script type=\"application/processing\" data-processing-target=\"pjs\">" +
-                        script + 
-                        "</script>" +
-                        "<canvas id=\"pjs\"> </canvas>" +
-                        "</body>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "   <title>Sketch - Processing.js</title>\n" +
+                        ExtractCSSLinks(script) + 
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3>Sketch with Processing.js</h3>\n" +
+                        "   <script src=\"https://cdnjs.cloudflare.com/ajax/libs/processing.js/1.6.6/processing.min.js\"></script>\n" +
+                        ExtractLibraries(script) + 
+                        "   <script type=\"application/processing\" data-processing-target=\"pjs\">\n" +
+                        ExtractNormalScript(script) + 
+                        "</script>\n" +
+                        "<canvas id=\"pjs\"> </canvas>\n" +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -566,20 +609,22 @@ namespace SomewhereDesktop
                 else if (ActiveItem.Content.StartsWith("// P5.js"))
                 {
                     string GenerateHtmlTemplateForP5JS(string script)
-                        => "<!DOCTYPE html>" +
-                        "<html>" +
-                        "<head>" +
-                        "<title>Sketch - P5.js</title>" +
-                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js\"></script>" +
-                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js\"></script>" +
-                        "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js\"></script>" +
-                        "</head>" +
-                        "<body>" +
-                        "<h3>Sketch with Processing.js</h3>" +
-                        "<script>" +
-                        script +
-                        "</script>" +
-                        "</body>" +
+                        => "<!DOCTYPE html>\n" +
+                        "<html>\n" +
+                        "<head>\n" +
+                        "   <title>Sketch - P5.js</title>\n" +
+                        ExtractCSSLinks(script) +
+                        "</head>\n" +
+                        "<body>\n" +
+                        "   <h3>Sketch with Processing.js</h3>\n" +
+                        "   <script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js\"></script>\n" +
+                        "   <script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js\"></script>\n" +
+                        "   <script src=\"https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js\"></script>\n" +
+                        ExtractLibraries(script) + 
+                        "   <script>\n" +
+                        ExtractNormalScript(script) +
+                        "   </script>\n" +
+                        "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     TempFile = GetTempFileName() + ".html";
@@ -1514,9 +1559,6 @@ namespace SomewhereDesktop
         /// </summary>
         private void NoteContentTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            IEnumerable<string> SplitToLines(string input)
-                => input.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
             if(e.Key == Key.Tab)
             {
                 TextBox textBox = sender as TextBox;
@@ -1687,6 +1729,8 @@ namespace SomewhereDesktop
         }
         private string this[string arg]
             => GetArgumentValue(arg);
+        private string[] SplitToLines(string input)
+                => input.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         private void TryCommitActiveItemChange()
         {
             if(ActiveItem != null)
@@ -1763,7 +1807,7 @@ namespace SomewhereDesktop
         {
             if (File.Exists(RecentFile))
                 // Each line represents one location
-                return File.ReadAllText(RecentFile).Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                return SplitToLines(File.ReadAllText(RecentFile));
             else return new string[] { };
         }
         /// <summary>
@@ -1894,7 +1938,7 @@ namespace SomewhereDesktop
                 }
                 catch (Exception e) { InfoText = $"{e.InnerException.Message}"; }
             }
-            else InfoText = $"Specified command `{commandName}` doesn't exist. Try again.";
+            else InfoText = $"Specified command `{commandName}` doesn't exist. Try again; Use `help` to see available commands.";
         }
         [Command("Navigates back browser history.")]
         public IEnumerable<string> B(params string[] args)
@@ -1903,6 +1947,18 @@ namespace SomewhereDesktop
                 return new string[] { BrowseBackHistory() };
             else
                 return new string[] { "No preview browser is available." };
+        }
+        [Command("Open webpage remote debug dev tool address.")]
+        public IEnumerable<string> D(params string[] args)
+        {
+            if (PreviewBrowser.Visibility == Visibility.Visible)
+            {
+                string address = $"http://localhost:{CefSettings.RemoteDebuggingPort}";
+                Process.Start(address);
+                return new string[] { $"Opening address {address}..." };
+            }
+            else
+                return new string[] { "A preview browser must be visible; Use `s web` to open preview browser." };
         }
         [Command("Output all available commands into a text file.")]
         [CommandArgument("filename", "name of the file to dump details", optional: true)]
