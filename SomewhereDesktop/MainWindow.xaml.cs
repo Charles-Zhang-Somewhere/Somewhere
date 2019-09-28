@@ -81,6 +81,9 @@ namespace SomewhereDesktop
             PreviewBrowser.BrowserSettings.BackgroundColor = ColorToUInt(Color.FromArgb(255, 255, 255, 255));
             // Check new versions in background
             BackgroundCheckNewVersion();
+
+            // Set identifiable window title
+            Title = "Somewhere - " + System.IO.Path.GetFileName(Commands.HomeDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar));
         }
         private void ShowRecentPathsDialog(string[] recent)
         {
