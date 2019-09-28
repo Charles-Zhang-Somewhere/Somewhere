@@ -458,6 +458,34 @@ namespace SomewhereDesktop
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForSVG(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
+                // Preview as HTML using Three.js
+                else if(ActiveItem.Content.StartsWith("// Three.js"))
+                {
+                    string GenerateHtmlTemplateForThreeJS(string script)
+                        => "<!DOCTYPE html>" +
+                        "<html>" +
+                        "<head>" +
+                        "   <meta charset=\"utf-8\">" +
+                        "   <title>Sketch - Three.js</title>" +
+                        "   <style>" +
+                        "       body { margin: 0; background: black; }" +   // For Three.js, use default black background
+                        "       canvas { width: 100%; height: 100% }" +
+                        "   </style>" +
+                        "</head>" +
+                        "<body>" +
+                        "   <h3 style=\"color: white;\">Sketch with Three.js</h3>" +
+                        "   <script src=\"https://threejs.org/build/three.js\"></script>" +
+                        // If the script contains explicit script tag, i.e. it may contain other explicit items, then we just include it
+                        (script.Contains("</script>") ? script
+                        // Otherwise it's pure JS and we create a script tag for it
+                        : ("<script>" + script + "</script>")) +
+                        "</body>" +
+                        "</html>";
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    File.WriteAllText(TempFile, GenerateHtmlTemplateForThreeJS(ActiveItem.Content));
+                    PreviewAddress = TempFile;
+                }
                 // Preview as HTML using Processing JS
                 else if(ActiveItem.Content.StartsWith("// Processing.js"))
                 {
