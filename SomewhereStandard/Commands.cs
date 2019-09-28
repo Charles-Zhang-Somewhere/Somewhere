@@ -617,7 +617,67 @@ namespace Somewhere
                     throw new ArgumentException($"Unrecognized action: `{action}`");
             }
         }
-        
+        [Command("Gnerate predefined scripts.", 
+            "Generate some scripts that are contained in SW, create corresponding files/notes for them.", category: "Misc.")]
+        [CommandArgument("scriptname", "name of the script; available: random")]
+        public IEnumerable<string> Generate(params string[] args)
+        {
+            ValidateArgs(args);
+            string name = args[0];
+            string script = string.Empty;
+            switch (name.ToLower())
+            {
+                case "random":
+                    script = @"<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=""utf-8""/>
+		<title>Random Choice Generator</title>
+	</head>
+	<body>
+		<label for=""inputs"">Enter options below, seperated by new lines: </label>
+		<div>
+			<textarea id=""inputs"" textarea rows=""4"" cols=""50""></textarea>
+		</div>
+		<button onclick=""run();"">Submit</button>
+		<div>
+			<div id=""result""></div>
+		</div>
+		<script type=""text/javascript"">
+			/**
+			 * Returns a random number between min (inclusive) and max (exclusive)
+			 */
+			function getRandomArbitrary(min, max) {
+			    return Math.random() * (max - min) + min;
+			}
+			
+			/**
+	 		* Returns a random integer between min (inclusive) and max (inclusive).
+			 * The value is no lower than min (or the next integer greater than min
+			 * if min isn't an integer) and no greater than max (or the next integer
+			 * lower than max if max isn't an integer).
+			 * Using Math.round() will give you a non-uniform distribution!
+			 */
+			function getRandomInt(min, max) {
+				min = Math.ceil(min);
+				max = Math.floor(max);
+				return Math.floor(Math.random() * (max - min + 1)) + min;
+			}
+			
+			// Run and get choice
+			function run(){
+				var options = document.getElementById('inputs').value.split('\n');
+				var choiceId = getRandomInt(0, options.length - 1);
+				document.getElementById('result').innerHTML = 'Result: ' + options[choiceId];
+			}
+		</script>
+	</body>
+</html>";
+                    return Create("(Script) Random", script, "script");
+                default:
+                    return new string[] { $"No available script with given name `{name}`." }; 
+            }
+        }
         [Command("Show available commands and general usage help. Use `help commandname` to see more.", logged: false, category: "Misc.")]
         [CommandArgument("commandname", "name of command", optional: true)]
         public IEnumerable<string> Help(params string[] args)
