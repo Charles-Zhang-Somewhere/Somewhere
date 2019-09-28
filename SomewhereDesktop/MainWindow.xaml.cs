@@ -408,7 +408,14 @@ namespace SomewhereDesktop
         }
         private string TempFile = null;
         private void UpdateItemPreview()
-        {   
+        {
+            // Create and return full path for a temp file (file not created yet)
+            string GetTempFileName()
+            {
+                string name =  System.IO.Path.Combine(Commands.HomeDirectory, Guid.NewGuid().ToString());   // Use a local file path instead of System.IO.GetTempFileName() for referencing local files
+                return name;
+            }
+
             // Clear previous
             ClearItemPreview();
             if(TempFile != null)
@@ -435,7 +442,7 @@ namespace SomewhereDesktop
                 else if (ActiveItem.Content.StartsWith("<!DOCTYPE html>"))
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    TempFile = GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, ActiveItem.Content);
                     PreviewAddress = TempFile;
                 }
@@ -454,7 +461,7 @@ namespace SomewhereDesktop
                         "</body>" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    TempFile = GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForSVG(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
@@ -482,7 +489,7 @@ namespace SomewhereDesktop
                         "</body>" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    TempFile = GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForThreeJS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
@@ -505,7 +512,7 @@ namespace SomewhereDesktop
                         "</body>" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    TempFile = GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
@@ -529,7 +536,7 @@ namespace SomewhereDesktop
                         "</body>" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = System.IO.Path.GetTempFileName() + ".html";
+                    TempFile = GetTempFileName() + ".html";
                     File.WriteAllText(TempFile, GenerateHtmlTemplateForP5JS(ActiveItem.Content));
                     PreviewAddress = TempFile;
                 }
@@ -1570,6 +1577,13 @@ namespace SomewhereDesktop
             Commands?.Dispose(); Commands = null;
             Popup?.Close(); Popup = null;
             LastWorker?.Dispose(); LastWorker = null;
+
+            // Delete temp file
+            if(TempFile != null)
+            {
+                System.IO.File.Delete(TempFile);
+                TempFile = null;
+            }
         }
         #endregion
 
