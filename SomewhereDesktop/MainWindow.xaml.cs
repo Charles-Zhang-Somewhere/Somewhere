@@ -1464,6 +1464,14 @@ namespace SomewhereDesktop
                         foreach (var line in Commands.ExecuteCommand(commandName, arguments))
                             result.AppendLine(line);
                     }
+                    // Automatically refresh items
+                    if (new string[] { "add", "create", "generate", "im", "mv", "mt", "mvt", "rm", "rmt", "tag", "untag", "update" }
+                        .Contains(commandName))
+                        RefreshCommand_Executed(null, null);
+                    // Automatically refresh status
+                    else if (new string[] { "add", "doc", "dump", "export", "im", "mv", "purge", "rm" }
+                        .Contains(commandName))
+                        ShowUpdateStatusPanel();
                 }
                 ConsoleResult = result.ToString();
                 ConsoleInput = string.Empty;
