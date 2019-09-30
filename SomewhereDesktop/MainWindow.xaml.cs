@@ -1863,7 +1863,7 @@ namespace SomewhereDesktop
             else if (code.Contains("```cityscript"))
                 return LanguageType.CityScript;
             // SPICE
-            else if (code.Contains(".END"))
+            else if (code.EndsWith(".end", StringComparison.OrdinalIgnoreCase) && code.StartsWith("* "))
                 return LanguageType.SpiceNetlist;
             else return LanguageType.Unidentified;
         }
