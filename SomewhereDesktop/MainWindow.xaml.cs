@@ -668,7 +668,7 @@ namespace SomewhereDesktop
                     // Source code
                     var lang = CheckCodeLanguage(ActiveItem.Content);
                     if(lang != LanguageType.Unidentified)
-                        PreviewMarkdown = $"{lang.ToString()} Code, use `cr` to run\n```\n{ActiveItem.Content}\n```";
+                        PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{ActiveItem.Content}\n```";
                     // Normal markdown
                     else
                         PreviewMarkdown = ActiveItem.Content;
@@ -1189,7 +1189,7 @@ namespace SomewhereDesktop
             e.CanExecute = visibility == Visibility.Visible;
         }
         private void CompileAndRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => CR();
+            => InfoText = CR().Single();
         private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = ActiveItem != null || ActiveNote != null;
         private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -2184,9 +2184,11 @@ namespace SomewhereDesktop
                 switch (type)
                 {
                     case LanguageType.CPP:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"C++ program finished in {RunProgram(CompileCPP())} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.CSharp:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"C# program finished in {RunProgram(CompileCSharp())} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
