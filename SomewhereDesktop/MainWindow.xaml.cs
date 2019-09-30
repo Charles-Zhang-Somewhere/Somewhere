@@ -1769,7 +1769,8 @@ namespace SomewhereDesktop
         {
             Unidentified,
             CPP,
-            CSharp
+            CSharp,
+            Python  // Python 3
         }
         /// <summary>
         /// Check language type of a given piece of code
@@ -1780,6 +1781,13 @@ namespace SomewhereDesktop
                 return LanguageType.CPP;
             else if (code.Contains("using System;"))
                 return LanguageType.CSharp;
+            // Use heuristics to guess host language is Python
+            else if (code.StartsWith("def ") || code.Contains("__main__") 
+                // Single line statements
+                || code.EndsWith(")") || code.EndsWith("]")
+                // Single line expressions
+                || (!code.Contains("\n") && !code.Contains("=") && code.IndexOfAny(new char[] { '+', '-', '*', '/', '^' }) != -1))
+                return LanguageType.Python;
             else return LanguageType.Unidentified;
         }
         /// <remark>
@@ -2153,6 +2161,34 @@ namespace SomewhereDesktop
                 }
                 catch (Exception) { throw; }
             }
+            // Run Python snippets
+            double RunPython()
+            {
+                string temp = GetTempFileName();
+                string sourcePath = temp + ".python";
+                // Dump source
+                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                try
+                {
+                    // Add temp file list
+                    TempFiles.Add(sourcePath);
+                    // Run interpreter
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = true;
+                        myProcess.StartInfo.FileName = "python";
+                        myProcess.StartInfo.CreateNoWindow = false;
+                        myProcess.StartInfo.Arguments = $"\"{sourcePath}\"";
+                        myProcess.Start();
+                        myProcess.WaitForExit();
+                    }
+                    sw.Stop();
+                    return sw.ElapsedMilliseconds / 1000;
+                }
+                catch (Exception) { throw; }
+            }
             // Run a program and measure it's performance in seconds
             double RunProgram(string exePath)
             {
@@ -2190,6 +2226,10 @@ namespace SomewhereDesktop
                     case LanguageType.CSharp:
                         DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"C# program finished in {RunProgram(CompileCSharp())} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.Python:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
+                        try { return new string[] { $"Python script run finished in {RunPython()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:
