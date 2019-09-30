@@ -766,7 +766,7 @@ namespace SomewhereDesktop
         /// <summary>
         /// Extensions that can be compiled/interpreted/executed
         /// </summary>
-        private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt" };
+        private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt", ".spice" };
         #endregion
 
         #region Public View Properties
@@ -1809,7 +1809,8 @@ namespace SomewhereDesktop
             CSharp,
             Python,  // Python 3
             Pbrt,
-            CityScript
+            CityScript,
+            SpiceNetlist
         }
         /// <summary>
         /// Check language type of a given piece of code;
@@ -1832,6 +1833,9 @@ namespace SomewhereDesktop
                         return LanguageType.Pbrt;
                     case ".city":
                         return LanguageType.CityScript;
+                    case ".cir":
+                    case ".spice":
+                        return LanguageType.SpiceNetlist;
                     default:
                         break;
                 }
@@ -1853,8 +1857,12 @@ namespace SomewhereDesktop
             // Prbt
             else if (code.Contains("WorldBegin") && code.Contains("WorldEnd"))
                 return LanguageType.Pbrt;
+            // City Script
             else if (code.Contains("```cityscript"))
                 return LanguageType.CityScript;
+            // SPICE
+            else if (code.Contains(".END"))
+                return LanguageType.SpiceNetlist;
             else return LanguageType.Unidentified;
         }
         /// <summary>
@@ -2316,6 +2324,33 @@ with open(""{0}"", 'w+') as the_file:
                 }
                 catch (Exception) { throw; }
             }
+            double SimulateCircuit()
+            {
+                string temp = GetTempFileName();
+                string sourcePath = temp + ".spice";
+                // Dump source
+                System.IO.File.WriteAllText(sourcePath, previewCode);
+                try
+                {
+                    // Add temp file list
+                    TempFiles.Add(sourcePath);
+                    // Run interpreter
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = false;
+                        myProcess.StartInfo.FileName = "ngspice";
+                        myProcess.StartInfo.CreateNoWindow = true;
+                        myProcess.StartInfo.Arguments = $"\"{sourcePath}\"";
+                        myProcess.Start();
+                        myProcess.WaitForExit();
+                    }
+                    sw.Stop();
+                    return sw.ElapsedMilliseconds / 1000;
+                }
+                catch (Exception) { throw; }
+            }
             double RunCityScript()
             {
                 string ExtractCityScriptSource(string markdown)
@@ -2471,6 +2506,10 @@ with open(""{0}"", 'w+') as the_file:
                     case LanguageType.CityScript:
                         DeleteTemporaryFiles();
                         try { return new string[] { $"Rendering CityScript scene finished in {RunCityScript()} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.SpiceNetlist:
+                        DeleteTemporaryFiles();
+                        try { return new string[] { $"SPICE circuit simlation finished in {SimulateCircuit()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:
