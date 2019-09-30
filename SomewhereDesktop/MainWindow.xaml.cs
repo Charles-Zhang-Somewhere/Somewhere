@@ -766,7 +766,9 @@ namespace SomewhereDesktop
         /// <summary>
         /// Extensions that can be compiled/interpreted/executed
         /// </summary>
-        private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt", ".spice" };
+        private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt",
+            ".city",
+            ".spice", ".cir", ".sp" };
         #endregion
 
         #region Public View Properties
