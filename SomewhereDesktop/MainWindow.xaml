@@ -373,7 +373,7 @@
                                             <TextBox x:Name="NoteTagsTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" 
                                                  Text="{Binding ActiveNoteTags, UpdateSourceTrigger=LostFocus}"/>
                                         </DockPanel>
-                                        <Button Content="Preview Note" HorizontalAlignment="Stretch" Height="35" DockPanel.Dock="Bottom" Command="local:CustomCommands.PreviewNote"
+                                        <Button Content="Preview Note" IsTabStop="False" HorizontalAlignment="Stretch" Height="35" DockPanel.Dock="Bottom" Command="local:CustomCommands.PreviewNote"
                                                 DataContext="{x:Static local:CustomCommands.PreviewNote}" ToolTip="{Binding Text}"/>
                                         <TextBox x:Name="NoteContentTextBox" IsEnabled="{Binding IsNoteFieldEditEnabled}" Style="{StaticResource Content}"
                                              Text="{Binding ActiveNoteContent, UpdateSourceTrigger=LostFocus}" PreviewTextInput="NoteContentTextBox_PreviewTextInput" PreviewKeyDown="NoteContentTextBox_PreviewKeyDown"/>
