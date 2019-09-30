@@ -702,6 +702,12 @@ namespace SomewhereDesktop
                     PreviewTextBox.Visibility = Visibility.Visible;
                     PreviewText = $"{ActiveItem.Name}:\n" + DumpZipHierarchy(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
+                // Preview Blender
+                else if(extension == ".blend")
+                {
+                    PreviewTextBox.Visibility = Visibility.Visible;
+                    PreviewText = $"{ActiveItem.Name}:\n" + DumpBlenderHierarchy(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                }
                 // Preview markdown
                 else if (extension == ".md")
                 {
@@ -1850,6 +1856,47 @@ namespace SomewhereDesktop
             else if (code.Contains("```cityscript"))
                 return LanguageType.CityScript;
             else return LanguageType.Unidentified;
+        }
+        /// <summary>
+        /// Dump contnts of a blender file
+        /// </summary>
+        private string DumpBlenderHierarchy(string filePath)
+        {
+            string outputFilePath = GetTempFileName() + ".txt";
+            string dumpScript = string.Format(@"import bpy
+# Use bpy.context.scene.objects.keys() to get the name of objects
+
+with open(""{0}"", 'w+') as the_file:
+    the_file.write(', '.join(bpy.context.scene.objects.keys()))", outputFilePath.Replace("\\", "\\\\"));
+            string dumpScriptPath = GetTempFileName() + ".py";
+            File.WriteAllText(dumpScriptPath, dumpScript);
+
+            string result = null;
+            try
+            {
+                using (Process myProcess = new Process())
+                {
+                    myProcess.StartInfo.UseShellExecute = false;
+                    myProcess.StartInfo.FileName = "blender";
+                    myProcess.StartInfo.CreateNoWindow = true;
+                    myProcess.StartInfo.RedirectStandardError = true;
+                    myProcess.StartInfo.RedirectStandardOutput = true;
+                    myProcess.StartInfo.WorkingDirectory = Commands.HomeDirectory;
+                    myProcess.StartInfo.Arguments = $"-b \"{filePath}\" -P \"{dumpScriptPath}\"";
+                    myProcess.Start();
+                    string message = myProcess.StandardError.ReadToEnd() + myProcess.StandardOutput.ReadToEnd();  // Notice the order might be messed up
+                    myProcess.WaitForExit();
+                }
+
+                result = File.ReadAllText(outputFilePath);
+                File.Delete(outputFilePath);
+            }
+            catch (Exception e)
+            {
+                result = "Cannot find \"blender\" program, install Blender and add to PATH in order to preview its content";
+            }
+            File.Delete(dumpScriptPath);
+            return result;
         }
         /// <summary>
         /// Dump hierarchy of a zip fle
