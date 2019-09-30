@@ -27,6 +27,7 @@ using StringHelper;
 using InteropCommon;
 using Vlc.DotNet.Forms;
 using System.Text.RegularExpressions;
+using System.IO.Compression;
 
 namespace SomewhereDesktop
 {
@@ -695,6 +696,12 @@ namespace SomewhereDesktop
                     PreviewImageSource.Visibility = Visibility.Visible;
                     PreviewImage = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
                 }
+                // Preview zip
+                else if(extension == ".zip")
+                {
+                    PreviewTextBox.Visibility = Visibility.Visible;
+                    PreviewText = $"{ActiveItem.Name}:\n" + DumpZipHierarchy(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                }
                 // Preview markdown
                 else if (extension == ".md")
                 {
@@ -746,6 +753,7 @@ namespace SomewhereDesktop
                 }
             }
         }
+
         private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".jpeg", ".bmp" };
         private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm", ".m4a" };
         private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
@@ -1842,6 +1850,19 @@ namespace SomewhereDesktop
             else if (code.Contains("```cityscript"))
                 return LanguageType.CityScript;
             else return LanguageType.Unidentified;
+        }
+        /// <summary>
+        /// Dump hierarchy of a zip fle
+        /// </summary>
+        private string DumpZipHierarchy(string filePath)
+        {
+            StringBuilder builder = new StringBuilder();            
+            using (ZipArchive archive = ZipFile.OpenRead(filePath))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                    builder.AppendLine(entry.FullName);
+            }
+            return builder.ToString();
         }
         /// <remark>
         /// Parse command line arguments in the format "-key value" in pairs;
