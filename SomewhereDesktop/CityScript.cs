@@ -23,14 +23,15 @@ namespace SomewhereDesktop
         public enum OutputType
         {
             Default, // Use default
-            CSV
+            CSV,
+            ThreeJS
         }
         /// <summary>
         /// Generate output target file
         /// </summary>
         /// <param name="type">Provides default or overwrite format in code</param>
         /// <returns>Physical path to the file</returns>
-        public string Output(string filePathWithoutExtension, OutputType type = OutputType.Default)
+        public string Output(string filePathWithoutExtension, OutputType type, out OutputType preferred)
         {
             string OutputCSV()
             {
@@ -39,14 +40,58 @@ namespace SomewhereDesktop
                     => $"{i}, {p.Item1.X} {p.Item1.Y} {p.Item1.Z}, {string.Join(" ", p.Item2)}"));
                 return path;
             }
+            string OutputThreeJS()
+            {
+                string path = filePathWithoutExtension + ".three";
+                using (StreamWriter writer = new StreamWriter(path))
+                {
+                    foreach (var placement in Placements)
+                    {
+                        if (placement.Item2.First() == "Cube")
+                        {
+                            writer.WriteLine(@"
+// Setup scene, camera and renderer
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Set a rotating code
+var geometry = new THREE.BoxGeometry(1, 1, 1);
+var material = new THREE.MeshBasicMaterial( {color: 0x00ff00 } );
+var cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+camera.position.z = 5;
+
+// Render something
+function animate() {
+	requestAnimationFrame(animate);
+	cube.rotation.x += 0.01;
+	cube.rotation.y += 0.01;
+	renderer.render(scene, camera);
+}
+animate();");
+                        }
+                    }
+                    writer.Flush();
+                }
+                return path;
+            }
 
             // Parse
             Parse();
             // Output depending on desired format
-            if (type == OutputType.Default && Settings.ContainsKey("outputformat"))
-                type = (OutputType)Enum.Parse(typeof(OutputType), Settings["outputformat"]);
-            switch (type)
+            if (type == OutputType.Default && Settings.ContainsKey("rendertype"))
+                preferred = (OutputType)Enum.Parse(typeof(OutputType), Settings["rendertype"]);
+            else
+                preferred = type;
+            switch (preferred)
             {
+                case OutputType.ThreeJS:
+                    return OutputThreeJS();
                 case OutputType.CSV:
                 case OutputType.Default:
                 default:
@@ -56,6 +101,10 @@ namespace SomewhereDesktop
         #endregion
 
         #region State Properties
+        /// <summary>
+        /// Options for settings
+        /// </summary>
+        public static readonly string[] Options = new string[] { "rendertype" };
         private Dictionary<string, string> Settings = new Dictionary<string, string>();
         private List<Tuple<Vector, string[]>> Placements = new List<Tuple<Vector, string[]>>();
         private struct Vector

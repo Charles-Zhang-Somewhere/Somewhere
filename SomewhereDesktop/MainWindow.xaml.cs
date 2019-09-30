@@ -466,6 +466,28 @@ namespace SomewhereDesktop
             }
             return builder.ToString();
         }
+        private string GenerateHtmlTemplateForThreeJS(string script)
+            => "<!DOCTYPE html>\n" +
+            "<html>\n" +
+            "<head>\n" +
+            "   <meta charset=\"utf-8\">\n" +
+            "   <title>Sketch - Three.js</title>\n" +
+            "   <style>\n" +
+            "       body { margin: 0; background: black; }\n" +   // For Three.js, use default black background
+            "       canvas { width: 100%; height: 100% }\n" +
+            "   </style>\n" +
+            ExtractCSSLinks(script) +
+            "</head>\n" +
+            "<body>\n" +
+            "   <h3 style=\"color: white;\">Sketch with Three.js</h3>\n" +
+            "   <script src=\"https://threejs.org/build/three.js\"></script>\n" +
+            ExtractLibraries(script) +
+            // If the script contains explicit script tag, i.e. it may contain other explicit items, then we just include it
+            (script.Contains("</script>") ? ExtractNormalScript(script)
+            // Otherwise it's pure JS and we create a script tag for it
+            : ("<script>" + ExtractNormalScript(script) + "</script>")) +
+            "</body>\n" +
+            "</html>";
         private void UpdateItemPreview()
         {
             // Clear previous
@@ -519,28 +541,6 @@ namespace SomewhereDesktop
                 // Preview as HTML using Three.js
                 else if(ActiveItem.Content.StartsWith("// Three.js"))
                 {
-                    string GenerateHtmlTemplateForThreeJS(string script)
-                        => "<!DOCTYPE html>\n" +
-                        "<html>\n" +
-                        "<head>\n" +
-                        "   <meta charset=\"utf-8\">\n" +
-                        "   <title>Sketch - Three.js</title>\n" +
-                        "   <style>\n" +
-                        "       body { margin: 0; background: black; }\n" +   // For Three.js, use default black background
-                        "       canvas { width: 100%; height: 100% }\n" +
-                        "   </style>\n" +
-                        ExtractCSSLinks(script) +
-                        "</head>\n" +
-                        "<body>\n" +
-                        "   <h3 style=\"color: white;\">Sketch with Three.js</h3>\n" +
-                        "   <script src=\"https://threejs.org/build/three.js\"></script>\n" +
-                        ExtractLibraries(script) + 
-                        // If the script contains explicit script tag, i.e. it may contain other explicit items, then we just include it
-                        (script.Contains("</script>") ? ExtractNormalScript(script)
-                        // Otherwise it's pure JS and we create a script tag for it
-                        : ("<script>" + ExtractNormalScript(script) + "</script>")) +
-                        "</body>\n" +
-                        "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     string temp = GetTempFileName() + ".html";
                     File.WriteAllText(temp, GenerateHtmlTemplateForThreeJS(ActiveItem.Content));
@@ -2285,6 +2285,12 @@ namespace SomewhereDesktop
                             string arguments = string.Join("\", \"", formatted.Substring(third + 1).Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
                             preprocessed.AppendLine($"place({vector}, \"{arguments}\")");
                         }
+                        // Convert options to `set` action
+                        else if (CityScript.Options.Any(o => line.StartsWith(o)))
+                        {
+                            int seperator = line.IndexOf(' ');
+                            preprocessed.AppendLine($"set(\"{line.Substring(0, seperator)}\", \"{line.Substring(seperator + 1)}\")");
+                        }
                         else
                             preprocessed.AppendLine(line);
                     }
@@ -2295,10 +2301,25 @@ namespace SomewhereDesktop
                 // Run proprocessing on source code part inside markdown
                 string script = Preprocess(ExtractCityScriptSource(previewCode));
                 // Run processor
-                string path = new CityScript(script).Output(GetTempFileName(), CityScript.OutputType.Default);
+                string path = new CityScript(script).Output(GetTempFileName(), CityScript.OutputType.Default, out CityScript.OutputType preferred);
                 // Preview result
-                Process.Start(path);
+                switch (preferred)
+                {
+                    case CityScript.OutputType.ThreeJS:
+                        string html = GetTempFileName() + ".html";
+                        File.WriteAllText(html, GenerateHtmlTemplateForThreeJS(File.ReadAllText(path)));
+                        TempFiles.Add(html);
+                        Process.Start(html);
+                        break;
+                    case CityScript.OutputType.Default:
+                    case CityScript.OutputType.CSV:
+                    default:
+                        Process.Start(path);
+                        break;
+                }
                 sw.Stop();
+                // Add to temp
+                TempFiles.Add(path);
                 return sw.ElapsedMilliseconds / 1000;
             }
             double RenderPbrt()
