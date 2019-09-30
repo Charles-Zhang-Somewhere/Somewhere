@@ -666,7 +666,7 @@ namespace SomewhereDesktop
                 {
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
                     // Source code
-                    var lang = CheckCodeLanguage(ActiveItem.Content);
+                    var lang = CheckCodeLanguage(null, ActiveItem.Content);
                     if(lang != LanguageType.Unidentified)
                         PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{ActiveItem.Content}\n```";
                     // Normal markdown
@@ -700,10 +700,22 @@ namespace SomewhereDesktop
                     PreviewMarkdown = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                 }
                 // Preview text
-                else if (extension == ".txt")
+                else if (extension == ".txt" || extension == ".conf")
                 {
                     PreviewTextBox.Visibility = Visibility.Visible;
                     PreviewText = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                }
+                // Preview source code
+                else if(CompilableSourceCodeExtensions.Contains(extension))
+                {
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    string text = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                    // Source code
+                    var lang = CheckCodeLanguage(extension, text);
+                    if (lang != LanguageType.Unidentified)
+                        PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{text}\n```";
+                    else
+                        PreviewMarkdown = $"```{text}\n```";
                 }
                 // Preview videos and audios
                 else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
@@ -733,6 +745,10 @@ namespace SomewhereDesktop
         private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".jpeg", ".bmp" };
         private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm", ".m4a" };
         private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
+        /// <summary>
+        /// Extensions that can be compiled/interpreted/executed
+        /// </summary>
+        private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt" };
         #endregion
 
         #region Public View Properties
@@ -1182,9 +1198,12 @@ namespace SomewhereDesktop
         }
         private void CompileAndRunCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            Visibility visibility = (ActiveItem?.Content != null && CheckCodeLanguage(ActiveItem.Content) != LanguageType.Unidentified)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+            string extension = (ActiveItem?.Name != null 
+                ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower()
+                : null) ?? null;
+            Visibility visibility = (ActiveItem != null && CheckCodeLanguage(extension, ActiveItem.Content) != LanguageType.Unidentified)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
             CompileAndRunButton.Visibility = visibility;
             e.CanExecute = visibility == Visibility.Visible;
         }
@@ -1774,10 +1793,31 @@ namespace SomewhereDesktop
             Pbrt
         }
         /// <summary>
-        /// Check language type of a given piece of code
+        /// Check language type of a given piece of code;
+        /// Extension (lower cased) if not null will take prescendence than heruistics from code
         /// </summary>
-        private LanguageType CheckCodeLanguage(string code)
+        private LanguageType CheckCodeLanguage(string extension, string code)
         {
+            if(extension != null)
+            {
+                switch (extension)
+                {
+                    case ".c":
+                    case ".cpp":
+                        return LanguageType.CPP;
+                    case ".cs":
+                        return LanguageType.CSharp;
+                    case ".python":
+                        return LanguageType.Python;
+                    case ".pbrt":
+                        return LanguageType.Pbrt;
+                    default:
+                        break;
+                }
+            }
+            if(code == null)
+                return LanguageType.Unidentified;
+
             if (code.Contains("#include"))
                 return LanguageType.CPP;
             else if (code.Contains("using System;"))
@@ -2082,6 +2122,11 @@ namespace SomewhereDesktop
         [Command("Compile and run.")]
         public IEnumerable<string> CR(params string[] args)
         {
+            string previewCode = ActiveItem.Content     // From virtual note
+                ?? File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));    // From physical file 
+            // (notice in this case a redundant temp copy will be created so little additional code logic 
+            // is needed for current implementation)
+
             // Compile CPP snippets, return compiled target path
             string CompileCPP()
             {
@@ -2091,7 +2136,7 @@ namespace SomewhereDesktop
                 string objectPath = temp + ".obj";
                 string targetPath = temp + ".exe";
                 // Dump source
-                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                System.IO.File.WriteAllText(sourcePath, previewCode);
                 try
                 {
                     // Get the location of VS (2019) compiler dev command line
@@ -2138,7 +2183,7 @@ namespace SomewhereDesktop
                 string sourcePath = temp + ".cs";
                 string targetPath = temp + ".exe";
                 // Dump source
-                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                System.IO.File.WriteAllText(sourcePath, previewCode);
                 try
                 {
                     // Get the location of .Net framework compiler
@@ -2171,7 +2216,7 @@ namespace SomewhereDesktop
                 string temp = GetTempFileName();
                 string sourcePath = temp + ".python";
                 // Dump source
-                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                System.IO.File.WriteAllText(sourcePath, previewCode);
                 try
                 {
                     // Add temp file list
@@ -2199,7 +2244,7 @@ namespace SomewhereDesktop
                 string sourcePath = temp + ".pbrt";
                 string targetPath = temp + ".png";
                 // Dump source
-                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                System.IO.File.WriteAllText(sourcePath, previewCode);
                 try
                 {
                     // Add temp file list
@@ -2247,11 +2292,12 @@ namespace SomewhereDesktop
                 catch (Exception){ throw; }
             }
 
-            if (string.IsNullOrEmpty(ActiveItem.Content))
+            if (string.IsNullOrEmpty(previewCode))
                 return new string[] { "No code available for preview." };
             else
             {
-                var type = CheckCodeLanguage(ActiveItem.Content);
+                var type = CheckCodeLanguage(ActiveItem.Name != null ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower() : null
+                    , previewCode);
                 switch (type)
                 {
                     case LanguageType.CPP:
