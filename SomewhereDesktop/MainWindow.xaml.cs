@@ -2280,7 +2280,7 @@ namespace SomewhereDesktop
                         {
                             string formatted = line.Replace(" ", ", ");
                             string pattern = ", ";
-                            int third = line.IndexOf(pattern, line.IndexOf(pattern, line.IndexOf(pattern) + 1) + 1);
+                            int third = formatted.IndexOf(pattern, formatted.IndexOf(pattern, formatted.IndexOf(pattern) + 1) + 1);
                             string vector = formatted.Substring(0, third);
                             string arguments = string.Join("\", \"", formatted.Substring(third + 1).Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
                             preprocessed.AppendLine($"place({vector}, \"{arguments}\")");
