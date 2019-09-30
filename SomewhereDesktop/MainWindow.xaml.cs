@@ -1770,7 +1770,8 @@ namespace SomewhereDesktop
             Unidentified,
             CPP,
             CSharp,
-            Python  // Python 3
+            Python,  // Python 3
+            Pbrt
         }
         /// <summary>
         /// Check language type of a given piece of code
@@ -1782,12 +1783,14 @@ namespace SomewhereDesktop
             else if (code.Contains("using System;"))
                 return LanguageType.CSharp;
             // Use heuristics to guess host language is Python
-            else if (code.StartsWith("def ") || code.Contains("__main__") 
+            else if (code.StartsWith("def ") || code.Contains("__main__")
                 // Single line statements
                 || code.EndsWith(")") || code.EndsWith("]")
                 // Single line expressions
                 || (!code.Contains("\n") && !code.Contains("=") && code.IndexOfAny(new char[] { '+', '-', '*', '/', '^' }) != -1))
                 return LanguageType.Python;
+            else if (code.Contains("WorldBegin") && code.Contains("WorldEnd"))
+                return LanguageType.Pbrt;
             else return LanguageType.Unidentified;
         }
         /// <remark>
@@ -2122,6 +2125,7 @@ namespace SomewhereDesktop
                     // Add temp file list
                     TempFiles.Add(sourcePath);
                     TempFiles.Add(objectPath);
+                    TempFiles.Add(batPath);
                     TempFiles.Add(targetPath);
                     return targetPath;
                 }
@@ -2189,6 +2193,37 @@ namespace SomewhereDesktop
                 }
                 catch (Exception) { throw; }
             }
+            double RenderPbrt()
+            {
+                string temp = GetTempFileName();
+                string sourcePath = temp + ".pbrt";
+                string targetPath = temp + ".png";
+                // Dump source
+                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                try
+                {
+                    // Add temp file list
+                    TempFiles.Add(sourcePath);
+                    TempFiles.Add(targetPath);
+                    // Run renderer
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = true;
+                        myProcess.StartInfo.FileName = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pbrt/pbrt.exe");
+                        myProcess.StartInfo.CreateNoWindow = false;
+                        myProcess.StartInfo.Arguments = $"--outfile \"{targetPath}\" \"{sourcePath}\"";
+                        myProcess.StartInfo.WorkingDirectory = Commands.HomeDirectory;
+                        myProcess.Start();
+                        myProcess.WaitForExit();
+                    }
+                    sw.Stop();
+                    Process.Start(targetPath);
+                    return sw.ElapsedMilliseconds / 1000;
+                }
+                catch (Exception) { throw; }
+            }
             // Run a program and measure it's performance in seconds
             double RunProgram(string exePath)
             {
@@ -2230,6 +2265,10 @@ namespace SomewhereDesktop
                     case LanguageType.Python:
                         DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"Python script run finished in {RunPython()} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.Pbrt:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
+                        try { return new string[] { $"Rendering pbrt scene finished in {RenderPbrt()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:
