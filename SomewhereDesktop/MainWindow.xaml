@@ -38,6 +38,7 @@
         <CommandBinding Command="local:CustomCommands.Refresh" CanExecute="RefreshCommand_CanExecute" Executed="RefreshCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.GotoActiveItemEditContent" 
                         CanExecute="GotoActiveItemEditContentCommand_CanExecute" Executed="GotoActiveItemEditContentCommand_Executed"/>
+        <CommandBinding Command="local:CustomCommands.CompileAndRun" CanExecute="CompileAndRunCommand_CanExecute" Executed="CompileAndRunCommand_Executed"/>
         <!-- Status Commands -->
         <CommandBinding Command="local:CustomCommands.OpenCommandPrompt" CanExecute="OpenCommandPromptCommand_CanExecute" Executed="OpenCommandPromptCommand_Executed"/>
         <!-- Notebook Commands -->
@@ -290,9 +291,11 @@
                                                 </DockPanel>
                                                 <StackPanel DockPanel.Dock="Bottom">
                                                     <Button Content="Save Changes" Command="local:CustomCommands.Save"
-                                                    DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}" />
+                                                    DataContext="{x:Static local:CustomCommands.Save}" ToolTip="{Binding Text}" />
                                                     <Button Content="Edit Contents"  Command="local:CustomCommands.GotoActiveItemEditContent"
                                                     DataContext="{x:Static local:CustomCommands.GotoActiveItemEditContent}" ToolTip="{Binding Text}"/>
+                                                    <Button Content="Compile and Run" Command="local:CustomCommands.CompileAndRun" x:Name="CompileAndRunButton"
+                                                            DataContext="{x:Static local:CustomCommands.CompileAndRun}" ToolTip="{Binding Text}"/>
                                                 </StackPanel>
                                                 <DockPanel LastChildFill="True">
                                                     <Label Content="Remark" DockPanel.Dock="Top"/>

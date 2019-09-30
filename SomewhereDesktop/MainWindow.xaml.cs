@@ -401,7 +401,7 @@ namespace SomewhereDesktop
                 Items = new ObservableCollection<FileItemObjectModel>(
                     Items.Where(i => i.TagsList.Intersect(TagFilters).Count() == TagFilters.Count));
         }
-        void ClearItemPreview()
+        private void ClearItemPreview()
         {
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
             VLCControl.Stop();
@@ -410,7 +410,23 @@ namespace SomewhereDesktop
                 = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
         }
-        private string TempFile = null;
+        private void DeleteTemporaryFiles()
+        {
+            foreach (var path in TempFiles)
+                File.Delete(path);
+            TempFiles.Clear();
+        }
+        /// <summary>
+        /// A collection of temporary files generated for preview
+        /// </summary>
+        private List<string> TempFiles = new List<string>();
+        /// <summary>
+        /// Create and return full path for a temp file (file not created yet);
+        /// May or may not contain an extension, caller should not depend on that
+        /// </summary>
+        private string GetTempFileName()
+            // Use a Home local file path instead of System.IO.GetTempFileName() for referencing local files
+            => System.IO.Path.Combine(Commands.HomeDirectory, Guid.NewGuid().ToString());
         private string ExtractValueAfterSymbol(string inputText, string lineSymbol, string template)
         {
             StringBuilder builder = new StringBuilder();
@@ -452,20 +468,9 @@ namespace SomewhereDesktop
         }
         private void UpdateItemPreview()
         {
-            // Create and return full path for a temp file (file not created yet)
-            string GetTempFileName()
-            {
-                string name =  System.IO.Path.Combine(Commands.HomeDirectory, Guid.NewGuid().ToString());   // Use a local file path instead of System.IO.GetTempFileName() for referencing local files
-                return name;
-            }
-
             // Clear previous
             ClearItemPreview();
-            if(TempFile != null)
-            {
-                System.IO.File.Delete(TempFile);
-                TempFile = null;
-            }
+            DeleteTemporaryFiles();
             // Return early in case of items refresh
             if (ActiveItem == null)
                 return;
@@ -485,9 +490,10 @@ namespace SomewhereDesktop
                 else if (ActiveItem.Content.StartsWith("<!DOCTYPE html>"))
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, ActiveItem.Content);
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, ActiveItem.Content);
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using SVG
                 else if (ActiveItem.Content.StartsWith("<!-- svg -->"))
@@ -505,9 +511,10 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForSVG(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForSVG(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using Three.js
                 else if(ActiveItem.Content.StartsWith("// Three.js"))
@@ -535,9 +542,10 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForThreeJS(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForThreeJS(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using PlotlyJS
                 else if (ActiveItem.Content.StartsWith("<!-- Plotly.js -->"))
@@ -557,9 +565,10 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForPlotlyJS(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForPlotlyJS(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using Boostrap and JQuery
                 else if (ActiveItem.Content.StartsWith("<!-- Bootstrap -->")
@@ -585,9 +594,10 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForBootstrap(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForBootstrap(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using Processing JS
                 else if(ActiveItem.Content.StartsWith("// Processing.js"))
@@ -610,9 +620,10 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForProcessingJS(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML using P5 JS
                 else if (ActiveItem.Content.StartsWith("// P5.js"))
@@ -636,23 +647,31 @@ namespace SomewhereDesktop
                         "</body>\n" +
                         "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateHtmlTemplateForP5JS(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateHtmlTemplateForP5JS(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview as HTML Javascript Notebook
                 else if(ActiveItem.Content.Contains("```jsx"))
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
-                    TempFile = GetTempFileName() + ".html";
-                    File.WriteAllText(TempFile, GenerateJavascriptNotebook(ActiveItem.Content));
-                    PreviewAddress = TempFile;
+                    string temp = GetTempFileName() + ".html";
+                    File.WriteAllText(temp, GenerateJavascriptNotebook(ActiveItem.Content));
+                    PreviewAddress = temp;
+                    TempFiles.Add(temp);
                 }
                 // Preview markdown
                 else
                 {
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                    PreviewMarkdown = ActiveItem.Content;
+                    // Source code
+                    var lang = CheckCodeLanguage(ActiveItem.Content);
+                    if(lang != LanguageType.Unidentified)
+                        PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{ActiveItem.Content}\n```";
+                    // Normal markdown
+                    else
+                        PreviewMarkdown = ActiveItem.Content;
                 }
             }
             // Preview folder
@@ -1161,6 +1180,16 @@ namespace SomewhereDesktop
             RefreshNotes();
             InfoText = $"{AllItems.Count()} items discovered.";
         }
+        private void CompileAndRunCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            Visibility visibility = (ActiveItem?.Content != null && CheckCodeLanguage(ActiveItem.Content) != LanguageType.Unidentified)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+            CompileAndRunButton.Visibility = visibility;
+            e.CanExecute = visibility == Visibility.Visible;
+        }
+        private void CompileAndRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+            => InfoText = CR().Single();
         private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = ActiveItem != null || ActiveNote != null;
         private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -1701,11 +1730,7 @@ namespace SomewhereDesktop
             LastWorker?.Dispose(); LastWorker = null;
 
             // Delete temp file
-            if(TempFile != null)
-            {
-                System.IO.File.Delete(TempFile);
-                TempFile = null;
-            }
+            DeleteTemporaryFiles();
         }
         #endregion
 
@@ -1740,6 +1765,23 @@ namespace SomewhereDesktop
         #endregion
 
         #region Sub-Routines
+        private enum LanguageType
+        {
+            Unidentified,
+            CPP,
+            CSharp
+        }
+        /// <summary>
+        /// Check language type of a given piece of code
+        /// </summary>
+        private LanguageType CheckCodeLanguage(string code)
+        {
+            if (code.Contains("#include"))
+                return LanguageType.CPP;
+            else if (code.Contains("using System;"))
+                return LanguageType.CSharp;
+            else return LanguageType.Unidentified;
+        }
         /// <remark>
         /// Parse command line arguments in the format "-key value" in pairs;
         /// Keys are converted to lowercase, and without dash; Values are case-sensitive
@@ -2025,6 +2067,135 @@ namespace SomewhereDesktop
                 return new string[] { BrowseBackHistory() };
             else
                 return new string[] { "No preview browser is available." };
+        }
+        [Command("Compile and run.")]
+        public IEnumerable<string> CR(params string[] args)
+        {
+            // Compile CPP snippets, return compiled target path
+            string CompileCPP()
+            {
+                string temp = GetTempFileName();
+                string sourcePath = temp + ".cpp";
+                string batPath = temp + ".bat";
+                string objectPath = temp + ".obj";
+                string targetPath = temp + ".exe";
+                // Dump source
+                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                try
+                {
+                    // Get the location of VS (2019) compiler dev command line
+                    string appendix = @"Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat";
+                    string devCmdPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), appendix);
+                    if (!System.IO.File.Exists(devCmdPath))
+                        throw new InvalidOperationException($"No VS2019 CPP compiler folder found on this system at `{devCmdPath}`.");
+                    // Dump bat: notice for CPP we need to setup proper environment (including PATH and include dir etc.) so we need to 
+                    // run the dev cmd first, which forces us to create a bat for multiple commands
+                    // And for some reason, the bat cannot contain multiple lines without causing issue (probably due to encoding),
+                    // so we are running everything as one line
+                    // Also if characters contain Unicode it will not run properly so we are writing out as ANSI (Encoding.Default)
+                    using (StreamWriter sw = new StreamWriter(File.Open(batPath, FileMode.OpenOrCreate), Encoding.Default))
+                    {
+                        sw.Write($"@ECHO OFF && \"{devCmdPath}\" && cl \"{sourcePath}\" -o \"{targetPath}\"");
+                    }
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = false;
+                        myProcess.StartInfo.FileName = batPath;
+                        myProcess.StartInfo.CreateNoWindow = true;
+                        myProcess.StartInfo.RedirectStandardError = true;
+                        myProcess.StartInfo.RedirectStandardOutput = true;
+                        myProcess.Start();
+                        string message = myProcess.StandardError.ReadToEnd() + myProcess.StandardOutput.ReadToEnd();  // Notice the order might be messed up
+                        myProcess.WaitForExit();
+                        // Due to how CL works, the error may be just normal output (e.g. warnings), instead of critical errors, so just display it
+                        if (!string.IsNullOrEmpty(message))
+                            new DialogWindow(this, "Compile Message", message.Replace("\n", "\n\n")).ShowDialog();
+                    }
+                    // Add temp file list
+                    TempFiles.Add(sourcePath);
+                    TempFiles.Add(objectPath);
+                    TempFiles.Add(targetPath);
+                    return targetPath;
+                }
+                catch (Exception) { throw; }
+            }
+            // Compile CSharp snippets
+            string CompileCSharp()
+            {
+                string temp = GetTempFileName();
+                string sourcePath = temp + ".cs";
+                string targetPath = temp + ".exe";
+                // Dump source
+                System.IO.File.WriteAllText(sourcePath, ActiveItem.Content);
+                try
+                {
+                    // Get the location of .Net framework compiler
+                    string frameworkFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), @"Microsoft.NET\Framework\");
+                    string frameworkVersionFolder = Directory
+                            .EnumerateDirectories(frameworkFolder)
+                            .OrderByDescending(version => Convert.ToInt32(Regex.Match(System.IO.Path.GetFileName(version), "^v(\\d)\\.").Groups[1].Value))
+                            .FirstOrDefault();
+                    if (!System.IO.Directory.Exists(frameworkFolder) || frameworkVersionFolder == null)
+                        throw new InvalidOperationException($"No .Net Framework compiler folder found on this system at `{frameworkFolder}`.");
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = false;
+                        myProcess.StartInfo.FileName = System.IO.Path.Combine(frameworkVersionFolder, "csc.exe");
+                        myProcess.StartInfo.CreateNoWindow = true;
+                        myProcess.StartInfo.Arguments = $"\"/out:{targetPath}\" \"{sourcePath}\"";
+                        myProcess.Start();
+                        myProcess.WaitForExit();
+                    }
+                    // Add temp file list
+                    TempFiles.Add(sourcePath);
+                    TempFiles.Add(targetPath);
+                    return targetPath;
+                }
+                catch (Exception) { throw; }
+            }
+            // Run a program and measure it's performance in seconds
+            double RunProgram(string exePath)
+            {
+                try
+                {
+                    if (!File.Exists(exePath))
+                        throw new ArgumentException("Executable doesn't exist (probably due to compilation error).");
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    using (Process myProcess = new Process())
+                    {
+                        myProcess.StartInfo.UseShellExecute = false;
+                        myProcess.StartInfo.FileName = exePath;
+                        myProcess.StartInfo.CreateNoWindow = false;
+                        myProcess.Start();
+                        myProcess.WaitForExit();
+                    }
+                    sw.Stop();
+                    return sw.ElapsedMilliseconds / 1000;
+                }
+                catch (Exception){ throw; }
+            }
+
+            if (string.IsNullOrEmpty(ActiveItem.Content))
+                return new string[] { "No code available for preview." };
+            else
+            {
+                var type = CheckCodeLanguage(ActiveItem.Content);
+                switch (type)
+                {
+                    case LanguageType.CPP:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
+                        try { return new string[] { $"C++ program finished in {RunProgram(CompileCPP())} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.CSharp:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
+                        try { return new string[] { $"C# program finished in {RunProgram(CompileCSharp())} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.Unidentified:
+                    default:
+                        return new string[] { "Language type unknown." };
+                }
+            }
         }
         [Command("Open webpage remote debug dev tool address.")]
         public IEnumerable<string> D(params string[] args)
