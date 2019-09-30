@@ -667,7 +667,9 @@ namespace SomewhereDesktop
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
                     // Source code
                     var lang = CheckCodeLanguage(null, ActiveItem.Content);
-                    if(lang != LanguageType.Unidentified)
+                    if (lang == LanguageType.CityScript)
+                        PreviewMarkdown = $"({lang.ToString()} notebook - use `cr` to run)\n{ActiveItem.Content}";
+                    else if (lang != LanguageType.Unidentified)
                         PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{ActiveItem.Content}\n```";
                     // Normal markdown
                     else
@@ -712,7 +714,9 @@ namespace SomewhereDesktop
                     string text = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
                     // Source code
                     var lang = CheckCodeLanguage(extension, text);
-                    if (lang != LanguageType.Unidentified)
+                    if(lang == LanguageType.CityScript)
+                        PreviewMarkdown = $"({lang.ToString()} notebook - use `cr` to run)\n{text}";
+                    else if (lang != LanguageType.Unidentified)
                         PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{text}\n```";
                     else
                         PreviewMarkdown = $"```{text}\n```";
@@ -1790,7 +1794,8 @@ namespace SomewhereDesktop
             CPP,
             CSharp,
             Python,  // Python 3
-            Pbrt
+            Pbrt,
+            CityScript
         }
         /// <summary>
         /// Check language type of a given piece of code;
@@ -1811,6 +1816,8 @@ namespace SomewhereDesktop
                         return LanguageType.Python;
                     case ".pbrt":
                         return LanguageType.Pbrt;
+                    case ".city":
+                        return LanguageType.CityScript;
                     default:
                         break;
                 }
@@ -1829,8 +1836,11 @@ namespace SomewhereDesktop
                 // Single line expressions
                 || (!code.Contains("\n") && !code.Contains("=") && code.IndexOfAny(new char[] { '+', '-', '*', '/', '^' }) != -1))
                 return LanguageType.Python;
+            // Prbt
             else if (code.Contains("WorldBegin") && code.Contains("WorldEnd"))
                 return LanguageType.Pbrt;
+            else if (code.Contains("```cityscript"))
+                return LanguageType.CityScript;
             else return LanguageType.Unidentified;
         }
         /// <remark>
@@ -2238,6 +2248,59 @@ namespace SomewhereDesktop
                 }
                 catch (Exception) { throw; }
             }
+            double RunCityScript()
+            {
+                string ExtractCityScriptSource(string markdown)
+                {
+                    StringBuilder source = new StringBuilder();
+                    bool insideCodeSection = false;
+                    foreach (var line in SplitToLines(markdown))
+                    {
+                        if (insideCodeSection)
+                        {
+                            if (line == "```")
+                                insideCodeSection = false;
+                            else
+                                source.AppendLine(line);
+                        }
+                        else if (line == "```cityscript")
+                            insideCodeSection = true;
+                        else
+                            continue;
+                    }
+                    return source.ToString();
+                }
+                string Preprocess(string source)
+                {
+                    StringBuilder preprocessed = new StringBuilder();
+                    foreach (var line in SplitToLines(source))
+                    {
+                        // Convert numbers to `place` action
+                        if (int.TryParse(line[0].ToString(), out _))
+                        {
+                            string formatted = line.Replace(" ", ", ");
+                            string pattern = ", ";
+                            int third = line.IndexOf(pattern, line.IndexOf(pattern, line.IndexOf(pattern) + 1) + 1);
+                            string vector = formatted.Substring(0, third);
+                            string arguments = string.Join("\", \"", formatted.Substring(third + 1).Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
+                            preprocessed.AppendLine($"place({vector}, \"{arguments}\")");
+                        }
+                        else
+                            preprocessed.AppendLine(line);
+                    }
+                    return preprocessed.ToString();
+                }
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                // Run proprocessing on source code part inside markdown
+                string script = Preprocess(ExtractCityScriptSource(previewCode));
+                // Run processor
+                string path = new CityScript(script).Output(GetTempFileName(), CityScript.OutputType.Default);
+                // Preview result
+                Process.Start(path);
+                sw.Stop();
+                return sw.ElapsedMilliseconds / 1000;
+            }
             double RenderPbrt()
             {
                 string temp = GetTempFileName();
@@ -2315,6 +2378,10 @@ namespace SomewhereDesktop
                     case LanguageType.Pbrt:
                         DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"Rendering pbrt scene finished in {RenderPbrt()} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.CityScript:
+                        DeleteTemporaryFiles();
+                        try { return new string[] { $"Rendering CityScript scene finished in {RunCityScript()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:
