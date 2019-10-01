@@ -489,6 +489,18 @@ namespace SomewhereDesktop
             : ("<script>" + ExtractNormalScript(script) + "</script>")) +
             "</body>\n" +
             "</html>";
+        private string GenerateHtmlTemplateForSVG(string svg)
+            => "<!DOCTYPE html>\n" +
+            "<html>\n" +
+            "<head>\n" +
+            "   <title>Sketch - svg</title>\n" +
+            "   <meta charset=\"utf-8\">\n" +
+            "</head>\n" +
+            "<body>\n" +
+            "   <h3>Sketch with svg</h3>\n" +
+            svg.Replace("@xmlns", "xmlns=\"http://www.w3.org/2000/svg\"") +
+            "</body>\n" +
+            "</html>";
         private void UpdateItemPreview()
         {
             // Clear previous
@@ -521,18 +533,6 @@ namespace SomewhereDesktop
                 // Preview as HTML using SVG
                 else if (ActiveItem.Content.StartsWith("<!-- svg -->"))
                 {
-                    string GenerateHtmlTemplateForSVG(string svg)
-                        => "<!DOCTYPE html>\n" +
-                        "<html>\n" +
-                        "<head>\n" +
-                        "   <title>Sketch - svg</title>\n" +
-                        "   <meta charset=\"utf-8\">\n" +
-                        "</head>\n" +
-                        "<body>\n" +
-                        "   <h3>Sketch with svg</h3>\n" +
-                        svg.Replace("@xmlns", "xmlns=\"http://www.w3.org/2000/svg\"") +
-                        "</body>\n" +
-                        "</html>";
                     PreviewBrowser.Visibility = Visibility.Visible;
                     string temp = GetTempFileName() + ".html";
                     File.WriteAllText(temp, GenerateHtmlTemplateForSVG(ActiveItem.Content));
@@ -2411,10 +2411,20 @@ with open(""{0}"", 'w+') as the_file:
                 switch (preferred)
                 {
                     case CityScript.OutputType.ThreeJS:
-                        string html = GetTempFileName() + ".html";
-                        File.WriteAllText(html, GenerateHtmlTemplateForThreeJS(File.ReadAllText(path)));
-                        TempFiles.Add(html);
-                        Process.Start(html);
+                        {
+                            string html = GetTempFileName() + ".html";
+                            File.WriteAllText(html, GenerateHtmlTemplateForThreeJS(File.ReadAllText(path)));
+                            TempFiles.Add(html);
+                            Process.Start(html);
+                        }
+                        break;
+                    case CityScript.OutputType.Plane:
+                        {
+                            string html = GetTempFileName() + ".html";
+                            File.WriteAllText(html, GenerateHtmlTemplateForSVG(File.ReadAllText(path)));
+                            TempFiles.Add(html);
+                            Process.Start(html);
+                        }
                         break;
                     case CityScript.OutputType.Default:
                     case CityScript.OutputType.CSV:

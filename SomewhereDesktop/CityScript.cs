@@ -24,7 +24,8 @@ namespace SomewhereDesktop
         {
             Default, // Use default
             CSV,
-            ThreeJS
+            ThreeJS,
+            Plane   // Plane Vector/Pixel Mixed Layout Drawing
         }
         /// <summary>
         /// Generate output target file
@@ -33,23 +34,123 @@ namespace SomewhereDesktop
         /// <returns>Physical path to the file</returns>
         public string Output(string filePathWithoutExtension, OutputType type, out OutputType preferred)
         {
-            string OutputCSV()
+            // Parse
+            Parse();
+            // Output depending on desired format
+            if (type == OutputType.Default && Settings.ContainsKey("rendertype"))
+                preferred = (OutputType)Enum.Parse(typeof(OutputType), Settings["rendertype"]);
+            else
+                preferred = type;
+            switch (preferred)
             {
-                string path = filePathWithoutExtension + ".csv";
-                File.WriteAllLines(path, Placements.Select((p, i) 
-                    => $"{i}, {p.Item1.X} {p.Item1.Y} {p.Item1.Z}, {string.Join(" ", p.Item2)}"));
-                return path;
+                case OutputType.ThreeJS:
+                    return OutputThreeJS(filePathWithoutExtension);
+                case OutputType.Plane:
+                    return OutputPlane(filePathWithoutExtension);
+                case OutputType.CSV:
+                case OutputType.Default:
+                default:
+                    return OutputCSV(filePathWithoutExtension);
             }
-            string OutputThreeJS()
+        }
+        #endregion
+
+        #region State Properties
+        /// <summary>
+        /// Options for settings
+        /// </summary>
+        public static readonly string[] Options = new string[] { "rendertype" };
+        private Dictionary<string, string> Settings = new Dictionary<string, string>();
+        private List<Placement> Placements = new List<Placement>();
+        private struct Vector
+        {
+            public double X { get; }
+            public double Y { get; }
+            public double Z { get; }
+
+            public Vector(double x, double y, double z)
             {
-                string path = filePathWithoutExtension + ".three";
-                using (StreamWriter writer = new StreamWriter(path))
+                X = x;
+                Y = y;
+                Z = z;
+            }
+        }
+        private class Placement
+        {
+            public Vector Location { get; set; }
+            public string[] Parameters { get; set; }
+
+            public Placement(Vector location, string[] parameters)
+            {
+                Location = location;
+                Parameters = parameters;
+            }
+        }
+        #endregion
+
+        #region Actions
+        private void Place(double x, double y, double z, params string[] parameters)
+            => Placements.Add(new Placement(new Vector(x, y, z), parameters));
+        private void Set(string name, string value)
+            => Settings[name] = value;
+        #endregion
+
+        #region Subroutines
+        /// <summary>
+        /// Parse the code and evaluate its effects, 
+        /// altering behaviors by changing environment settings during evaluation
+        /// </summary>
+        private void Parse()
+        {
+            // Create script object
+            Script script = new Script();
+            script.Globals["place"] = (Action<double, double, double, string[]>)Place;  // Notice in Lua we use lower case
+            script.Globals["set"] = (Action<string, string>)Set;
+
+            // Evaluate
+            script.DoString(Script);
+        }
+        private string OutputCSV(string filePathWithoutExtension)
+        {
+            string path = filePathWithoutExtension + ".csv";
+            File.WriteAllLines(path, Placements.Select((p, i)
+                => $"{i}, {p.Location.X} {p.Location.Y} {p.Location.Z}, {string.Join(" ", p.Parameters)}"));
+            return path;
+        }
+        private string OutputPlane(string filePathWithoutExtension)
+        {
+            string Rect(string x, string y, string width, string height, string fill)
+                => $"<rect x=\"{x}\" y=\"{y}\" width=\"{width}\" height=\"{height}\" fill=\"{fill}\" />";
+            string Circle(string cx, string cy, string radius, string fill)
+                => $"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{radius}\" fill=\"{fill}\" />";
+            string Text(string x, string y, string font_size, string anchor, string fill, string text)
+                => $"<text x=\"{x}\" y=\"{y}\" font-size=\"{font_size}\" text-anchor=\"{anchor}\" fill=\"{fill}\">{text}</text>";
+
+            string path = filePathWithoutExtension + ".html_part";
+            using (StreamWriter writer = new StreamWriter(path))
+            {
+                int width = 300; int height = 300;
+                writer.WriteLine($"<svg version=\"1.1\" baseProfile=\"full\" width=\"{width}\" height=\"{height}\" xmlns=\"http://www.w3.org/2000/svg\">");
+                foreach (var placement in Placements)
                 {
-                    foreach (var placement in Placements)
+                    if (placement.Parameters.First() == "Cube")
+                        writer.WriteLine(Rect($"{width / 2}", $"{height / 2}", placement.Parameters[1], placement.Parameters[2], "red"));
+                }
+                writer.WriteLine("</svg>");
+                writer.Flush();
+            }
+            return path;
+        }
+        private string OutputThreeJS(string filePathWithoutExtension)
+        {
+            string path = filePathWithoutExtension + ".three";
+            using (StreamWriter writer = new StreamWriter(path))
+            {
+                foreach (var placement in Placements)
+                {
+                    if (placement.Parameters.First() == "Cube")
                     {
-                        if (placement.Item2.First() == "Cube")
-                        {
-                            writer.WriteLine(@"
+                        writer.WriteLine(@"
 // Setup scene, camera and renderer
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -74,75 +175,11 @@ function animate() {
 	renderer.render(scene, camera);
 }
 animate();");
-                        }
                     }
-                    writer.Flush();
                 }
-                return path;
+                writer.Flush();
             }
-
-            // Parse
-            Parse();
-            // Output depending on desired format
-            if (type == OutputType.Default && Settings.ContainsKey("rendertype"))
-                preferred = (OutputType)Enum.Parse(typeof(OutputType), Settings["rendertype"]);
-            else
-                preferred = type;
-            switch (preferred)
-            {
-                case OutputType.ThreeJS:
-                    return OutputThreeJS();
-                case OutputType.CSV:
-                case OutputType.Default:
-                default:
-                    return OutputCSV();
-            }
-        }
-        #endregion
-
-        #region State Properties
-        /// <summary>
-        /// Options for settings
-        /// </summary>
-        public static readonly string[] Options = new string[] { "rendertype" };
-        private Dictionary<string, string> Settings = new Dictionary<string, string>();
-        private List<Tuple<Vector, string[]>> Placements = new List<Tuple<Vector, string[]>>();
-        private struct Vector
-        {
-            public double X { get; }
-            public double Y { get; }
-            public double Z { get; }
-
-            public Vector(double x, double y, double z)
-            {
-                X = x;
-                Y = y;
-                Z = z;
-            }
-        }
-        #endregion
-
-        #region Actions
-        private void Place(double x, double y, double z, params string[] parameters)
-            => Placements.Add(new Tuple<Vector, string[]>(new Vector(x, y, z), parameters));
-        private void Set(string name, string value)
-            => Settings[name] = value;
-        #endregion
-
-        #region Subroutines
-        /// <summary>
-        /// Parse the code and evaluate its effects, 
-        /// altering behaviors by changing environment settings during evaluation
-        /// </summary>
-        private void Parse()
-        {
-            // Create script object
-            Script script = new Script();
-            script.Globals["place"] = (Action<double, double, double, string[]>)Place;  // Notice in Lua we use lower case
-            script.Globals["set"] = (Action<string, string>)Set;
-
-            // Evaluate
-            script.DoString(Script);
+            return path;
         }
         #endregion
     }
