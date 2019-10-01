@@ -70,6 +70,7 @@
         <!-- Inventory Commands -->
         <KeyBinding Key="F3" Command="local:CustomCommands.Find"/>
         <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
+        <KeyBinding Key="F10" Command="local:CustomCommands.CompileAndRun"/>
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="local:CustomCommands.Save"/>

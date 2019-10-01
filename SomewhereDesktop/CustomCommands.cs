@@ -28,7 +28,7 @@ namespace SomewhereDesktop
         public static readonly RoutedUICommand OpenCommandPrompt = new RoutedUICommand("Open a new command prompt window (F9)", "OpenCommandPrompt", typeof(CustomCommands));
         public static readonly RoutedUICommand Refresh = new RoutedUICommand("Refresh Inventory tab items (F5)", "Refresh", typeof(CustomCommands));
         public static readonly RoutedUICommand Save = new RoutedUICommand("Save current editing item/note (Ctrl+S); Used to explicitly save changes; Usually changes are saved automatically but only when text box lose focus", "Save", typeof(CustomCommands));
-        public static readonly RoutedUICommand CompileAndRun = new RoutedUICommand("Compile current code file and run it.", "CompileAndRun", typeof(CustomCommands));
+        public static readonly RoutedUICommand CompileAndRun = new RoutedUICommand("Compile current code file and run it (F10)", "CompileAndRun", typeof(CustomCommands));
         public static readonly RoutedUICommand GotoActiveItemEditContent = new RoutedUICommand("Edit content for note item", "GotoActiveItemEditContent", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchInventory = new RoutedUICommand("Switch to Inventory tab (Ctrl+1)", "SwitchInventory", typeof(CustomCommands));
         public static readonly RoutedUICommand SwitchNotebook = new RoutedUICommand("Switch to Notebook tab (Ctrl+2)", "SwitchNotebook", typeof(CustomCommands));
