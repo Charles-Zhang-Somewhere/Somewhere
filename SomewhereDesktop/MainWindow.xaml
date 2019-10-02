@@ -40,6 +40,7 @@
                         CanExecute="GotoActiveItemEditContentCommand_CanExecute" Executed="GotoActiveItemEditContentCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.CompileAndRun" CanExecute="CompileAndRunCommand_CanExecute" Executed="CompileAndRunCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.TryCompileAndRun" CanExecute="TryCompileAndRun_CanExecute" Executed="TryCompileAndRun_Executed"/>
+        <CommandBinding Command="local:CustomCommands.RunInBackground" CanExecute="RunInBackground_CanExecute" Executed="RunInBackground_Execute"/>
         <!-- Status Commands -->
         <CommandBinding Command="local:CustomCommands.OpenCommandPrompt" CanExecute="OpenCommandPromptCommand_CanExecute" Executed="OpenCommandPromptCommand_Executed"/>
         <!-- Notebook Commands -->
@@ -73,6 +74,7 @@
         <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
         <KeyBinding Key="F10" Command="local:CustomCommands.CompileAndRun"/>
         <KeyBinding Key="F10" Modifiers="Shift" Command="local:CustomCommands.TryCompileAndRun"/>
+        <KeyBinding Key="F10" Modifiers="Shift+Alt" Command="local:CustomCommands.RunInBackground"/>
         <!-- Notebook Commands -->
         <KeyBinding Key="F2" Command="local:CustomCommands.Create"/>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="local:CustomCommands.Save"/>

@@ -1272,9 +1272,13 @@ namespace SomewhereDesktop
             InfoText = $"{AllItems.Count()} items discovered.";
         }
         private void TryCompileAndRun_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
+            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible && ActiveNote != null;
         private void TryCompileAndRun_Executed(object sender, ExecutedRoutedEventArgs e)
             => InfoText = CompileAndRun(ActiveNote).Single();
+        private void RunInBackground_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => TryCompileAndRun_CanExecute(null, e);
+        private void RunInBackground_Execute(object sender, ExecutedRoutedEventArgs e)
+            => InfoText = CompileAndRun(ActiveNote, true).Single();
         private void CompileAndRunCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             if(ActiveItem == null || InventoryPanel.Visibility == Visibility.Collapsed)
@@ -1832,6 +1836,7 @@ namespace SomewhereDesktop
             Commands?.Dispose(); Commands = null;
             Popup?.Close(); Popup = null;
             LastWorker?.Dispose(); LastWorker = null;
+            MelodyEngine.RequireDispose();
 
             // Delete temp file
             DeleteTemporaryFiles();
@@ -2281,7 +2286,7 @@ with open(""{0}"", 'w+') as the_file:
         [Command("Compile and run.")]
         public IEnumerable<string> CR(params string[] args)
             => CompileAndRun(ActiveItem);
-        private IEnumerable<string> CompileAndRun(FileItemObjectModel item)
+        private IEnumerable<string> CompileAndRun(FileItemObjectModel item, bool background = false)
         {
             string previewCode = item.Content     // From virtual note
                 ?? File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(item.Name));    // From physical file 
@@ -2605,7 +2610,16 @@ with open(""{0}"", 'w+') as the_file:
                         try { return new string[] { $"SPICE circuit simlation finished in {SimulateCircuit()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Melody:
-                        try { return new string[] { $"Melody played for {PlayMelody()} seconds." }; }
+                        try
+                        {
+                            if(background)
+                            {
+                                Task.Run(() => PlayMelody());
+                                return new string[] { $"Melody is playing in the background." };
+                            }
+                            else
+                                return new string[] { $"Melody played for {PlayMelody()} seconds." };
+                        }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:

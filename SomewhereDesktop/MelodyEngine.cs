@@ -20,6 +20,23 @@ namespace SomewhereDesktop
         private string Script { get; }
         #endregion
 
+        #region Shared Single Resource
+        private static OutputDevice OutDevice = null;
+        private static Object Locker = new object();
+        private static int UserCount = 0;
+        public static void RequireDispose()
+        {
+            lock(Locker)
+            {
+                if (OutDevice != null)
+                {
+                    OutDevice.Dispose();
+                    OutDevice = null;
+                }
+            }
+        }
+        #endregion
+
         #region General Interface
         public enum Note
         {
@@ -169,7 +186,14 @@ namespace SomewhereDesktop
         /// </summary>
         public void Play()
         {
-            using (OutputDevice outDevice = new OutputDevice(0))
+            lock(Locker)
+            {
+                // Acquire device only when it's not already acquired
+                if (OutDevice == null)
+                    OutDevice = new OutputDevice(0);
+                // Increment user count
+                Interlocked.Increment(ref UserCount);
+            }
             {
                 ChannelMessageBuilder builder = new ChannelMessageBuilder();
 
@@ -195,7 +219,13 @@ namespace SomewhereDesktop
                     builder.Data1 = note;
                     builder.Data2 = volume;
                     builder.Build();
-                    outDevice.Send(builder.Result);
+                    lock(Locker)
+                    {
+                        // Premture closing
+                        if (OutDevice == null)
+                            return;
+                        OutDevice.Send(builder.Result);
+                    }                    
                 }
                 void ReleaseNote(int note)
                 {
@@ -203,7 +233,13 @@ namespace SomewhereDesktop
                     builder.Data1 = note;
                     builder.Data2 = 0;
                     builder.Build();
-                    outDevice.Send(builder.Result);
+                    lock (Locker)
+                    {
+                        // Premture closing
+                        if (OutDevice == null)
+                            return;
+                        OutDevice.Send(builder.Result);
+                    }
                 }
 
                 // Extract tempo
@@ -233,6 +269,9 @@ namespace SomewhereDesktop
                 foreach (var note in rawNotes)
                 {
                     index++;
+                    // Premture closing
+                    if (OutDevice == null)
+                        return;
                     void PlayNoteName(string name)
                     {
                         // Get continue
@@ -265,6 +304,17 @@ namespace SomewhereDesktop
                     // Stop
                     else if (note == '~')
                         Thread.Sleep(tempoDelay);
+                }
+            }
+            lock(Locker)
+            {
+                // Decrement user count
+                Interlocked.Decrement(ref UserCount);
+                // Release device only when it's not being used by anyone else
+                if (OutDevice != null && OutDevice.IsDisposed == false && UserCount == 0)
+                {
+                    OutDevice.Dispose();
+                    OutDevice = null;
                 }
             }
         }
