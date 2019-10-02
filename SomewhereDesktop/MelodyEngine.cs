@@ -246,6 +246,9 @@ namespace SomewhereDesktop
                     }
                     else if (note == '-')    // Continue
                         PlayNoteName(prevNote + prevLevel.ToString(), delay: tempoDelay);
+                    // Stop
+                    else if (note == '~')
+                        Thread.Sleep(tempoDelay);
                 }
             }
         }
