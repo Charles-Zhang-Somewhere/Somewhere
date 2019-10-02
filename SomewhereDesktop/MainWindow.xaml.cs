@@ -566,7 +566,7 @@ namespace SomewhereDesktop
                 case LanguageType.Unidentified:
                 default:
                     PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                    PreviewMarkdown = $"```{source}\n```";
+                    PreviewMarkdown = source;
                     break;
             }
         }
