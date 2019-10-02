@@ -919,7 +919,7 @@ namespace SomewhereDesktop
                 if (!Keyboard.IsKeyDown(Key.Tab) // Avoid the case when we are merely update notes and go to tags field of note
                     && !(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))// Avoid the case when we are merely use PreviewNote command to preview note
                     && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
-                    CreateNewNote(PreviewBrowser.Title, value);
+                    CreateAndJumpToNewNote(PreviewBrowser.Title, value);
                 else
                 {
                     // If we are stepping back, then don't save this address changing value
@@ -1323,20 +1323,28 @@ namespace SomewhereDesktop
         }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
-        private void CreateNewNote(string title, string content)
+        private FileItemObjectModel AddNote(string title, string content, string tags)
         {
-            // Save old note by forcing update
-            NoteNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
-            NoteContentTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
             // Add to database
-            int id = Commands.AddFile(title, content);
+            var result = Commands.CreateNote(title, content, tags);  // notice tags are NOT optional
+
             // Add to view collection
-            var item = new FileItemObjectModel(Commands.GetFileDetail(id));
+            var item = new FileItemObjectModel(Commands.GetFileDetail(result.ID));
             // Add to items cache
             AllItems.Add(item);
             RefreshItems();
             // Update note collection
             RefreshNotes();
+            RefreshTags();
+            return item;
+        }
+        private void CreateAndJumpToNewNote(string title, string content)
+        {
+            // Save old note by forcing update
+            NoteNameTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();
+            NoteContentTextBox.GetBindingExpression(TextBox.TextProperty).UpdateSource();            
+            // Add new note
+            var item = AddNote(title, content, "untagged (bad!👹)");
             // Set activead
             ActiveNote = item;
             // Show note panel and focus on editing textbox
@@ -1345,7 +1353,7 @@ namespace SomewhereDesktop
             NoteNameTextBox.SelectAll();
         }
         private void CreateNoteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-            => CreateNewNote(null, string.Empty);  // Give some default empty content (i.e. not null) so it's not considered a binary file
+            => CreateAndJumpToNewNote(null, string.Empty);  // Give some default empty content (i.e. not null) so it's not considered a binary file
         private void OpenHomeCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;
         /// <summary>
@@ -2288,6 +2296,26 @@ with open(""{0}"", 'w+') as the_file:
                 return new string[] { BrowseBackHistory() };
             else
                 return new string[] { "No preview browser is available." };
+        }
+        [Command("Bookmark current webpage, optionally with tags.")]
+        [CommandArgument("tag", "tags for the bookmark", optional: true)]
+        public IEnumerable<string> BK(params string[] args)
+        {
+            if (PreviewBrowser.Visibility == Visibility.Visible)
+            {
+                string tagsString = null;
+                if (args.Length == 1)
+                    tagsString = args[0];
+                else
+                    tagsString = "link";
+                string name = string.IsNullOrWhiteSpace(PreviewBrowser.Title)
+                    ? PreviewBrowser.Address
+                    : PreviewBrowser.Title;
+                var note = AddNote(name, PreviewBrowser.Address, tagsString);
+                return new string[] { $"Bookmark note `{name}` (#{note.ID}) for address `{PreviewBrowser.Address}` created." };
+            }
+            else
+                return new string[] { "No preview browser/address to save as bookmark." };
         }
         [Command("Compile and run.")]
         public IEnumerable<string> CR(params string[] args)

@@ -271,7 +271,7 @@ namespace Somewhere
             // Get file ID string
             string idString = $"#{itemID}";
             // Validate existence
-            if (physicalName != oldPhysicalName && (parentFolder != null 
+            if (physicalName != oldPhysicalName && (parentFolder != null
                 ? File.Exists(Path.Combine(parentFolder.IsPathRooted() ? parentFolder : Path.Combine(HomeDirectory, parentFolder), physicalName))
                 : FileExistsAtHomeFolder(physicalName)))
             {
@@ -313,7 +313,7 @@ namespace Somewhere
 
         #region Commands (Public Interface as Library)
         [Command("Add an item to home.",
-            "Notice for folders inside Home this command will add the folder itself - to import and flatten the folder, use `im` command.", 
+            "Notice for folders inside Home this command will add the folder itself - to import and flatten the folder, use `im` command.",
             category: "File")]
         [CommandArgument("itemname", "name of item; use * to add all items in current directory (will not add subdirectories or items in subdirectory); " +
             "if given path is outside Home directory - for files they will be copied, for folders they will be cut and paste inside Home")]
@@ -358,7 +358,7 @@ namespace Somewhere
                 {
                     itemname = GetRelative(args[0]);    // Convert absoluate path to relative
                     // Handle non-existing path
-                    bool existAsFile = FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)), 
+                    bool existAsFile = FileExistsAtHomeFolder(GetPhysicalNameForFilesThatCanBeInsideFolder(itemname)),
                         existAsFolder = DirectoryExistsAtHomeFolder(itemname);
                     if (!existAsFile && !existAsFolder)
                         throw new ArgumentException($"Specified item `{path}` doesn't exist in Home folder ({HomeDirectory}); Notice current working directory is `{Directory.GetCurrentDirectory()}`. " +
@@ -449,27 +449,34 @@ namespace Somewhere
             category: "File")]
         [CommandArgument("notename", "name for the virtual file, must be unique among all managed files")]
         [CommandArgument("content", "initial content for the virtual file")]
-        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; tags are required", optional: false)]
+        [CommandArgument("tags", "comma delimited list of tags in double quotes; any character except commas and double quotes are allowed; tags are required",
+            optional: false /* Not optional. */)]
         public IEnumerable<string> Create(params string[] args)
         {
             ValidateArgs(args);
             string name = args[0];
+            string content = args[1];
+            string tags = args[2];
+            var result = CreateNote(name, content, tags);
+            return new string[] { $"{(name == null ? $"Knowledge #{result.ID}" : $"Note `{name}`")} has been created with {result.Tags.Length} {(result.Tags.Length > 1 ? "tags" : "tag")}: `{result.Tags.JoinTags()}`." };
+        }
+        public (int ID, string[] Tags) CreateNote(string name, string content, string tagsString)
+        {
             if (string.IsNullOrEmpty(name))
                 name = null;    // Nullify empty name
             if (name != null && FileExistsAtHomeFolder(name))
                 throw new ArgumentException($"Specified notename `{name}` already exist (as a physical file) on disk.");
             if (name != null && IsFileInDatabase(name))
                 throw new InvalidOperationException($"Specified notename `{name}` is already used by another virtual file in database.");
-            // Get content and save the file
-            string content = args[1];
+            // Add content and save the file
             int id = AddFile(name, content);
             TryRecordCommit(JournalEvent.CommitOperation.CreateNote, name, null);
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemContent, name, content);
             // Get tags
-            string[] tags = args[2].SplitTags().ToArray();   // Save as lower case
+            string[] tags = tagsString.SplitTags().ToArray();   // Save as lower case
             string[] allTags = AddTagsToFile(id, tags);
             TryRecordCommit(JournalEvent.CommitOperation.ChangeItemTags, name, allTags.JoinTags());
-            return new string[] { $"{(name == null ? $"Knowledge #{id}" : $"Note `{name}`")} has been created with {allTags.Length} {(allTags.Length > 1 ? "tags" : "tag")}: `{allTags.JoinTags()}`." };
+            return (id, allTags);
         }
         [Command("Generate documentation of Somewhere program.", logged: false, category: "Misc.")]
         [CommandArgument("path", "path for the generated file; relative to home folder")]
