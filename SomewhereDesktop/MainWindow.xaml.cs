@@ -28,9 +28,35 @@ using InteropCommon;
 using Vlc.DotNet.Forms;
 using System.Text.RegularExpressions;
 using System.IO.Compression;
+using CefSharp;
 
 namespace SomewhereDesktop
 {
+    public class DownloadHandler : IDownloadHandler
+    {
+        public event EventHandler<DownloadItem> OnBeforeDownloadFired;
+
+        public event EventHandler<DownloadItem> OnDownloadUpdatedFired;
+
+        public void OnBeforeDownload(IWebBrowser chromiumWebBrowser, IBrowser browser, DownloadItem downloadItem, IBeforeDownloadCallback callback)
+        {
+            OnBeforeDownloadFired?.Invoke(this, downloadItem);
+
+            if (!callback.IsDisposed)
+            {
+                using (callback)
+                {
+                    callback.Continue(downloadItem.SuggestedFileName, showDialog: true);
+                }
+            }
+        }
+
+        public void OnDownloadUpdated(IWebBrowser chromiumWebBrowser, IBrowser browser, DownloadItem downloadItem, IDownloadItemCallback callback)
+        {
+            OnDownloadUpdatedFired?.Invoke(this, downloadItem);
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -81,6 +107,7 @@ namespace SomewhereDesktop
             InitializeVLCControl();
             // Initialize CefSharp Browser Control
             PreviewBrowser.MenuHandler = new CustomMenuHandler();
+            PreviewBrowser.DownloadHandler = new DownloadHandler();
             uint ColorToUInt(Color color)
                 => (uint)((color.A << 24) | (color.R << 16) | (color.G << 8) | (color.B << 0));
             PreviewBrowser.BrowserSettings.BackgroundColor = ColorToUInt(Color.FromArgb(255, 255, 255, 255));
@@ -501,6 +528,48 @@ namespace SomewhereDesktop
             svg.Replace("@xmlns", "xmlns=\"http://www.w3.org/2000/svg\"") +
             "</body>\n" +
             "</html>";
+        private void PreviewSourceCodeOrMarkdown(string extension, string source)
+        {
+            // Source code
+            var lang = CheckCodeLanguage(extension, source);
+            switch (lang)
+            {
+                // General source code preview
+                case LanguageType.CPP:
+                case LanguageType.CSharp:
+                case LanguageType.Python:
+                case LanguageType.Pbrt:
+                case LanguageType.SpiceNetlist:
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{source}\n```";
+                    break;
+                // Special City Script preview label
+                case LanguageType.CityScript:
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    PreviewMarkdown = $"({lang.ToString()} notebook - use `cr` to run)\n{source}";
+                    break;
+                // Special melody preview
+                case LanguageType.Melody:
+                    PreviewBrowser.Visibility = Visibility.Visible;
+                    string temp = GetTempFileName() + ".html";
+                    string lib = GetTempFileName() + ".js";
+                    string css = GetTempFileName() + ".css";
+                    File.WriteAllText(lib, GetEmbeddedResource("abcjs_midi_5.8.1-min.js"));
+                    File.WriteAllText(css, GetEmbeddedResource("abcjs-midi.css"));
+                    File.WriteAllText(temp, new MelodyEngine(source).Render(lib, css));
+                    PreviewAddress = temp;
+                    TempFiles.Add(lib);
+                    TempFiles.Add(css);
+                    TempFiles.Add(temp);
+                    break;
+                // Normal markdown
+                case LanguageType.Unidentified:
+                default:
+                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
+                    PreviewMarkdown = $"```{source}\n```";
+                    break;
+            }
+        }
         private void UpdateItemPreview()
         {
             // Clear previous
@@ -662,20 +731,9 @@ namespace SomewhereDesktop
                     PreviewAddress = temp;
                     TempFiles.Add(temp);
                 }
-                // Preview markdown
+                // Preview Source Code
                 else
-                {
-                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
-                    // Source code
-                    var lang = CheckCodeLanguage(null, ActiveItem.Content);
-                    if (lang == LanguageType.CityScript)
-                        PreviewMarkdown = $"({lang.ToString()} notebook - use `cr` to run)\n{ActiveItem.Content}";
-                    else if (lang != LanguageType.Unidentified)
-                        PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{ActiveItem.Content}\n```";
-                    // Normal markdown
-                    else
-                        PreviewMarkdown = ActiveItem.Content;
-                }
+                    PreviewSourceCodeOrMarkdown(null, ActiveItem.Content);
             }
             // Preview folder
             else if (ActiveItem.Name.EndsWith("/") || ActiveItem.Name.EndsWith("\\"))
@@ -723,16 +781,8 @@ namespace SomewhereDesktop
                 // Preview source code
                 else if(CompilableSourceCodeExtensions.Contains(extension))
                 {
-                    PreviewMarkdownViewer.Visibility = Visibility.Visible;
                     string text = File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
-                    // Source code
-                    var lang = CheckCodeLanguage(extension, text);
-                    if(lang == LanguageType.CityScript)
-                        PreviewMarkdown = $"({lang.ToString()} notebook - use `cr` to run)\n{text}";
-                    else if (lang != LanguageType.Unidentified)
-                        PreviewMarkdown = $"{lang.ToString()} Code - use `cr` to run:\n```\n{text}\n```";
-                    else
-                        PreviewMarkdown = $"```{text}\n```";
+                    PreviewSourceCodeOrMarkdown(extension, text);
                 }
                 // Preview videos and audios
                 else if (VideoFileExtensions.Contains(extension) || AudioFileExtensions.Contains(extension))
@@ -767,8 +817,13 @@ namespace SomewhereDesktop
         /// Extensions that can be compiled/interpreted/executed
         /// </summary>
         private readonly static string[] CompilableSourceCodeExtensions = new string[] { ".bat", ".c", ".cpp", ".cs", ".python", ".pbrt",
+            // City Script
             ".city",
-            ".spice", ".cir", ".sp" };
+            // SPICE
+            ".spice", ".cir", ".sp",
+            // Melody
+            ".melody"
+        };
         #endregion
 
         #region Public View Properties
@@ -1812,7 +1867,8 @@ namespace SomewhereDesktop
             Python,  // Python 3
             Pbrt,
             CityScript,
-            SpiceNetlist
+            SpiceNetlist,
+            Melody
         }
         /// <summary>
         /// Check language type of a given piece of code;
@@ -1838,6 +1894,8 @@ namespace SomewhereDesktop
                     case ".cir":
                     case ".spice":
                         return LanguageType.SpiceNetlist;
+                    case ".melody":
+                        return LanguageType.Melody;
                     default:
                         break;
                 }
@@ -1849,6 +1907,9 @@ namespace SomewhereDesktop
                 return LanguageType.CPP;
             else if (code.Contains("using System;"))
                 return LanguageType.CSharp;
+            // Melody
+            else if (code.Contains("(4/4"))
+                return LanguageType.Melody;
             // Use heuristics to guess host language is Python
             else if (code.StartsWith("def ") || code.Contains("__main__")
                 // Single line statements
@@ -2522,6 +2583,9 @@ with open(""{0}"", 'w+') as the_file:
                     case LanguageType.SpiceNetlist:
                         DeleteTemporaryFiles();
                         try { return new string[] { $"SPICE circuit simlation finished in {SimulateCircuit()} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.Melody:
+                        try { return new string[] { $"Melody played in {new MelodyEngine(previewCode).Play()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:
