@@ -792,12 +792,7 @@ namespace SomewhereDesktop
                     Play(CurrentVideoUrl);
                 }
                 // Preview webpages
-                else if(extension == ".html"
-                    // Preview pdf
-                    || extension == ".pdf"
-                    // Preview gif
-                    || extension == ".webp"
-                    || extension == ".gif")
+                else if(BrowserPreviewableExtensions.Contains(extension))
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     PreviewAddress = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
@@ -813,6 +808,11 @@ namespace SomewhereDesktop
         private readonly static string[] ImageFileExtensions = new string[] { ".png", ".img", ".jpg", ".jpeg", ".bmp" };
         private readonly static string[] AudioFileExtensions = new string[] { ".ogg", ".mp3", ".wav",".ogm", ".m4a" };
         private readonly static string[] VideoFileExtensions = new string[] { ".avi", ".flv", ".mp4", ".mpeg", ".wmv", ".mpg" };
+        private readonly static string[] BrowserPreviewableExtensions = new string[] { ".html", ".mhtml", 
+            // Preview pdf
+            ".pdf",
+            // Preview gif
+            ".webp", ".gif"};
         /// <summary>
         /// Extensions that can be compiled/interpreted/executed
         /// </summary>
