@@ -2414,6 +2414,14 @@ with open(""{0}"", 'w+') as the_file:
                 }
                 catch (Exception) { throw; }
             }
+            double PlayMelody()
+            {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                new MelodyEngine(previewCode).Play();
+                sw.Stop();
+                return sw.ElapsedMilliseconds / 1000;
+            }
             double RunCityScript()
             {
                 string ExtractCityScriptSource(string markdown)
@@ -2585,7 +2593,7 @@ with open(""{0}"", 'w+') as the_file:
                         try { return new string[] { $"SPICE circuit simlation finished in {SimulateCircuit()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Melody:
-                        try { return new string[] { $"Melody played in {new MelodyEngine(previewCode).Play()} seconds." }; }
+                        try { return new string[] { $"Melody played for {PlayMelody()} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.Unidentified:
                     default:

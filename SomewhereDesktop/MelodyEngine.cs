@@ -1,7 +1,9 @@
 ﻿using Sanford.Multimedia.Midi;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -164,15 +166,15 @@ namespace SomewhereDesktop
         /// <summary>
         /// Play as MIDI music
         /// </summary>
-        public async Task Play()
+        public void Play()
         {
             using (OutputDevice outDevice = new OutputDevice(0))
             {
                 ChannelMessageBuilder builder = new ChannelMessageBuilder();
 
-                async Task PlayNoteName(string name, int volume = 127, int delay = 1000)
-                    => await PlayNote((int)Enum.Parse(typeof(Note), name.Replace("-1", "_1").Replace("#", "Sharp")), volume, delay);
-                async Task PlayNote(int note, int volume = 127, int delay = 1000)
+                void PlayNoteName(string name, int volume = 127, int delay = 1000)
+                    => PlayNote((int)Enum.Parse(typeof(Note), name.ToUpper().Replace("-1", "_1").Replace("#", "Sharp")), volume, delay);
+                void PlayNote(int note, int volume = 127, int delay = 1000)
                 {
                     builder.Command = ChannelCommand.NoteOn;
                     builder.MidiChannel = 0;
@@ -181,7 +183,7 @@ namespace SomewhereDesktop
                     builder.Build();
 
                     outDevice.Send(builder.Result);
-                    await Task.Delay(delay);
+                    Thread.Sleep(delay);
 
                     builder.Command = ChannelCommand.NoteOff;
                     builder.Data2 = 0;
@@ -189,11 +191,42 @@ namespace SomewhereDesktop
                     outDevice.Send(builder.Result);
                 }
 
-                await PlayNoteName("C4", delay: 500);
-                await PlayNoteName("C4", delay: 500);
-                await PlayNoteName("C4", delay: 500);
-                await PlayNoteName("E4", delay: 500);
-                await PlayNoteName("F4", delay: 500);
+                // Extract tempo
+                int tempoDelay = GetTempoDelay(120);   // From temp to milisec delay; Default 120
+                var reg = Regex.Match(Script, "^\\(.*-(\\d+)\\)");
+                string rawNotes = Script;
+                if(reg.Success == true)
+                {
+                    tempoDelay = GetTempoDelay(Convert.ToInt32(reg.Groups[1].Value));
+                    rawNotes = Script.Substring(reg.Value.Length);
+                }
+                // Very basic implementation for just simple notes
+                int currentLevel = 4;
+                char prevNote = ' ';
+                int prevLevel = currentLevel;
+                foreach (var note in rawNotes)
+                {
+                    if (note == ' ')
+                        continue;
+                    else if (note == '#')
+                        currentLevel++;
+                    else if (note == '$')
+                        currentLevel--;
+                    else if (MediumNotes.Contains(note))
+                    {
+                        prevNote = note;
+                        prevLevel = currentLevel;
+                        PlayNoteName(note + currentLevel.ToString(), delay: tempoDelay);
+                    }
+                    else if (HighNotes.Contains(note))
+                    {
+                        prevNote = note;
+                        prevLevel = currentLevel + 1;
+                        PlayNoteName(note + (currentLevel + 1).ToString(), delay: tempoDelay);
+                    }
+                    else if (note == '-')    // Continue
+                        PlayNoteName(prevNote + prevLevel.ToString(), delay: tempoDelay);
+                }
             }
         }
         /// <summary>
@@ -201,17 +234,68 @@ namespace SomewhereDesktop
         /// </summary>
         public string Render(string libPath, string cssPath)
         {
-            string abc = @"X: 1
-T: Cooley's
-M: 4/4
-L: 1/8
-R: reel
-K: Emin
-|:D2|EB{c}BA B2 EB|~B2 AB dBAG|FDAD BDAD|FDAD dAFD|
-EBBA B2 EB|B2 AB defg|afe^c dBAF|DEFD E2:|
-|:gf|eB B2 efge|eB B2 gedB|A2 FA DAFA|A2 FA defg|
-eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|
-";
+            string BuildABC()
+            {
+                // Extract tempo
+                int tempoDelay = GetTempoDelay(120);   // From temp to milisec delay; Default 120
+                var reg = Regex.Match(Script, "^\\(.*-(\\d+)\\)");
+                string rawNotes = Script;
+                if (reg.Success == true)
+                {
+                    tempoDelay = GetTempoDelay(Convert.ToInt32(reg.Groups[1].Value));
+                    rawNotes = Script.Substring(reg.Value.Length);
+                }
+
+                StringBuilder builder = new StringBuilder(
+@"X:1
+T:Melody
+M:4/4
+C:Trad.
+K:C
+");
+                builder.Append("|");
+                int counter = 0;
+                int currentLevel = 4;
+                char prevNote = ' ';
+                int prevLevel = currentLevel;
+                // Tone and temp etc. are not fully implemented
+                foreach (var note in rawNotes)
+                {
+                    if (note == ' ')
+                        continue;
+                    else if (note == '#')
+                        currentLevel++;
+                    else if (note == '$')
+                        currentLevel--;
+                    else if (MediumNotes.Contains(note))
+                    {
+                        prevNote = char.ToUpper(note);
+                        prevLevel = currentLevel;
+                        builder.Append(char.ToUpper(note) + 2.ToString());    // 4th note use 2, also ABC's note is inverted per Melody
+                        counter++;
+                    }
+                    else if (HighNotes.Contains(note))
+                    {
+                        prevNote = char.ToLower(note);
+                        prevLevel = currentLevel + 1;
+                        builder.Append(char.ToLower(note) + 2.ToString());    // 4th note use 2
+                        counter++;
+                    }
+                    else if (note == '-')    // Continue
+                    {
+                        builder.Append(prevNote + 2.ToString());    // 4th note use 2
+                        counter++;
+                    }
+
+                    if(counter == 4)
+                    {
+                        builder.Append("|");
+                        counter = 0;
+                    }
+                }
+
+                return builder.ToString();
+            }
 
             return @"<!DOCTYPE HTML>
 <html>
@@ -250,7 +334,7 @@ eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|
 	see the place in the text where that note is defined.</p>
 
 <p>For more information, see <a href=""https://github.com/paulrosen/abcjs"" >the project page</a>.</p>
-<textarea name=""abc"" id=""abc"" cols=""80"" rows=""15"">" + abc + @"
+<textarea name=""abc"" id=""abc"" cols=""80"" rows=""15"">" + BuildABC() + @"
 </textarea>
 
 <hr />
@@ -289,6 +373,13 @@ eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|
 </body>
 </html>";
         }
+        #endregion
+
+        #region Sub Routines
+        private static readonly char[] MediumNotes = "cdefgab".ToCharArray();
+        private static readonly char[] HighNotes = "CDEFGAB".ToCharArray();
+        private int GetTempoDelay(int tempo)
+                => (int)((float)60 /* 60 seconds */ / tempo * 1000);
         #endregion
     }
 }
