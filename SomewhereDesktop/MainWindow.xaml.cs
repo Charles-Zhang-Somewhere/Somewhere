@@ -1908,7 +1908,7 @@ namespace SomewhereDesktop
             else if (code.Contains("using System;"))
                 return LanguageType.CSharp;
             // Melody
-            else if (code.Contains("(4/4"))
+            else if (Regex.IsMatch(code, MelodyEngine.TimeSignaturePattern))
                 return LanguageType.Melody;
             // Use heuristics to guess host language is Python
             else if (code.StartsWith("def ") || code.Contains("__main__")

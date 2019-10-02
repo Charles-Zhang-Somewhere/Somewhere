@@ -163,6 +163,7 @@ namespace SomewhereDesktop
             FSharp9,
             G9
         }
+        public static string TimeSignaturePattern = "^\\((.*?)(-(\\d+))?\\)";
         /// <summary>
         /// Play as MIDI music
         /// </summary>
@@ -175,29 +176,48 @@ namespace SomewhereDesktop
                 void PlayNoteName(string name, int volume = 127, int delay = 1000)
                     => PlayNote((int)Enum.Parse(typeof(Note), name.ToUpper().Replace("-1", "_1").Replace("#", "Sharp")), volume, delay);
                 void PlayNote(int note, int volume = 127, int delay = 1000)
+                    => PlayNotes(new int[] { note }, volume, delay);
+                void PlayNotes(int[] notes, int volume, int delay)
                 {
-                    builder.Command = ChannelCommand.NoteOn;
-                    builder.MidiChannel = 0;
-                    builder.Data1 = note;
-                    builder.Data2 = volume;
-                    builder.Build();
-
-                    outDevice.Send(builder.Result);
+                    // On
+                    foreach (var note in notes)
+                    {
+                        builder.Command = ChannelCommand.NoteOn;
+                        builder.MidiChannel = 0;
+                        builder.Data1 = note;
+                        builder.Data2 = volume;
+                        builder.Build();
+                        outDevice.Send(builder.Result);
+                    }
+                    // Hold
                     Thread.Sleep(delay);
-
-                    builder.Command = ChannelCommand.NoteOff;
-                    builder.Data2 = 0;
-                    builder.Build();
-                    outDevice.Send(builder.Result);
+                    // Off
+                    foreach (var note in notes)
+                    {
+                        builder.Command = ChannelCommand.NoteOff;
+                        builder.Data2 = 0;
+                        builder.Build();
+                        outDevice.Send(builder.Result);
+                    }
                 }
 
                 // Extract tempo
                 int tempoDelay = GetTempoDelay(120);   // From temp to milisec delay; Default 120
-                var reg = Regex.Match(Script, "^\\(.*-(\\d+)\\)");
+                var reg = Regex.Match(Script, TimeSignaturePattern);
                 string rawNotes = Script;
                 if(reg.Success == true)
                 {
-                    tempoDelay = GetTempoDelay(Convert.ToInt32(reg.Groups[1].Value));
+                    string tempo = reg.Groups[3].Value;
+                    if (!string.IsNullOrEmpty(tempo))
+                        tempoDelay = GetTempoDelay(Convert.ToInt32(tempo));
+                    // Divide by time step scaling, default at 4th per step
+                    string timeSignature = reg.Groups[1].Value;
+                    if (!string.IsNullOrEmpty(timeSignature))
+                    {
+                        int targetStep = Convert.ToInt32(timeSignature.Substring(timeSignature.IndexOf('/') + 1));
+                        float scale = 4 / (float)targetStep;
+                        tempoDelay = (int)(scale * tempoDelay);
+                    }
                     rawNotes = Script.Substring(reg.Value.Length);
                 }
                 // Very basic implementation for just simple notes
