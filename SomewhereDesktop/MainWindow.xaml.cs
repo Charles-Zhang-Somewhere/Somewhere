@@ -1271,8 +1271,18 @@ namespace SomewhereDesktop
             RefreshNotes();
             InfoText = $"{AllItems.Count()} items discovered.";
         }
+        private void TryCompileAndRun_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible;
+        private void TryCompileAndRun_Executed(object sender, ExecutedRoutedEventArgs e)
+            => InfoText = CompileAndRun(ActiveNote).Single();
         private void CompileAndRunCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
+            if(ActiveItem == null || InventoryPanel.Visibility == Visibility.Collapsed)
+            {
+                e.CanExecute = false;
+                CompileAndRunButton.Visibility = Visibility.Collapsed;
+                return;
+            }
             string extension = (ActiveItem?.Name != null 
                 ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower()
                 : null) ?? null;
@@ -2270,9 +2280,11 @@ with open(""{0}"", 'w+') as the_file:
         }
         [Command("Compile and run.")]
         public IEnumerable<string> CR(params string[] args)
+            => CompileAndRun(ActiveItem);
+        private IEnumerable<string> CompileAndRun(FileItemObjectModel item)
         {
-            string previewCode = ActiveItem.Content     // From virtual note
-                ?? File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));    // From physical file 
+            string previewCode = item.Content     // From virtual note
+                ?? File.ReadAllText(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(item.Name));    // From physical file 
             // (notice in this case a redundant temp copy will be created so little additional code logic 
             // is needed for current implementation)
 
@@ -2564,7 +2576,7 @@ with open(""{0}"", 'w+') as the_file:
                 return new string[] { "No code available for preview." };
             else
             {
-                var type = CheckCodeLanguage(ActiveItem.Name != null ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower() : null
+                var type = CheckCodeLanguage(item.Name != null ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(item.Name)).ToLower() : null
                     , previewCode);
                 switch (type)
                 {
