@@ -173,32 +173,37 @@ namespace SomewhereDesktop
             {
                 ChannelMessageBuilder builder = new ChannelMessageBuilder();
 
-                void PlayNoteName(string name, int volume = 127, int delay = 1000)
-                    => PlayNote((int)Enum.Parse(typeof(Note), name.ToUpper().Replace("-1", "_1").Replace("#", "Sharp")), volume, delay);
+                int NotationToNoteID(string notation)
+                    => (int)Enum.Parse(typeof(Note), notation.ToUpper().Replace("-1", "_1").Replace("#", "Sharp"));
                 void PlayNote(int note, int volume = 127, int delay = 1000)
                     => PlayNotes(new int[] { note }, volume, delay);
                 void PlayNotes(int[] notes, int volume, int delay)
                 {
                     // On
                     foreach (var note in notes)
-                    {
-                        builder.Command = ChannelCommand.NoteOn;
-                        builder.MidiChannel = 0;
-                        builder.Data1 = note;
-                        builder.Data2 = volume;
-                        builder.Build();
-                        outDevice.Send(builder.Result);
-                    }
+                        HoldNote(note, volume);
                     // Hold
                     Thread.Sleep(delay);
                     // Off
                     foreach (var note in notes)
-                    {
-                        builder.Command = ChannelCommand.NoteOff;
-                        builder.Data2 = 0;
-                        builder.Build();
-                        outDevice.Send(builder.Result);
-                    }
+                        ReleaseNote(note);
+                }
+                void HoldNote(int note, int volume)
+                {
+                    builder.Command = ChannelCommand.NoteOn;
+                    builder.MidiChannel = 0;
+                    builder.Data1 = note;
+                    builder.Data2 = volume;
+                    builder.Build();
+                    outDevice.Send(builder.Result);
+                }
+                void ReleaseNote(int note)
+                {
+                    builder.Command = ChannelCommand.NoteOff;
+                    builder.Data1 = note;
+                    builder.Data2 = 0;
+                    builder.Build();
+                    outDevice.Send(builder.Result);
                 }
 
                 // Extract tempo
@@ -224,8 +229,19 @@ namespace SomewhereDesktop
                 int currentLevel = 4;
                 char prevNote = ' ';
                 int prevLevel = currentLevel;
+                int index = 0;
                 foreach (var note in rawNotes)
                 {
+                    index++;
+                    void PlayNoteName(string name)
+                    {
+                        // Get continue
+                        int count = 1;
+                        while (index - 1 /* Sub by 1 because we add ahead*/ + count < rawNotes.Length 
+                            && rawNotes[index - 1 + count] == '-')
+                            count++;
+                        PlayNote(NotationToNoteID(name), delay: tempoDelay * count);
+                    }
                     if (note == ' ')
                         continue;
                     else if (note == '#')
@@ -236,16 +252,16 @@ namespace SomewhereDesktop
                     {
                         prevNote = note;
                         prevLevel = currentLevel;
-                        PlayNoteName(note + currentLevel.ToString(), delay: tempoDelay);
+                        PlayNoteName(note + currentLevel.ToString());
                     }
                     else if (HighNotes.Contains(note))
                     {
                         prevNote = note;
                         prevLevel = currentLevel + 1;
-                        PlayNoteName(note + (currentLevel + 1).ToString(), delay: tempoDelay);
+                        PlayNoteName(note + (currentLevel + 1).ToString());
                     }
                     else if (note == '-')    // Continue
-                        PlayNoteName(prevNote + prevLevel.ToString(), delay: tempoDelay);
+                        continue;
                     // Stop
                     else if (note == '~')
                         Thread.Sleep(tempoDelay);
