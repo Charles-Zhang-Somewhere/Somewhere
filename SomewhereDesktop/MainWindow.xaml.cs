@@ -1274,11 +1274,17 @@ namespace SomewhereDesktop
         private void TryCompileAndRun_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = NotebookPanel.Visibility == Visibility.Visible && ActiveNote != null;
         private void TryCompileAndRun_Executed(object sender, ExecutedRoutedEventArgs e)
-            => InfoText = CompileAndRun(ActiveNote).Single();
+        {
+            SaveCommand_Executed(null, null);   // Force saving and updating
+            InfoText = CompileAndRun(ActiveNote).Single();
+        }
         private void RunInBackground_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => TryCompileAndRun_CanExecute(null, e);
         private void RunInBackground_Execute(object sender, ExecutedRoutedEventArgs e)
-            => InfoText = CompileAndRun(ActiveNote, true).Single();
+        {
+            SaveCommand_Executed(null, null);   // Force saving and updating
+            InfoText = CompileAndRun(ActiveNote, true).Single();
+        }
         private void CompileAndRunCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             if(ActiveItem == null || InventoryPanel.Visibility == Visibility.Collapsed)
