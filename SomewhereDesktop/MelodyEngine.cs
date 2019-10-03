@@ -180,7 +180,166 @@ namespace SomewhereDesktop
             FSharp9,
             G9
         }
+        // Mapping from drum preset range to drum key
+        public static Dictionary<string, int[]> DrumRanges = new Dictionary<string, int[]>()
+        {
+            // Name, key mapping: 123456789
+            { "default", new int[]{ 35, 36, 37, 38, 39, 40, 41, 42, 43 } }
+        };
+        public static Dictionary<string, int> InstrumentMapping = new Dictionary<string, int>()
+        {
+            // Notice those are indeed 1-indexed
+            // General MIDI family name preferred: Family Name, Program Change Preferred #, Program Change # Range
+            { "piano", 1}, // Range: 1-8
+            { "chromatic percussion", 11}, // Range: 9-16
+            { "organ", 20}, // Range: 17-24
+            { "guitar", 26}, // Range: 25-32
+            { "bass", 39}, // Range: 33-40
+            { "strings", 43}, // Range: 41-48
+            { "ensemble", 53}, // Range: 49-56
+            { "brass", 54}, // Range: 57-64
+            { "reed", 65}, // Range: 65-72
+            { "pipe", 74}, // Range: 73-80
+            { "synth lead", 81}, // Range: 81-88
+            { "synth pad", 89}, // Range: 89-96
+            { "synth effects", 99}, // Range: 97-104
+            { "ethnic", 107}, // Range: 105-112
+            { "percussive", 118}, // Range: 113-120
+            { "sound effects", 128}, // Range: 121-128
+            // General MIDI Specific Instrument: Instrument Name, PC#
+            {"acoustic grand piano", 1},
+            {"bright acoustic piano", 2},
+            {"electric grand piano", 3},
+            {"honky-tonk piano", 4},
+            {"electric piano 1", 5},
+            {"electric piano 2", 6},
+            {"harpsichord", 7},
+            {"clavi", 8},
+            {"celesta", 9},
+            {"glockenspiel", 10},
+            {"music box", 11},
+            {"vibraphone", 12},
+            {"marimba", 13},
+            {"xylophone", 14},
+            {"tubular bells", 15},
+            {"dulcimer", 16},
+            {"drawbar organ", 17},
+            {"percussive organ", 18},
+            {"rock organ", 19},
+            {"church organ", 20},
+            {"reed organ", 21},
+            {"accordion", 22},
+            {"harmonica", 23},
+            {"tango accordion", 24},
+            {"acoustic guitar (nylon)", 25},
+            {"acoustic guitar (steel)", 26},
+            {"electric guitar (jazz)", 27},
+            {"electric guitar (clean)", 28},
+            {"electric guitar (muted)", 29},
+            {"overdriven guitar", 30},
+            {"distortion guitar", 31},
+            {"guitar harmonics", 32},
+            {"acoustic bass", 33},
+            {"electric bass (finger)", 34},
+            {"electric bass (pick)", 35},
+            {"fretless bass", 36},
+            {"slap bass 1", 37},
+            {"slap bass 2", 38},
+            {"synth bass 1", 39},
+            {"synth bass 2", 40},
+            {"violin", 41},
+            {"viola", 42},
+            {"cello", 43},
+            {"contrabass", 44},
+            {"tremolo strings", 45},
+            {"pizzicato strings", 46},
+            {"orchestral harp", 47},
+            {"timpani", 48},
+            {"string ensemble 1", 49},
+            {"string ensemble 2", 50},
+            {"synthstrings 1", 51},
+            {"synthstrings 2", 52},
+            {"choir aahs", 53},
+            {"voice oohs", 54},
+            {"synth voice", 55},
+            {"orchestra hit", 56},
+            {"trumpet", 57},
+            {"trombone", 58},
+            {"tuba", 59},
+            {"muted trumpet", 60},
+            {"french horn", 61},
+            {"brass section", 62},
+            {"synthbrass 1", 63},
+            {"synthbrass 2", 64},
+            {"soprano sax", 65},
+            {"alto sax", 66},
+            {"tenor sax", 67},
+            {"baritone sax", 68},
+            {"oboe", 69},
+            {"english horn", 70},
+            {"bassoon", 71},
+            {"clarinet", 72},
+            {"piccolo", 73},
+            {"flute", 74},
+            {"recorder", 75},
+            {"pan flute", 76},
+            {"blown bottle", 77},
+            {"shakuhachi", 78},
+            {"whistle", 79},
+            {"ocarina", 80},
+            {"lead 1 (square)", 81},
+            {"lead 2 (sawtooth)", 82},
+            {"lead 3 (calliope)", 83},
+            {"lead 4 (chiff)", 84},
+            {"lead 5 (charang)", 85},
+            {"lead 6 (voice)", 86},
+            {"lead 7 (fifths)", 87},
+            {"lead 8 (bass + lead)", 88},
+            {"pad 1 (new age)", 89},
+            {"pad 2 (warm)", 90},
+            {"pad 3 (polysynth)", 91},
+            {"pad 4 (choir)", 92},
+            {"pad 5 (bowed)", 93},
+            {"pad 6 (metallic)", 94},
+            {"pad 7 (halo)", 95},
+            {"pad 8 (sweep)", 96},
+            {"fx 1 (rain)", 97},
+            {"fx 2 (soundtrack)", 98},
+            {"fx 3 (crystal)", 99},
+            {"fx 4 (atmosphere)", 100},
+            {"fx 5 (brightness)", 101},
+            {"fx 6 (goblins)", 102},
+            {"fx 7 (echoes)", 103},
+            {"fx 8 (sci-fi)", 104},
+            {"sitar", 105},
+            {"banjo", 106},
+            {"shamisen", 107},
+            {"koto", 108},
+            {"kalimba", 109},
+            {"bag pipe", 110},
+            {"fiddle", 111},
+            {"shanai", 112},
+            {"tinkle bell", 113},
+            {"agogo", 114},
+            {"steel drums", 115},
+            {"woodblock", 116},
+            {"taiko drum", 117},
+            {"melodic tom", 118},
+            {"synth drum", 119},
+            {"reverse cymbal", 120},
+            {"guitar fret noise", 121},
+            {"breath noise", 122},
+            {"seashore", 123},
+            {"bird tweet", 124},
+            {"telephone ring", 125},
+            {"helicopter", 126},
+            {"applause", 127},
+            {"gunshot", 128},
+            // Spcial mapping
+            {"drum", 118 }  // "drum" for "percussive"
+        };
         public static string TimeSignaturePattern = "^\\((.*?)(-(\\d+))?\\)";
+        public static string InstrumentInstructionPattern = "^{(.*?)(:(.*?))?}";
         /// <summary>
         /// Play as MIDI music
         /// </summary>
@@ -214,31 +373,34 @@ namespace SomewhereDesktop
                 }
                 void HoldNote(int note, int volume)
                 {
-                    builder.Command = ChannelCommand.NoteOn;
-                    builder.MidiChannel = 0;
-                    builder.Data1 = note;
-                    builder.Data2 = volume;
-                    builder.Build();
                     lock(Locker)
                     {
                         // Premture closing
                         if (OutDevice == null)
                             return;
-                        OutDevice.Send(builder.Result);
+                        OutDevice.Send(builder, ChannelCommand.NoteOn, note, volume, 0);
                     }                    
                 }
                 void ReleaseNote(int note)
                 {
-                    builder.Command = ChannelCommand.NoteOff;
-                    builder.Data1 = note;
-                    builder.Data2 = 0;
-                    builder.Build();
                     lock (Locker)
                     {
                         // Premture closing
                         if (OutDevice == null)
                             return;
-                        OutDevice.Send(builder.Result);
+                        OutDevice.Send(builder, ChannelCommand.NoteOff, note, 0, 0);
+                    }
+                }
+                void SetInstrument(string instrument)
+                {
+                    lock(Locker)
+                    {
+                        // Prematur close
+                        if (OutDevice == null || 
+                            // Ignore invalid instrument instruction
+                            !InstrumentMapping.ContainsKey(instrument))
+                            return;
+                        OutDevice.Send(builder, ChannelCommand.ProgramChange, InstrumentMapping[instrument], 0, 0);
                     }
                 }
 
@@ -263,47 +425,72 @@ namespace SomewhereDesktop
                 }
                 // Very basic implementation for just simple notes
                 int currentLevel = 4;
-                char prevNote = ' ';
-                int prevLevel = currentLevel;
-                int index = 0;
-                foreach (var note in rawNotes)
+                string currentInstrument = null;
+                string drumRangeSet = DrumRanges.Keys.First();
+                for (int i = 0; i < rawNotes.Length; i++)
                 {
-                    index++;
+                    var note = rawNotes[i];
                     // Premture closing
                     if (OutDevice == null)
                         return;
-                    void PlayNoteName(string name)
+                    // Helper methods
+                    void PlayNoteKeyName(string name)
+                        => PlayNoteContinued(NotationToNoteID(name));
+                    void PlayNoteContinued(int id)
                     {
                         // Get continue
                         int count = 1;
-                        while (index - 1 /* Sub by 1 because we add ahead*/ + count < rawNotes.Length 
-                            && rawNotes[index - 1 + count] == '-')
+                        while (i + count < rawNotes.Length 
+                            && rawNotes[i + count] == '-')
                             count++;
-                        PlayNote(NotationToNoteID(name), delay: tempoDelay * count);
+                        PlayNote(id, delay: tempoDelay * count);
                     }
-                    if (note == ' ')
+                    // Handled or ignore, just continue
+                    if (// Ignore white space
+                        note == ' ' ||
+                        // Continuity handled
+                        note == '-')
                         continue;
                     else if (note == '#')
                         currentLevel++;
                     else if (note == '$')
                         currentLevel--;
+                    // Keyboard notes
                     else if (MediumNotes.Contains(note))
-                    {
-                        prevNote = note;
-                        prevLevel = currentLevel;
-                        PlayNoteName(note + currentLevel.ToString());
-                    }
+                        PlayNoteKeyName(note + currentLevel.ToString());
                     else if (HighNotes.Contains(note))
+                        PlayNoteKeyName(note + (currentLevel + 1).ToString());
+                    // Drump notes
+                    else if(DrumNotes.Contains(note))
                     {
-                        prevNote = note;
-                        prevLevel = currentLevel + 1;
-                        PlayNoteName(note + (currentLevel + 1).ToString());
+                        // First entry and re-entry
+                        if (currentInstrument == null || !InstrumentMapping.ContainsKey(currentInstrument)
+                            || InstrumentMapping[currentInstrument] < 113
+                            || InstrumentMapping[currentInstrument] > 120)
+                            SetInstrument("drum");
+                        int drumIndex = Convert.ToInt32($"{note}"); // In C# char is interpreted directly as int, so put it in a string
+                        if (drumIndex > 9) continue;    // Skip invalid
+                        PlayNoteContinued(GetDrumKey(drumRangeSet, drumIndex));
                     }
-                    else if (note == '-')    // Continue
-                        continue;
+                    // Instrument
+                    else if(note == '{')
+                    {
+                        var match = Regex.Match(rawNotes.Substring(i), InstrumentInstructionPattern);
+                        string instrument = match.Groups[1].Value;
+                        string preset = match.Groups[3].Value;
+                        SetInstrument(instrument.ToLower());
+                        drumRangeSet = !string.IsNullOrEmpty(preset) ? preset.ToLower() : drumRangeSet;
+                        i += match.Length;
+                    }
                     // Stop
-                    else if (note == '~')
+                    else if (// Default step
+                        note == '~' ||
+                        // Drump stop
+                        note == '0')
                         Thread.Sleep(tempoDelay);
+                    else
+                        // Skip unidentified
+                        continue;
                 }
             }
             lock(Locker)
@@ -467,8 +654,35 @@ K:C
         #region Sub Routines
         private static readonly char[] MediumNotes = "cdefgab".ToCharArray();
         private static readonly char[] HighNotes = "CDEFGAB".ToCharArray();
+        private static readonly char[] DrumNotes = "123456789".ToCharArray();
+        /// <param name="rangeSet">Lower case</param>
+        /// <param name="index">Must be in 1-9, we will map it to 0-8</param>
+        private int GetDrumKey(string rangeSet, int index)
+        {
+            if (DrumRanges.ContainsKey(rangeSet))
+                return DrumRanges[rangeSet][index];
+            else
+                // For invalid drum range just use default
+                return DrumRanges.Keys.First()[index];
+        }
         private int GetTempoDelay(int tempo)
                 => (int)((float)60 /* 60 seconds */ / tempo * 1000);
         #endregion
+    }
+
+    public static class OutputDeviceExtension
+    {
+        public static void Send(this OutputDevice device, ChannelCommand command, int data1, int data2 = 0, int midiChannel = 0)
+            => Send(device, new ChannelMessageBuilder(), command, data1, data2, midiChannel);
+        public static void Send(this OutputDevice device, ChannelMessageBuilder builder, 
+            ChannelCommand command, int data1, int data2 = 0, int midiChannel = 0)
+        {
+            builder.Command = command;
+            builder.Data1 = data1;
+            builder.Data2 = data2;
+            builder.MidiChannel = midiChannel;
+            builder.Build();
+            device.Send(builder.Result);
+        }
     }
 }
