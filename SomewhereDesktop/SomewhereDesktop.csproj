@@ -81,6 +81,9 @@
     <Reference Include="Csv, Version=1.0.52.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Csv.1.0.52\lib\net40\Csv.dll</HintPath>
     </Reference>
+    <Reference Include="HelixToolkit.Wpf, Version=2.9.0.0, Culture=neutral, PublicKeyToken=52aa3500039caf0d, processorArchitecture=MSIL">
+      <HintPath>..\packages\HelixToolkit.Wpf.2.9.0\lib\net45\HelixToolkit.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="InteropCommon, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\InteropCommon.1.0.0\lib\netstandard2.0\InteropCommon.dll</HintPath>
     </Reference>

@@ -435,7 +435,7 @@ namespace SomewhereDesktop
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
                 = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
-                = PreviewBrowser.Visibility
+                = PreviewBrowser.Visibility = Preview3D.Visibility
                 = Visibility.Collapsed;
         }
         /// <summary>
@@ -805,6 +805,14 @@ namespace SomewhereDesktop
                 {
                     PreviewBrowser.Visibility = Visibility.Visible;
                     PreviewAddress = Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name);
+                }
+                // Preview Wavefront .obj
+                else if(extension == ".obj")
+                {
+                    Preview3D.Visibility = Visibility.Visible;
+                    HelixToolkit.Wpf.ObjReader objReader = new HelixToolkit.Wpf.ObjReader();
+                    System.Windows.Media.Media3D.Model3DGroup model = objReader.Read(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name));
+                    PreviewModel.Content = model;
                 }
                 else
                 {

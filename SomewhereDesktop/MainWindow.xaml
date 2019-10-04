@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:h="http://helix-toolkit.org/wpf"
         xmlns:local="clr-namespace:SomewhereDesktop"
         xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
         xmlns:cefSharp="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
@@ -270,6 +271,10 @@
                                                     <WindowsFormsHost x:Name="PreviewWindowsFormsHost" Visibility="Collapsed"/>
                                                     <cefSharp:ChromiumWebBrowser x:Name="PreviewBrowser" Visibility="Collapsed" Address="{Binding PreviewAddress, Mode=TwoWay}"
                                                                                  PreviewKeyDown="PreviewBrowser_PreviewKeyDown"/>
+                                                    <h:HelixViewport3D x:Name="Preview3D" Visibility="Collapsed">
+                                                        <h:DefaultLights/>
+                                                        <ModelVisual3D x:Name="PreviewModel"/>
+                                                    </h:HelixViewport3D>
                                                 </Grid>
                                             </DockPanel>
                                         </Border>
