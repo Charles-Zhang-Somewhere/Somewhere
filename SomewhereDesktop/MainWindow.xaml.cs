@@ -438,10 +438,18 @@ namespace SomewhereDesktop
                 = PreviewBrowser.Visibility
                 = Visibility.Collapsed;
         }
+        /// <summary>
+        /// Delete temporary files and folders
+        /// </summary>
         private void DeleteTemporaryFiles()
         {
             foreach (var path in TempFiles)
-                File.Delete(path);
+            {
+                if (path.Last() == System.IO.Path.DirectorySeparatorChar)
+                    Directory.Delete(path, true);
+                else
+                    File.Delete(path);
+            }
             TempFiles.Clear();
         }
         /// <summary>
@@ -536,6 +544,7 @@ namespace SomewhereDesktop
             {
                 // General source code preview
                 case LanguageType.CPP:
+                case LanguageType.Qt:
                 case LanguageType.CSharp:
                 case LanguageType.Python:
                 case LanguageType.Pbrt:
@@ -822,7 +831,9 @@ namespace SomewhereDesktop
             // SPICE
             ".spice", ".cir", ".sp",
             // Melody
-            ".melody"
+            ".melody",
+            // Qt
+            ".qt"
         };
         #endregion
 
@@ -1897,7 +1908,8 @@ namespace SomewhereDesktop
             Pbrt,
             CityScript,
             SpiceNetlist,
-            Melody
+            Melody,
+            Qt // Uses special .cpp extension name as .qt
         }
         /// <summary>
         /// Check language type of a given piece of code;
@@ -1925,6 +1937,8 @@ namespace SomewhereDesktop
                         return LanguageType.SpiceNetlist;
                     case ".melody":
                         return LanguageType.Melody;
+                    case ".qt":
+                        return LanguageType.Qt;
                     default:
                         break;
                 }
@@ -1932,8 +1946,17 @@ namespace SomewhereDesktop
             if(code == null)
                 return LanguageType.Unidentified;
 
-            if (code.Contains("#include"))
+            // Qt
+            if ( // First line contains MinGW environment path
+                code.StartsWith("@") &&
+                // First line ends with "Qt"
+                (Math.Max(code.IndexOf('\r'), code.IndexOf('\n')) != -1
+                && code.Substring(0, Math.Max(code.IndexOf('\r'), code.IndexOf('\n')) - 1).EndsWith(".bat")))   // Check available Mingw environment bat
+                return LanguageType.Qt;
+            // C++
+            else if (code.Contains("#include"))
                 return LanguageType.CPP;
+            // C#
             else if (code.Contains("using System;"))
                 return LanguageType.CSharp;
             // Melody
@@ -1945,7 +1968,7 @@ namespace SomewhereDesktop
                 || code.EndsWith(")") || code.EndsWith("]")
                 // Single line expressions
                 || (!code.Contains("\n") && !code.Contains("=") && code.IndexOfAny(new char[] { '+', '-', '*', '/', '^' }) != -1))
-                return LanguageType.Python;
+                return LanguageType.Python;            
             // Prbt
             else if (code.Contains("WorldBegin") && code.Contains("WorldEnd"))
                 return LanguageType.Pbrt;
@@ -2376,6 +2399,67 @@ with open(""{0}"", 'w+') as the_file:
                 }
                 catch (Exception) { throw; }
             }
+            // Compile Qt snippets, return compiled target path
+            string CompileQt()
+            {
+                string folder = GetTempFileName() + System.IO.Path.DirectorySeparatorChar;
+                string folderName = System.IO.Path.GetFileName(folder.Substring(0, folder.Length - 1));
+                string sourceName = "source";
+                string sourcePath = System.IO.Path.Combine(folder, sourceName + ".cpp");
+                string batPath = System.IO.Path.Combine(folder, sourceName + ".bat");
+                int firstLineEnding = Math.Max(previewCode.IndexOf('\r'), previewCode.IndexOf('\n'));
+                string devCmdPath = previewCode.Substring(1, firstLineEnding).Trim();
+                // Dump source
+                System.IO.Directory.CreateDirectory(folder);
+                System.IO.File.WriteAllText(sourcePath, previewCode.Substring(firstLineEnding));
+                try
+                {
+                    // Return whether succeed
+                    bool GenerateAndRunBat(string commands, bool redirect = false)
+                    {
+                        using (StreamWriter sw = new StreamWriter(File.Open(batPath, FileMode.OpenOrCreate), Encoding.Default))
+                        {
+                            // The qtenv.bat will try to reset working directory and cause trouble, so set it back
+                            sw.Write(commands);
+                        }
+                        using (Process myProcess = new Process())
+                        {
+                            myProcess.StartInfo.UseShellExecute = false;
+                            myProcess.StartInfo.FileName = batPath;
+                            myProcess.StartInfo.CreateNoWindow = true;
+                            myProcess.StartInfo.RedirectStandardError = redirect;
+                            myProcess.StartInfo.RedirectStandardOutput = redirect;
+                            myProcess.StartInfo.WorkingDirectory = folder;
+                            myProcess.Start();
+                            string message = redirect ? myProcess.StandardError.ReadToEnd() + myProcess.StandardOutput.ReadToEnd(): null;  // Notice the order might be messed up
+                            myProcess.WaitForExit();
+                            if (redirect && !string.IsNullOrEmpty(message))
+                            {
+                                new DialogWindow(this, "Compile Message", message.Replace("\n", "\n\n")).ShowDialog();
+                                return false;
+                            }
+                            return true;
+                        }
+                    }
+
+                    // Get the location of Qt MinGW compiler dev env command line bat
+                    if (!System.IO.File.Exists(devCmdPath))
+                        throw new InvalidOperationException($"Invalid Environment bat `{devCmdPath}`.");
+                    // Dump bat: notice for Qt we need to setup proper environment (including PATH and include dir etc.) so we need to 
+                    // run the dev cmd first, which forces us to create a bat for multiple commands
+                    // And for some reason, the bat cannot contain multiple lines without causing issue (probably due to encoding),
+                    // so we are running everything as one line
+                    // Also if characters contain Unicode it will not run properly so we are writing out as ANSI (Encoding.Default)
+                    GenerateAndRunBat($"@ECHO OFF && \"{devCmdPath}\" && cd /d \"{folder}\" && qmake -project");
+                    string proPath = System.IO.Path.Combine(folder, folderName + ".pro");
+                    File.WriteAllText(proPath, File.ReadAllText(proPath).Replace("INCLUDEPATH += .\r\n", "INCLUDEPATH += .\r\nQT += widgets\r\n"));
+                    GenerateAndRunBat($"@ECHO OFF && \"{devCmdPath}\" && cd /d \"{folder}\" && qmake && mingw32-make", true);
+                    // Add temp file list
+                    TempFiles.Add(folder);
+                    return System.IO.Path.Combine(folder, "release", folderName + ".exe");
+                }
+                catch (Exception e) { throw; }
+            }
             // Compile CSharp snippets
             string CompileCSharp()
             {
@@ -2622,6 +2706,10 @@ with open(""{0}"", 'w+') as the_file:
                     case LanguageType.CPP:
                         DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
                         try { return new string[] { $"C++ program finished in {RunProgram(CompileCPP())} seconds." }; }
+                        catch (Exception e) { return new string[] { e.Message }; }
+                    case LanguageType.Qt:
+                        DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
+                        try { return new string[] { $"Qt program finished in {RunProgram(CompileQt())} seconds." }; }
                         catch (Exception e) { return new string[] { e.Message }; }
                     case LanguageType.CSharp:
                         DeleteTemporaryFiles(); // In case we are previewing multiple times on the same item (in which case UpdateItemPreview() is not called), delete preview temp files
