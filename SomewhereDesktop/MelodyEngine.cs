@@ -480,7 +480,7 @@ namespace SomewhereDesktop
                         string preset = match.Groups[3].Value;
                         SetInstrument(instrument.ToLower());
                         drumRangeSet = !string.IsNullOrEmpty(preset) ? preset.ToLower() : drumRangeSet;
-                        i += match.Length;
+                        i += match.Length - 1;
                     }
                     // Stop
                     else if (// Default step
