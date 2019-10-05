@@ -432,6 +432,7 @@ namespace SomewhereDesktop
         private void ClearItemPreview()
         {
             PreviewText = PreviewImage = PreviewStatus = PreviewMarkdown = null;
+            PreviewModel.Content = null;
             VLCControl.Stop();
             PreviewTextBox.Visibility = PreviewImageSource.Visibility = PreviewTextBlock.Visibility
                 = PreviewMarkdownViewer.Visibility = PreviewWindowsFormsHost.Visibility
@@ -738,6 +739,19 @@ namespace SomewhereDesktop
                     string temp = GetTempFileName() + ".html";
                     File.WriteAllText(temp, GenerateJavascriptNotebook(ActiveItem.Content));
                     PreviewAddress = temp;
+                    TempFiles.Add(temp);
+                }
+                // Preview as Obj 3D
+                else if(ActiveItem.Content.StartsWith("# Obj"))
+                {
+                    Preview3D.Visibility = Visibility.Visible;
+                    string temp = GetTempFileName() + ".obj";
+                    File.WriteAllText(temp, ActiveItem.Content);
+                    HelixToolkit.Wpf.ObjReader objReader = new HelixToolkit.Wpf.ObjReader();  // Instead of doing it using a memory stream, use a real file. 
+                    // This can help in cases where external texture and material files are referenced.
+                    // Otherwise the library doesn't know where to use as relative path for looking for those files.
+                    System.Windows.Media.Media3D.Model3DGroup model = objReader.Read(temp);
+                    PreviewModel.Content = model;
                     TempFiles.Add(temp);
                 }
                 // Preview Source Code
