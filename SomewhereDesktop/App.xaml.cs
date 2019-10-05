@@ -16,6 +16,9 @@ namespace SomewhereDesktop
     {
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            // Close existing application
+            Application.Current.MainWindow.Close();
+
             // Show new dialog
             StringBuilder builder = new StringBuilder(e.Exception.Message);
             builder.AppendLine();
@@ -38,9 +41,6 @@ namespace SomewhereDesktop
             builder.AppendLine();
             builder.AppendLine("Thanks for your patience and support!");
             new DialogWindow(null, "Don't panic! An operation error has occured", builder.ToString()).ShowDialog();
-
-            // Close existing application
-            Application.Current.MainWindow.Close();
         }
     }
 }

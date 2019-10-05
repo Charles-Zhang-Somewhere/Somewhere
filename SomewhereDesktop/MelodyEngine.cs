@@ -338,7 +338,7 @@ namespace SomewhereDesktop
             // Spcial mapping
             {"drum", 117 }  // "drum" for "percussive"
         };
-        public static string TimeSignaturePattern = "^\\((.*?)(-(\\d+))?\\)";
+        public static string TimeSignaturePattern = "^\\((\\d+/\\d+)(-(\\d+))?\\)";
         public static string InstrumentInstructionPattern = "^{(.*?)(:(.*?))?}";
         /// <summary>
         /// Play as MIDI music

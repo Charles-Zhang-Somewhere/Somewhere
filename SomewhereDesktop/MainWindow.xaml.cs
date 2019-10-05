@@ -1326,7 +1326,7 @@ namespace SomewhereDesktop
                 CompileAndRunButton.Visibility = Visibility.Collapsed;
                 return;
             }
-            string extension = (ActiveItem?.Name != null 
+            string extension = (!string.IsNullOrEmpty(ActiveItem?.Name)
                 ? System.IO.Path.GetExtension(Commands.GetPhysicalPathForFilesThatCanBeInsideFolder(ActiveItem.Name)).ToLower()
                 : null) ?? null;
             Visibility visibility = (ActiveItem != null && CheckCodeLanguage(extension, ActiveItem.Content) != LanguageType.Unidentified)
@@ -1987,7 +1987,7 @@ namespace SomewhereDesktop
             // Use heuristics to guess host language is Python
             else if (code.StartsWith("def ") || code.Contains("__main__")
                 // Single line statements
-                || code.EndsWith(")") || code.EndsWith("]")
+                || (!code.Contains("\n") && (code.EndsWith(")") || code.EndsWith("]")))
                 // Single line expressions
                 || (!code.Contains("\n") && !code.Contains("=") && code.IndexOfAny(new char[] { '+', '-', '*', '/', '^' }) != -1))
                 return LanguageType.Python;            
