@@ -29,6 +29,11 @@ using Vlc.DotNet.Forms;
 using System.Text.RegularExpressions;
 using System.IO.Compression;
 using CefSharp;
+using CSCore.SoundIn;
+using CSCore.Streams;
+using CSCore;
+using CSCore.Codecs.WAV;
+using CSCore.CoreAudioAPI;
 
 namespace SomewhereDesktop
 {
@@ -1300,6 +1305,52 @@ namespace SomewhereDesktop
             ActiveNote = ActiveItem;
             NoteContentTextBox.Focus();
             NoteContentTextBox.SelectAll();
+        }
+        private void RecordCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = true;
+        private void RecordCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            string fileName = $"New Recoding {DateTime.Now.ToString("yyyMMdd hhmmss")}.wav";
+            string filePath = System.IO.Path.Combine(Commands.HomeDirectory, fileName);
+            // Create a new soundIn instance for using input devices
+            using (var wasapiCapture = new WasapiCapture(true, AudioClientShareMode.Shared, 30))
+            {
+                // Important: always initialize the soundIn instance before creating the
+                // SoundInSource. The SoundInSource needs the WaveFormat of the soundIn,
+                // which gets determined by the soundIn.Initialize method.
+                wasapiCapture.Initialize();
+                // Wrap a sound source around the soundIn instance
+                // in order to prevent playback interruptions, set FillWithZeros to true
+                // otherwise, if the SoundIn does not provide enough data, the playback stops
+                var wasapiCaptureSource = new SoundInSource(wasapiCapture);
+
+                using (var stereoSource = wasapiCaptureSource.ToStereo())
+                // using (var writer = MediaFoundationEncoder.CreateWMAEncoder(stereoSource.WaveFormat, "output.wma"))
+                using (var waveWriter = new WaveWriter(filePath, stereoSource.WaveFormat))
+                {
+                    byte[] buffer = new byte[stereoSource.WaveFormat.BytesPerSecond];
+                    wasapiCaptureSource.DataAvailable += (s, ev) =>
+                    {
+                        int read = stereoSource.Read(buffer, 0, buffer.Length);
+                        waveWriter.Write(buffer, 0, read);
+                    };
+                    // Start recording
+                    wasapiCapture.Start();
+                    new DialogWindow(this, "Recording", "A new recording has started...", OKButtonText: "Finish").ShowDialog();
+                    // Stop recording
+                    wasapiCapture.Stop();
+                    InfoText = $"Recording `{fileName}` is finished and added to Home.";
+                }
+            }
+
+            // Add item to database
+            Commands.Add(filePath);
+            // Update panel and info
+            RefreshAllItems();
+            RefreshItems();
+            // Select added item
+            if (InventoryPanel.Visibility == Visibility.Visible)
+                ActiveItem = Items.OrderBy(i => i.EntryDate).LastOrDefault() ?? ActiveItem;
         }
         private void CreateNoteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
             => e.CanExecute = true;

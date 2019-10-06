@@ -20,6 +20,7 @@ namespace SomewhereDesktop
         #endregion
 
         #region UI Commands
+        public static readonly RoutedUICommand Record = new RoutedUICommand("Record some sound", "Record", typeof(CustomCommands));
         public static readonly RoutedUICommand Recent = new RoutedUICommand("Show recent home paths", "Recent", typeof(CustomCommands));
         public static readonly RoutedUICommand Maximize = new RoutedUICommand("Maximize window (F11)", "Maximize", typeof(CustomCommands));
         public static readonly RoutedUICommand Hide = new RoutedUICommand("Hide window (Ctrl+` or ESC)", "Hide", typeof(CustomCommands));

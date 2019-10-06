@@ -29,7 +29,7 @@
                     <Button Content="✖" Width="35" Height="35" Command="Close"/>
                 </DockPanel>
             </Grid>
-            <Button Content="OK" Command="Close" DockPanel.Dock="Bottom"/>
+            <Button x:Name="OKButton" Content="OK" Command="Close" DockPanel.Dock="Bottom"/>
             <Border x:Name="OptionsPanel" Style="{StaticResource Panel}" DockPanel.Dock="Bottom">
                 <StackPanel>
                     <Label Content="Options:" Style="{StaticResource Header}"/>
