@@ -28,6 +28,7 @@
         <CommandBinding Command="local:CustomCommands.SwitchSettings" CanExecute="SwitchSettingsCommand_CanExecute" Executed="SwitchSettingsCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.SwitchStatus" CanExecute="SwitchStatusCommand_CanExecute" Executed="SwitchStatusCommand_Executed"/>
         <!-- Repository Commands -->
+        <CommandBinding Command="local:CustomCommands.Record" CanExecute="RecordCommand_CanExecute" Executed="RecordCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Open" CanExecute="OpenHomeCommand_CanExecute" Executed="OpenHomeCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.New" CanExecute="NewHomeCommand_CanExecute" Executed="NewHomeCommand_Executed"/>
         <CommandBinding Command="local:CustomCommands.Recent" CanExecute="RecentHomesCommand_CanExecute" Executed="RecentHomesCommand_Executed"/>
@@ -71,6 +72,7 @@
         <!-- Status Commands -->
         <KeyBinding Key="F9" Command="local:CustomCommands.OpenCommandPrompt"/>
         <!-- Inventory Commands -->
+        <KeyBinding Key="F4" Command="local:CustomCommands.Record"/>
         <KeyBinding Key="F3" Command="local:CustomCommands.Find"/>
         <KeyBinding Key="F5" Command="local:CustomCommands.Refresh"/>
         <KeyBinding Key="F10" Command="local:CustomCommands.CompileAndRun"/>

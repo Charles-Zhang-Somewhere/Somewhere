@@ -24,7 +24,7 @@ namespace SomewhereDesktop
     {
         #region Constructor
         /// <param name="content">Markdown-enabled</param>
-        public DialogWindow(Window owner, string title = "Dialog", string content = "", IEnumerable<string> options = null)
+        public DialogWindow(Window owner, string title = "Dialog", string content = "", IEnumerable<string> options = null, string OKButtonText = null)
         {
             Owner = owner;
             InitializeComponent();
@@ -39,6 +39,8 @@ namespace SomewhereDesktop
                 OptionsPanel.Visibility = Visibility.Collapsed;
                 Options = null;
             }
+            if (OKButtonText != null)
+                OKButton.Content = OKButtonText;
         }
         #endregion
 
