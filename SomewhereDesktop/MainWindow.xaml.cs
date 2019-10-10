@@ -120,7 +120,7 @@ namespace SomewhereDesktop
             BackgroundCheckNewVersion();
 
             // Set identifiable window title
-            Title = "Somewhere - " + System.IO.Path.GetFileName(Commands.HomeDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+            Title = System.IO.Path.GetFileName(Commands.HomeDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar)) + " - Somewhere";
         }
         private void ShowRecentPathsDialog(string[] recent)
         {
