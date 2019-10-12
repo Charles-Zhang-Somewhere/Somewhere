@@ -299,7 +299,8 @@
                                                     <Label Content="Tags" Style="{StaticResource AttributeField}"/>
                                                     <!-- For tags input, disable horizontal scrollbar and allow text to wrap -->
                                                     <TextBox x:Name="ItemTagsTextBox" Text="{Binding ActiveItemTags, UpdateSourceTrigger=LostFocus}" 
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                         TextWrapping="Wrap"/>
                                                 </DockPanel>
                                                 <StackPanel DockPanel.Dock="Bottom">
                                                     <Button Content="Save Changes" Command="local:CustomCommands.Save"
