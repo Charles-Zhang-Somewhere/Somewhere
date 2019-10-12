@@ -12,6 +12,7 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 For note editor: when multiple lines are selected and first cursor is beginning of line, allow using `tab` to add tabs, and use `shift+tab` to remove tabs
 
 Add renderer support: pbrt
+[Bug] There is a serious issue everything a file (e.g. image) is previewed in SD it will be "updated" - a log entry will be created affecting database and showing this
 
 Allow foreign reference (absolute path) implementation.
 Desktop change window title so it's more identifiable on Windows task bar for specific repository (just keep the last folder name)
