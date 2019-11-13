@@ -59,7 +59,7 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 
 Optional Download: It's recommended for CLI to be used with [Cmder](https://cmder.net) (better for Unicode display, nicer colors and better overall experience); Notice Cmder is available on Windows only.
 
-To get the latest nightly build for **Win_x64** (which contains commits from all branches), use this [link](https://utoronto-my.sharepoint.com/:f:/g/personal/ttt_zhang_mail_utoronto_ca/EikOdy7Pp-tCgHdjmO9-y6QBEQd6Hro79r7EpLK3NQiltw?e=rUdBTe).
+To get the latest nightly build for **Win_x64** (which contains commits from all branches), use this [link](https://utoronto-my.sharepoint.com/:f:/r/personal/ttt_zhang_mail_utoronto_ca/Documents/Somewhere-latest?csf=1&e=1TYD33).
 
 # Treatments
 
