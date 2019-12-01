@@ -134,6 +134,8 @@ To get the latest nightly build for **Win_x64** (which contains commits from all
     * To turn an idea into a useful thought, it can either: get a name and become an information with a title (the same title which can also contain oteht information), get tags and become knowledge, or get a structure and become structired data measure. 
     * Every note starts as idea, then it gradually grow and when it gets a title it becomes a complete note. Then it may become a title in its own regard.
 2. Knowledge system: offline wiki (that offline wiki app link from wikipedia) is not enough but a must. (Around 40Gb base knowledge local reference)
+3. (Differentiation) Category system when used for well-defined subjects and intend to cover only variety if very useful especially for product catalog and first-time uesr navigation.
+	* Idea from: Canava Computer changed their website from new modern verion back to old classical version in favour of easier categorical browsing instead of flat list browsing experience.
 
 ## Questions
 
