@@ -193,6 +193,7 @@ To avoid confusion, above convention is governed by following rules:
 5. For time related notes, try tag it with date in this format: `yyyy-MM-dd` e.g. `2019-08-31`; Specialized sorting and related features might be implemented.
 6. Want to give a tag some more meaning? Create a note with the same name (spaces allowed) as tag, and write your story either in the content or remark for that note. This will also work with Knowledge system in the future, and is the preferred way to define relationships for tags - if any. For instance, at the stage if gathering ideas, one of the tag was called "ProjctHehastus", and a note with same name exists, I.e. "Project Hephaestus".
 7. Try add `_HomeBackground.png/jpg` and see what happens to your Home background. Better color adjustment is expected in *future release* (not a promise).
+8. To add many items (that are not considered same tags otherwise you could just `add *`) to the repository semi-automatically (TL;DR create a bat file for all items): 1) open command line inside repository folder; 2) run `sw status`, copy the new items lines of output result; 3) Paste the lines into Notepad++ and replace (regular expression) `^\[New\] (.*)$` with `sw add "$1" ""`; 4) Remove unwanted items and add needed tags in the second quote; 5) Double check for typos, then save as a `.bat` inside repository file and double click to execute.
 
 ## Best Practices
 
