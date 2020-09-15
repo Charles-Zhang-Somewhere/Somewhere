@@ -1,5 +1,7 @@
 (This documentation is still work-in-progress)
 
+[![YouTube Link](Documentation/YouTube%20Video%20Link%20Image.png)](https://www.youtube.com/watch?v=z-GBAwwtFpQ&t=575s)
+
 # Overview
 
 Welcome to **Somewhere**, a simple program that enables you to tag your files in a designated "**Home folder**". it's my best wish that this tool can come handy to you!
