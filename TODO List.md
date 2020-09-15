@@ -1,3 +1,11 @@
+# General Indexed Notes
+
+1. (bug, file name, pending) When tag filtering is on, changing file name doesn't causing any actual file rename - database is updated though.
+	* (design, implementation, proposal, rewrite) A rewrite is recommended: make SW more file-manager style (e.g. like XnView) because 1) Having to be fixed to one folder is sick because swtiching targets needs opening a new instance; 2) Requiring to manually add files is sick (better to be able to just view, and opt-in SW repo). In all other cases, we might deprecate SD because it tends to introduce unnecessary integration complexity (Knowledge subsystem, music melogy), and it's not that useful now we have XnView.
+* (somewhere, todo, feature, essential, desktop) For SomewhereDesktop, automatically show a pop-up importing all files that are not registered yet have a tag scheme filename. Just import those files, don't modify their filenames to avoid potential conflicts. Might also respect YAML files if any - in that case those YAML meta are import-only and SW will not try to sync, to SW its database will have master copies of actual final tags.
+    * (Idea from) This is to address the issue that sometimes I do wish to have a SD-like image browser yet the files I am browsing don't exist in SD yet and I don't yet have time to add them. 
+         * (Pending, todo, software, utility, software development, tooling) In that case, since both XYPlorer and Windows Image seem to fail me in obvious ways, we might want to quickly create a DESKTOP WPF image viewer (intended for viewing a selection list of images) which might also be able to manage YAML style tags meta information.
+
 # Immediate To-Do List
 
 This list is for myself.
