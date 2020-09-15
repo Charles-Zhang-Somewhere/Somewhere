@@ -59,7 +59,7 @@ This app is absolutely intended for **personal use**; By design it's not tested 
 
 Optional Download: It's recommended for CLI to be used with [Cmder](https://cmder.net) (better for Unicode display, nicer colors and better overall experience); Notice Cmder is available on Windows only.
 
-To get the latest nightly build for **Win_x64** (which contains commits from all branches), use this [link](https://utoronto-my.sharepoint.com/:f:/g/personal/ttt_zhang_mail_utoronto_ca/EikOdy7Pp-tCgHdjmO9-y6QBEQd6Hro79r7EpLK3NQiltw?e=rUdBTe).
+To get the latest nightly build for **Win_x64** (which contains commits from all branches), use this [link](https://utoronto-my.sharepoint.com/:f:/r/personal/ttt_zhang_mail_utoronto_ca/Documents/Somewhere-latest?csf=1&e=1TYD33).
 
 # Treatments
 
@@ -134,6 +134,8 @@ To get the latest nightly build for **Win_x64** (which contains commits from all
     * To turn an idea into a useful thought, it can either: get a name and become an information with a title (the same title which can also contain oteht information), get tags and become knowledge, or get a structure and become structired data measure. 
     * Every note starts as idea, then it gradually grow and when it gets a title it becomes a complete note. Then it may become a title in its own regard.
 2. Knowledge system: offline wiki (that offline wiki app link from wikipedia) is not enough but a must. (Around 40Gb base knowledge local reference)
+3. (Differentiation) Category system when used for well-defined subjects and intend to cover only variety if very useful especially for product catalog and first-time uesr navigation.
+	* Idea from: Canava Computer changed their website from new modern verion back to old classical version in favour of easier categorical browsing instead of flat list browsing experience.
 
 ## Questions
 
@@ -191,6 +193,7 @@ To avoid confusion, above convention is governed by following rules:
 5. For time related notes, try tag it with date in this format: `yyyy-MM-dd` e.g. `2019-08-31`; Specialized sorting and related features might be implemented.
 6. Want to give a tag some more meaning? Create a note with the same name (spaces allowed) as tag, and write your story either in the content or remark for that note. This will also work with Knowledge system in the future, and is the preferred way to define relationships for tags - if any. For instance, at the stage if gathering ideas, one of the tag was called "ProjctHehastus", and a note with same name exists, I.e. "Project Hephaestus".
 7. Try add `_HomeBackground.png/jpg` and see what happens to your Home background. Better color adjustment is expected in *future release* (not a promise).
+8. To add many items (that are not considered same tags otherwise you could just `add *`) to the repository semi-automatically (TL;DR create a bat file for all items): 1) open command line inside repository folder; 2) run `sw status`, copy the new items lines of output result; 3) Paste the lines into Notepad++ and replace (regular expression) `^\[New\] (.*)$` with `sw add "$1" ""`; 4) Remove unwanted items and add needed tags in the second quote; 5) Double check for typos, then save as a `.bat` inside repository file and double click to execute.
 
 ## Best Practices
 

@@ -19,7 +19,10 @@ GetPhysicalName(string itemName) has very serious issue - as when called by Add(
 
 For note editor: when multiple lines are selected and first cursor is beginning of line, allow using `tab` to add tabs, and use `shift+tab` to remove tabs
 
+In SD, whenever we preview some item, if it doesn't have any remark, during swtiching to other items or Edit its content, an empty review will be created and saved for the item; Also notice a relevant issue that whenever we preview an item it will be resaved.
+
 Add renderer support: pbrt
+[Bug] There is a serious issue everything a file (e.g. image) is previewed in SD it will be "updated" - a log entry will be created affecting database and showing this
 
 Allow foreign reference (absolute path) implementation.
 Desktop change window title so it's more identifiable on Windows task bar for specific repository (just keep the last folder name)
@@ -202,6 +205,7 @@ Somethings that used to be an issue and is no longer identified:
 5. (Issue) Inventory panel tags need sorting, filters don't need sorting.
 6. (Core, Command Behavior) `mv` command if old not exist and new already exist and new not exist in DB then we can automatically treat this as an explicit renaming and just update it. (No idea what that means)
 7. (Issue) Exception Error dialog seems to have a height larger than screen resolution, adjust MaxHeight property.
+8. (Bug) File name like "Aristotle’s Rhetoric (Stanford Encyclopedia of Philosophy).pdf" will through error in command line saying the file doesn't exist - however it works in GUI. This seems not related to length of filepath exceeding 126 characters because file name like "Android-based Simulator to Support Tomasulo Algorithm Teaching and Learning.pdf" works.
 
 # Don't Do
 
