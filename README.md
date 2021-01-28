@@ -2,6 +2,11 @@
 
 [![YouTube Link](Documentation/YouTube%20Video%20Link%20Image.png)](https://www.youtube.com/watch?v=z-GBAwwtFpQ&t=575s)
 
+# Notes
+
+* (Development, Proposal) Notice the whole concept will be re-developed in Qt for cross-platform support. As a redesign and in accordance with new KMD specification, we will drop support for unreasonable names, drop support for file meta, and maybe use simple (master) Path/Name based database scheme instead of using a real database. And there will be no need for a "repository". It's purely text-based, file-system based, name-based, convention-based non-intrusive minimal-application-specific data.
+* (Todo, Urgent, Scenario) VLC can't even do something as simple as "rename" files. That's a bit ridiculous given its (underlying) tremendous power. Evidently Somewhere is a great interface to solve such lame problems.
+
 # Overview
 
 Welcome to **Somewhere**, a simple program that enables you to tag your files in a designated "**Home folder**". it's my best wish that this tool can come handy to you!
