@@ -1,3 +1,5 @@
+(THIS PROJECT IS DEPRECATED, SEE [SOMEWHERE 2](https://github.com/Charles-Zhang-Somewhere/Somewhere2))
+
 (This documentation is still work-in-progress)
 
 [![YouTube Link](Documentation/YouTube%20Video%20Link%20Image.png)](https://www.youtube.com/watch?v=z-GBAwwtFpQ&t=575s)
